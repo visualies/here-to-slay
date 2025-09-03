@@ -30,17 +30,6 @@ export function CenterArea() {
           </div>
         </div>
       </div>
-      
-      {/* Dice are now integrated into the game board - no separate button needed */}
-      <div className="flex flex-col items-center gap-2">
-        <div className="text-sm text-gray-600 font-medium">Dice Area</div>
-        <div className="w-40 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <div className="text-2xl mb-1">🎲</div>
-            <div className="text-xs">Dice roll here</div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
