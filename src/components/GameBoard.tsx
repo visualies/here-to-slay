@@ -1,5 +1,8 @@
+"use client";
+
 import { PlayerArea } from "./PlayerArea";
 import { CenterArea } from "./CenterArea";
+import { IntegratedDiceCanvas } from "./IntegratedDiceCanvas";
 
 export default function GameBoard() {
   return (
@@ -40,6 +43,9 @@ export default function GameBoard() {
           <CenterArea />
         </div>
       </div>
+      
+      {/* Integrated dice canvas - covers the entire game board */}
+      <IntegratedDiceCanvas />
     </div>
   );
 }
