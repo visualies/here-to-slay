@@ -30,7 +30,7 @@ function GridGround() {
       {/* Shadow receiving plane - transparent with visible shadows */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.09, 0]} receiveShadow>
         <planeGeometry args={[gridSize, gridSize]} />
-        <shadowMaterial transparent opacity={0.3} />
+        <shadowMaterial transparent opacity={0.2} />
       </mesh>
       
       {/* Visible grid */}
@@ -278,13 +278,15 @@ export function IntegratedDiceCanvas() {
           position={[10, 10, 5]}
           intensity={1}
           castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-camera-far={50}
-          shadow-camera-left={-50}
-          shadow-camera-right={50}
-          shadow-camera-top={50}
-          shadow-camera-bottom={-50}
+          shadow-mapSize-width={4096}
+          shadow-mapSize-height={4096}
+          shadow-camera-far={20}
+          shadow-camera-left={-10}
+          shadow-camera-right={10}
+          shadow-camera-top={10}
+          shadow-camera-bottom={-10}
+          shadow-radius={3}
+          shadow-bias={-0.0001}
         />
 
         {/* Physics World */}
