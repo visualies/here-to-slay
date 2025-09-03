@@ -36,11 +36,33 @@ function DiceModel() {
   // Scale the model appropriately
   clonedObj.scale.set(0.12, 0.12, 0.12);
   
-  // Enable shadow casting for all meshes in the object
+  // Enable shadow casting and set off-white color for all meshes in the object
   clonedObj.traverse((child) => {
     if (child instanceof THREE.Mesh) {
       child.castShadow = true;
       child.receiveShadow = true;
+      // Set colors based on material name
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach(mat => {
+            if (mat instanceof THREE.Material && (mat as any).color) {
+              if (mat.name === 'black') {
+                (mat as any).color = new THREE.Color('#000000');
+              } else {
+                (mat as any).color = new THREE.Color('#f8f8f8');
+              }
+            }
+          });
+        } else {
+          if ((child.material as any).color) {
+            if (child.material.name === 'black') {
+              (child.material as any).color = new THREE.Color('#000000');
+            } else {
+              (child.material as any).color = new THREE.Color('#f8f8f8');
+            }
+          }
+        }
+      }
     }
   });
   
