@@ -16,6 +16,10 @@ interface DiceProps {
   setDragDelta: (delta: THREE.Vector3) => void;
   sharedDragVelocity: THREE.Vector3;
   setSharedDragVelocity: (velocity: THREE.Vector3) => void;
+  draggedDicePosition: THREE.Vector3;
+  setDraggedDicePosition: (position: THREE.Vector3) => void;
+  diceInSync: boolean;
+  setDiceInSync: (inSync: boolean) => void;
 }
 
 // Dice face component with dots
@@ -60,7 +64,7 @@ function DiceFace({
   );
 }
 
-export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, diceIndex, dragDelta, setDragDelta, sharedDragVelocity, setSharedDragVelocity }: DiceProps) {
+export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, diceIndex, dragDelta, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync }: DiceProps) {
   const [ref, api] = useBox(() => ({
     mass: 1,
     position,
@@ -154,6 +158,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   }, [isDragging, setIsDraggingAny]);
 
   const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [syncOffset, setSyncOffset] = useState<THREE.Vector3>(new THREE.Vector3());
 
   // Make all dice kinematic when any is dragged, and lift them up
   useEffect(() => {
@@ -162,18 +167,20 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       api.velocity.set(0, 0, 0);
       api.angularVelocity.set(0, 0, 0);
       
-      // Store initial position and lift up
+      // Store initial position and lift up - all dice get same lift height
       if (meshRef.current) {
         const worldPos = new THREE.Vector3();
         meshRef.current.getWorldPosition(worldPos);
         setInitialPosition(worldPos.clone());
-        api.position.set(worldPos.x, worldPos.y + (isDragging ? 0.5 : 0.3), worldPos.z);
+        api.position.set(worldPos.x, worldPos.y + 0.5, worldPos.z); // Same height for all
       }
     } else {
-      // Re-enable physics when not dragging
+      // Re-enable physics when not dragging and reset sync state
       api.mass.set(1);
+      setDiceInSync(false);
+      setSyncOffset(new THREE.Vector3()); // Reset the locked offset
     }
-  }, [isDraggingAny, isDragging, api]);
+  }, [isDraggingAny, api, setDiceInSync]);
 
   // Handle global pointer events using useFrame for continuous tracking
   useFrame(() => {
@@ -198,10 +205,11 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         const velocity = currentPos2D.clone().sub(lastPos2D);
         setDragVelocity(velocity);
         
-        // Update shared drag delta for other dice (cumulative movement from start)
+        // Update shared data for other dice
         const totalDelta = intersectPoint.clone().sub(dragStart);
         setDragDelta(totalDelta);
         setSharedDragVelocity(velocity);
+        setDraggedDicePosition(newPosition.clone());
         
         // Store velocity history for smoother throwing
         setVelocityHistory(prev => {
@@ -211,11 +219,66 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         
         setLastDragPosition(intersectPoint);
       }
-    } else if (isDraggingAny && !isDragging && dragDelta.length() > 0) {
-      // This dice is not being dragged but should follow the drag movement
-      const newPosition = initialPosition.clone().add(dragDelta);
-      newPosition.y = Math.max(newPosition.y, 1.3); // Keep elevated
-      api.position.set(newPosition.x, newPosition.y, newPosition.z);
+    } else if (isDraggingAny && !isDragging) {
+      // This dice is not being dragged - should follow the dragged dice
+      if (draggedDicePosition.length() > 0 && meshRef.current) {
+        const currentPos = new THREE.Vector3();
+        meshRef.current.getWorldPosition(currentPos);
+        
+        // Calculate target position with offset
+        const direction = draggedDicePosition.clone().sub(currentPos);
+        direction.y = 0; // Only consider horizontal distance
+        const distance = direction.length();
+        const targetDistance = 0.8; // Desired separation distance
+        
+        // Calculate target position
+        let targetPosition;
+        if (distance > 0.001) {
+          direction.normalize();
+          targetPosition = draggedDicePosition.clone().sub(direction.multiplyScalar(targetDistance));
+        } else {
+          // If exactly on top, offset to the side
+          targetPosition = draggedDicePosition.clone().add(new THREE.Vector3(targetDistance, 0, 0));
+        }
+        
+        // Determine movement speed based on distance to target
+        const distanceToTarget = currentPos.distanceTo(targetPosition);
+        let moveSpeed;
+        
+        if (diceInSync && syncOffset.length() > 0) {
+          // Locked in sync - maintain exact relative position
+          const finalPosition = draggedDicePosition.clone().add(syncOffset);
+          finalPosition.y = Math.max(finalPosition.y, 1.5); // Keep elevated
+          api.position.set(finalPosition.x, finalPosition.y, finalPosition.z);
+        } else {
+          // Not locked yet - approach with variable speed
+          if (distanceToTarget <= 0.15) {
+            // Very close - lock the relative position
+            const currentOffset = currentPos.clone().sub(draggedDicePosition);
+            currentOffset.y = 0; // Keep only horizontal offset
+            setSyncOffset(currentOffset);
+            setDiceInSync(true);
+            moveSpeed = 1.0; // Effectively instant
+          } else if (distanceToTarget <= 0.5) {
+            // Getting close - increase speed significantly
+            moveSpeed = 0.3;
+          } else {
+            // Far away - normal approach speed
+            moveSpeed = 0.08;
+          }
+          
+          // Move towards target position
+          const moveDirection = targetPosition.clone().sub(currentPos);
+          const moveDistance = Math.min(moveDirection.length(), moveSpeed);
+          
+          if (moveDistance > 0.001) {
+            moveDirection.normalize();
+            const finalPosition = currentPos.clone().add(moveDirection.multiplyScalar(moveDistance));
+            finalPosition.y = Math.max(finalPosition.y, 1.5); // Keep elevated
+            api.position.set(finalPosition.x, finalPosition.y, finalPosition.z);
+          }
+        }
+      }
     }
   });
 

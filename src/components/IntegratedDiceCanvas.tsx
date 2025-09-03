@@ -192,6 +192,8 @@ export function IntegratedDiceCanvas() {
   const [isDraggingAny, setIsDraggingAny] = useState(false);
   const [dragDelta, setDragDelta] = useState<THREE.Vector3>(new THREE.Vector3());
   const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [draggedDicePosition, setDraggedDicePosition] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [diceInSync, setDiceInSync] = useState(false);
 
   const handleDiceResult = useCallback((value: number, index: number) => {
     setDiceResults(prev => {
@@ -297,6 +299,10 @@ export function IntegratedDiceCanvas() {
               setDragDelta={setDragDelta}
               sharedDragVelocity={dragVelocity}
               setSharedDragVelocity={setDragVelocity}
+              draggedDicePosition={draggedDicePosition}
+              setDraggedDicePosition={setDraggedDicePosition}
+              diceInSync={diceInSync}
+              setDiceInSync={setDiceInSync}
             />
           ))}
         </Physics>
