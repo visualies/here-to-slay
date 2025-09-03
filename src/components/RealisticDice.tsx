@@ -132,33 +132,33 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
     console.log('Effect triggered - isDraggingAny:', isDraggingAny, 'isDragging:', isDragging, 'sharedVelocity length:', sharedDragVelocity.length(), 'totalDragDistance:', totalDragDistance);
     if (!isDraggingAny && (totalDragDistance > 0 || sharedDragVelocity.length() > 0)) {
       console.log('Inside effect - will calculate throw velocity');
-      // Simple approach: use the total drag direction with consistent speed
+      // Use shared velocity for both dice to ensure consistency
       let throwVelocity = new THREE.Vector3();
       
-      if (totalDragDistance > 0) {
-        // This dice was dragged - calculate direction from start to end of drag
-        let dragDirection = lastDragPosition.clone().sub(dragStart);
-        dragDirection.y = 0; // Only horizontal movement initially
+      if (sharedDragVelocity.length() > 0.01) {
+        // Use shared velocity - this ensures both dice get the same direction and speed
+        throwVelocity = sharedDragVelocity.clone();
+        console.log('Using shared velocity for dice:', throwVelocity);
         
-        // If drag distance is too short or zero (pure click), extend it upward at a random angle
-        if (totalDragDistance <= 0.05) {
-          console.log('Short tap detected, totalDragDistance:', totalDragDistance);
+        // If this is a very short drag/tap, extend the velocity for better physics
+        if (sharedDragVelocity.length() <= 0.05) {
+          console.log('Short tap detected, extending shared velocity');
           // Create a random upward arc for short drags/taps
           const randomAngle = (Math.random() - 0.5) * Math.PI; // Random angle -90° to +90°
-          const minDistance = 0.5; // Increased minimum effective distance for taps
+          const minDistance = 0.5; // Minimum effective distance for taps
           
           // Create an extended path with stronger upward component
           const horizontalDistance = Math.cos(randomAngle) * minDistance;
           const upwardDistance = Math.abs(Math.sin(randomAngle)) * minDistance + 0.3; // Stronger upward arc + minimum
           
-          // If original drag had some direction, use it, otherwise random horizontal
-          if (dragDirection.length() > 0.001) {
-            dragDirection.normalize();
-            dragDirection.multiplyScalar(horizontalDistance);
+          // If shared velocity had some direction, use it, otherwise random horizontal
+          if (throwVelocity.length() > 0.001) {
+            throwVelocity.normalize();
+            throwVelocity.multiplyScalar(horizontalDistance);
           } else {
             // Pure tap - random horizontal direction
             const randomHorizontal = Math.random() * Math.PI * 2;
-            dragDirection.set(
+            throwVelocity.set(
               Math.cos(randomHorizontal) * horizontalDistance,
               0,
               Math.sin(randomHorizontal) * horizontalDistance
@@ -166,32 +166,17 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
           }
           
           // Add upward component for arc
-          dragDirection.y = upwardDistance;
-          console.log('Extended drag direction with upward:', dragDirection);
-        }
-        
-        if (dragDirection.length() > 0) {
-          // Normalize and apply speed
-          const direction = dragDirection.clone().normalize();
-          const speed = Math.max(totalDragDistance * 0.08, 0.15); // Minimum speed for extended paths
-          throwVelocity = direction.multiplyScalar(Math.min(speed, 0.4));
-          console.log('Final throw velocity:', throwVelocity);
+          throwVelocity.y = upwardDistance;
+          console.log('Extended shared velocity with upward:', throwVelocity);
         }
       } else {
-        // This dice was not dragged - create a simple consistent velocity
-        if (sharedDragVelocity.length() > 0.01) {
-          // Use shared velocity if it's meaningful
-          throwVelocity = sharedDragVelocity.clone();
-          console.log('Using shared velocity for non-dragged dice:', throwVelocity);
-        } else {
-          // Fallback: create a minimal random throw to avoid complete inactivity
-          throwVelocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.1,
-            0.05, // Small upward component
-            (Math.random() - 0.5) * 0.1
-          );
-          console.log('Using fallback minimal velocity for non-dragged dice:', throwVelocity);
-        }
+        // Fallback: create a minimal random throw to avoid complete inactivity
+        throwVelocity = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.1,
+          0.05, // Small upward component
+          (Math.random() - 0.5) * 0.1
+        );
+        console.log('Using fallback minimal velocity:', throwVelocity);
       }
       
       // Scale up the velocity for throwing force (now includes Y component from path extension)
@@ -299,29 +284,43 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         const totalDelta = intersectPoint.clone().sub(dragStart);
         setDragDelta(totalDelta);
         
-        // Calculate path-based velocity for sharing - only update if meaningful movement
-        const pathDirection = totalDelta.clone();
-        pathDirection.y = 0; // Only horizontal movement
+        // Calculate velocity based on recent movement instead of total path for better end direction
+        const recentMovement = currentPos2D.clone().sub(lastPos2D);
+        const recentDirection = recentMovement.length() > 0.001 ? recentMovement.clone() : totalDelta.clone();
+        recentDirection.y = 0; // Only horizontal movement initially
         
         // Only update shared velocity if we have meaningful movement to avoid erratic behavior
-        if (pathDirection.length() > 0.02 || totalDragDistance > 0.02) {
-          let pathBasedVelocity = new THREE.Vector3();
+        if (recentDirection.length() > 0.01 || totalDragDistance > 0.02) {
+          let sharedVelocity = new THREE.Vector3();
           
-          if (pathDirection.length() > 0.001) {
-            pathDirection.normalize();
-            const speed = Math.min(totalDragDistance * 0.05, 0.3); 
-            pathBasedVelocity = pathDirection.multiplyScalar(speed);
+          if (recentDirection.length() > 0.001) {
+            // Calculate based on recent movement direction for more responsive end direction
+            let dragDirection = recentDirection.clone();
+            
+            // Handle short drags the same way as in the throw effect
+            if (totalDragDistance <= 0.05) {
+              // For very short drags, we'll let the throw effect handle the extension
+              // Just store the basic direction here
+              dragDirection.normalize();
+              const speed = Math.max(totalDragDistance * 0.08, 0.15);
+              sharedVelocity = dragDirection.multiplyScalar(Math.min(speed, 0.4));
+            } else {
+              // Normal drag - calculate direction and speed
+              dragDirection.normalize();
+              const speed = Math.max(totalDragDistance * 0.08, 0.15);
+              sharedVelocity = dragDirection.multiplyScalar(Math.min(speed, 0.4));
+            }
           }
           
-          setSharedDragVelocity(pathBasedVelocity);
+          setSharedDragVelocity(sharedVelocity);
         }
         // If movement is too small, keep the previous shared velocity (don't update to zero)
         setDraggedDicePosition(newPosition.clone());
         
-        // Store velocity history for smoother throwing (simplified)
+        // Store velocity history for smoother throwing (shorter window for better end direction)
         setVelocityHistory(prev => {
           const newHistory = [...prev, frameVelocity.clone()];
-          return newHistory.slice(-10); // Keep last 10 samples
+          return newHistory.slice(-3); // Keep only last 3 samples for more responsive end direction
         });
         
         setLastDragPosition(intersectPoint);
