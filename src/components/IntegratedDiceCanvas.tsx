@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useState, useCallback, useEffect } from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, usePlane } from "@react-three/cannon";
 import * as THREE from "three";
 import { RealisticDice } from "./RealisticDice";
@@ -190,7 +190,7 @@ export function IntegratedDiceCanvas() {
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [diceCount, setDiceCount] = useState(2);
   const [isDraggingAny, setIsDraggingAny] = useState(false);
-  const [dragDelta, setDragDelta] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [, setDragDelta] = useState<THREE.Vector3>(new THREE.Vector3());
   const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [draggedDicePosition, setDraggedDicePosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [diceInSync, setDiceInSync] = useState(false);
@@ -294,8 +294,6 @@ export function IntegratedDiceCanvas() {
               onResult={(value) => handleDiceResult(value, i)}
               isDraggingAny={isDraggingAny}
               setIsDraggingAny={setIsDraggingAny}
-              diceIndex={i}
-              dragDelta={dragDelta}
               setDragDelta={setDragDelta}
               sharedDragVelocity={dragVelocity}
               setSharedDragVelocity={setDragVelocity}

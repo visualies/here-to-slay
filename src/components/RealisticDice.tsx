@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame, useThree, useLoader } from "@react-three/fiber";
 import { useBox } from "@react-three/cannon";
-import { Text } from "@react-three/drei";
+import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
+import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
 import * as THREE from "three";
 
 interface DiceProps {
@@ -11,8 +12,6 @@ interface DiceProps {
   onResult: (value: number) => void;
   isDraggingAny: boolean;
   setIsDraggingAny: (dragging: boolean) => void;
-  diceIndex: number;
-  dragDelta: THREE.Vector3;
   setDragDelta: (delta: THREE.Vector3) => void;
   sharedDragVelocity: THREE.Vector3;
   setSharedDragVelocity: (velocity: THREE.Vector3) => void;
@@ -22,53 +21,29 @@ interface DiceProps {
   setDiceInSync: (inSync: boolean) => void;
 }
 
-// Dice face component with dots
-function DiceFace({ 
-  position, 
-  rotation, 
-  value, 
-  color = "white" 
-}: { 
-  position: [number, number, number]; 
-  rotation: [number, number, number]; 
-  value: number; 
-  color?: string;
-}) {
-  const dotPositions = {
-    1: [[0, 0, 0.01]],
-    2: [[-0.15, 0.15, 0.01], [0.15, -0.15, 0.01]],
-    3: [[-0.15, 0.15, 0.01], [0, 0, 0.01], [0.15, -0.15, 0.01]],
-    4: [[-0.15, 0.15, 0.01], [0.15, 0.15, 0.01], [-0.15, -0.15, 0.01], [0.15, -0.15, 0.01]],
-    5: [[-0.15, 0.15, 0.01], [0.15, 0.15, 0.01], [0, 0, 0.01], [-0.15, -0.15, 0.01], [0.15, -0.15, 0.01]],
-    6: [[-0.15, 0.15, 0.01], [0.15, 0.15, 0.01], [-0.15, 0, 0.01], [0.15, 0, 0.01], [-0.15, -0.15, 0.01], [0.15, -0.15, 0.01]]
-  };
+// 3D Dice Model Component
+function DiceModel() {
+  const materials = useLoader(MTLLoader, '/dice.mtl');
+  const obj = useLoader(OBJLoader, '/cube.obj', (loader) => {
+    materials.preload();
+    loader.setMaterials(materials);
+  });
 
-  const dots = dotPositions[value as keyof typeof dotPositions] || [];
-
-  return (
-    <group position={position} rotation={rotation}>
-      {/* Face background */}
-      <mesh>
-        <planeGeometry args={[0.54, 0.54]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      
-      {/* Dots */}
-      {dots.map((dotPos, index) => (
-        <mesh key={index} position={dotPos as [number, number, number]}>
-          <circleGeometry args={[0.05, 8]} />
-          <meshStandardMaterial color="black" />
-        </mesh>
-      ))}
-    </group>
-  );
+  // Clone the object to avoid issues with multiple instances
+  const clonedObj = obj.clone();
+  
+  // Scale the model appropriately
+  clonedObj.scale.set(0.12, 0.12, 0.12);
+  
+  return <primitive object={clonedObj} />;
 }
 
-export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, diceIndex, dragDelta, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync }: DiceProps) {
+export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync }: DiceProps) {
+  // Use simple box physics
   const [ref, api] = useBox(() => ({
     mass: 1,
     position,
-    args: [0.6, 0.6, 0.6],
+    args: [0.3, 0.3, 0.3],
     material: { friction: 0.3, restitution: 0.7 },
   }));
 
@@ -78,13 +53,13 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   const [lastResult, setLastResult] = useState<number | null>(null);
   const [isStable, setIsStable] = useState(false);
   const [dragStart, setDragStart] = useState<THREE.Vector3>(new THREE.Vector3());
-  const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastDragPosition, setLastDragPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [velocityHistory, setVelocityHistory] = useState<THREE.Vector3[]>([]);
   const { camera, raycaster, pointer } = useThree();
 
   // Handle drag start
-  const handlePointerDown = useCallback((event: any) => {
+  const handlePointerDown = useCallback((event: THREE.Event) => {
     event.stopPropagation();
     setIsDragging(true);
     setIsDraggingAny(true);
@@ -109,7 +84,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       // Reset drag delta when starting new drag
       setDragDelta(new THREE.Vector3());
     }
-  }, [api, setIsDraggingAny, diceIndex]);
+  }, [api, setIsDraggingAny, setDragDelta]);
 
   // Apply throw velocity when any dice drag ends
   useEffect(() => {
@@ -146,7 +121,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       
       api.angularVelocity.set(rotationForce.x, rotationForce.y, rotationForce.z);
     }
-  }, [isDraggingAny, api, velocityHistory, sharedDragVelocity]);
+  }, [isDraggingAny, isDragging, api, velocityHistory, sharedDragVelocity]);
 
   // Handle drag end
   const handlePointerUp = useCallback(() => {
@@ -157,7 +132,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
     }
   }, [isDragging, setIsDraggingAny]);
 
-  const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [syncOffset, setSyncOffset] = useState<THREE.Vector3>(new THREE.Vector3());
 
   // Make all dice kinematic when any is dragged, and lift them up
@@ -337,24 +312,27 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
 
   return (
     <group ref={ref}>
-      {/* Main dice body */}
+      {/* 3D Dice Model with physics */}
+      {/* Visible transparent collision box */}
       <mesh
         ref={meshRef}
         onPointerDown={handlePointerDown}
         castShadow
         receiveShadow
       >
-        <boxGeometry args={[0.6, 0.6, 0.6]} />
-        <meshStandardMaterial color="white" />
+        <boxGeometry args={[0.3, 0.3, 0.3]} />
+        <meshStandardMaterial 
+          color="white" 
+          transparent 
+          opacity={0.3} 
+          wireframe={false}
+        />
       </mesh>
       
-      {/* Dice faces with dots */}
-      <DiceFace position={[0, 0, 0.31]} rotation={[0, 0, 0]} value={1} />
-      <DiceFace position={[0, 0, -0.31]} rotation={[0, Math.PI, 0]} value={6} />
-      <DiceFace position={[0.31, 0, 0]} rotation={[0, -Math.PI / 2, 0]} value={2} />
-      <DiceFace position={[-0.31, 0, 0]} rotation={[0, Math.PI / 2, 0]} value={5} />
-      <DiceFace position={[0, 0.31, 0]} rotation={[Math.PI / 2, 0, 0]} value={3} />
-      <DiceFace position={[0, -0.31, 0]} rotation={[-Math.PI / 2, 0, 0]} value={4} />
+      {/* 3D Dice Model - visual only */}
+      <group>
+        <DiceModel />
+      </group>
     </group>
   );
 }
