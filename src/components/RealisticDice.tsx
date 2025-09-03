@@ -7,6 +7,9 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
 import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
 import * as THREE from "three";
 
+// Configurable randomness strength (0 = no randomness, 1 = full randomness)
+const DICE_RANDOMNESS_STRENGTH = 0.3;
+
 interface DiceProps {
   position: [number, number, number];
   onResult: (value: number) => void;
@@ -84,14 +87,19 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   const [lastResult, setLastResult] = useState<number | null>(null);
   const [isStable, setIsStable] = useState(false);
   const [dragStart, setDragStart] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [dragStartTime, setDragStartTime] = useState<number>(0);
   const [, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastDragPosition, setLastDragPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [velocityHistory, setVelocityHistory] = useState<THREE.Vector3[]>([]);
+  const [totalDragDistance, setTotalDragDistance] = useState<number>(0);
+  const [lastGoodVelocity, setLastGoodVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [lastGoodVelocityTime, setLastGoodVelocityTime] = useState<number>(0);
   const { camera, raycaster, pointer } = useThree();
 
   // Handle drag start
   const handlePointerDown = useCallback((event: THREE.Event) => {
     event.stopPropagation();
+    console.log('Pointer down - starting drag');
     setIsDragging(true);
     setIsDraggingAny(true);
     setIsStable(false);
@@ -103,14 +111,16 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       meshRef.current.getWorldPosition(worldPosition);
       setDragOffset(worldPosition.clone().sub(intersection.point));
       setDragStart(intersection.point.clone());
+      setDragStartTime(performance.now());
       setLastDragPosition(intersection.point.clone());
       setDragVelocity(new THREE.Vector3());
       setVelocityHistory([]);
+      setTotalDragDistance(0);
+      setLastGoodVelocity(new THREE.Vector3());
+      setLastGoodVelocityTime(0);
       
       // Lift the dice up slightly and store drag start position
       api.position.set(worldPosition.x, worldPosition.y + 0.5, worldPosition.z);
-      api.velocity.set(0, 0, 0); // Stop any current movement
-      api.angularVelocity.set(0, 0, 0); // Stop any rotation
       
       // Reset drag delta when starting new drag
       setDragDelta(new THREE.Vector3());
@@ -119,49 +129,121 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
 
   // Apply throw velocity when any dice drag ends
   useEffect(() => {
-    if (!isDraggingAny && (isDragging || sharedDragVelocity.length() > 0)) {
-      // Calculate average velocity for throwing
-      let avgVelocity = new THREE.Vector3();
-      if (velocityHistory.length > 0) {
-        // Use the last few velocity samples to get a smooth average
-        const recentSamples = velocityHistory.slice(-3); // Last 3 frames
-        for (const vel of recentSamples) {
-          avgVelocity.add(vel);
+    console.log('Effect triggered - isDraggingAny:', isDraggingAny, 'isDragging:', isDragging, 'sharedVelocity length:', sharedDragVelocity.length(), 'totalDragDistance:', totalDragDistance);
+    if (!isDraggingAny && (totalDragDistance > 0 || sharedDragVelocity.length() > 0)) {
+      console.log('Inside effect - will calculate throw velocity');
+      // Simple approach: use the total drag direction with consistent speed
+      let throwVelocity = new THREE.Vector3();
+      
+      if (totalDragDistance > 0) {
+        // This dice was dragged - calculate direction from start to end of drag
+        let dragDirection = lastDragPosition.clone().sub(dragStart);
+        dragDirection.y = 0; // Only horizontal movement initially
+        
+        // If drag distance is too short or zero (pure click), extend it upward at a random angle
+        if (totalDragDistance <= 0.05) {
+          console.log('Short tap detected, totalDragDistance:', totalDragDistance);
+          // Create a random upward arc for short drags/taps
+          const randomAngle = (Math.random() - 0.5) * Math.PI; // Random angle -90° to +90°
+          const minDistance = 0.5; // Increased minimum effective distance for taps
+          
+          // Create an extended path with stronger upward component
+          const horizontalDistance = Math.cos(randomAngle) * minDistance;
+          const upwardDistance = Math.abs(Math.sin(randomAngle)) * minDistance + 0.3; // Stronger upward arc + minimum
+          
+          // If original drag had some direction, use it, otherwise random horizontal
+          if (dragDirection.length() > 0.001) {
+            dragDirection.normalize();
+            dragDirection.multiplyScalar(horizontalDistance);
+          } else {
+            // Pure tap - random horizontal direction
+            const randomHorizontal = Math.random() * Math.PI * 2;
+            dragDirection.set(
+              Math.cos(randomHorizontal) * horizontalDistance,
+              0,
+              Math.sin(randomHorizontal) * horizontalDistance
+            );
+          }
+          
+          // Add upward component for arc
+          dragDirection.y = upwardDistance;
+          console.log('Extended drag direction with upward:', dragDirection);
         }
-        avgVelocity.divideScalar(recentSamples.length);
+        
+        if (dragDirection.length() > 0) {
+          // Normalize and apply speed
+          const direction = dragDirection.clone().normalize();
+          const speed = Math.max(totalDragDistance * 0.08, 0.15); // Minimum speed for extended paths
+          throwVelocity = direction.multiplyScalar(Math.min(speed, 0.4));
+          console.log('Final throw velocity:', throwVelocity);
+        }
       } else {
-        // Use shared velocity for non-dragged dice  
-        avgVelocity = sharedDragVelocity.clone();
+        // This dice was not dragged - create a simple consistent velocity
+        if (sharedDragVelocity.length() > 0.01) {
+          // Use shared velocity if it's meaningful
+          throwVelocity = sharedDragVelocity.clone();
+          console.log('Using shared velocity for non-dragged dice:', throwVelocity);
+        } else {
+          // Fallback: create a minimal random throw to avoid complete inactivity
+          throwVelocity = new THREE.Vector3(
+            (Math.random() - 0.5) * 0.1,
+            0.05, // Small upward component
+            (Math.random() - 0.5) * 0.1
+          );
+          console.log('Using fallback minimal velocity for non-dragged dice:', throwVelocity);
+        }
       }
       
-      // Scale up the velocity for throwing force (only horizontal movement)
-      const throwForce = new THREE.Vector3(
-        avgVelocity.x * 40, // Increased X movement multiplier
-        8, // Increased upward force
-        avgVelocity.z * 40  // Increased Z movement multiplier
+      // Scale up the velocity for throwing force (now includes Y component from path extension)
+      const baseThrowForce = new THREE.Vector3(
+        throwVelocity.x * 15, // X movement multiplier
+        throwVelocity.y * 15 + 4, // Y movement from path extension + base upward force
+        throwVelocity.z * 15  // Z movement multiplier
       );
       
-      api.velocity.set(throwForce.x, throwForce.y, throwForce.z);
-      
-      // Add rotation based on drag direction with increased intensity
-      const rotationForce = new THREE.Vector3(
-        -avgVelocity.z * 15, // Increased roll around X axis
-        avgVelocity.x * 15,  // Increased roll around Y axis
-        avgVelocity.x * 10   // Increased spin around Z axis
+      // Add small random variations for uniqueness (simplified since path extension handles taps)
+      const randomVariation = new THREE.Vector3(
+        (Math.random() - 0.5) * 2 * DICE_RANDOMNESS_STRENGTH, // Random X force
+        Math.random() * 1.5 * DICE_RANDOMNESS_STRENGTH,       // Random upward force
+        (Math.random() - 0.5) * 2 * DICE_RANDOMNESS_STRENGTH  // Random Z force
       );
       
-      api.angularVelocity.set(rotationForce.x, rotationForce.y, rotationForce.z);
+      const finalThrowForce = baseThrowForce.clone().add(randomVariation);
+      
+      api.velocity.set(finalThrowForce.x, finalThrowForce.y, finalThrowForce.z);
+      
+      // Add rotation based on throw direction with moderate intensity
+      const baseRotationForce = new THREE.Vector3(
+        -throwVelocity.z * 8, // Reduced roll around X axis
+        throwVelocity.x * 8,  // Reduced roll around Y axis
+        throwVelocity.x * 5   // Reduced spin around Z axis
+      );
+      
+      // Add random rotation variations to make each dice unique
+      const randomRotation = new THREE.Vector3(
+        (Math.random() - 0.5) * 25 * DICE_RANDOMNESS_STRENGTH, // Random X rotation
+        (Math.random() - 0.5) * 25 * DICE_RANDOMNESS_STRENGTH, // Random Y rotation
+        (Math.random() - 0.5) * 20 * DICE_RANDOMNESS_STRENGTH  // Random Z rotation
+      );
+      
+      // Combine base rotation with random variation
+      const finalRotationForce = baseRotationForce.clone().add(randomRotation);
+      
+      api.angularVelocity.set(finalRotationForce.x, finalRotationForce.y, finalRotationForce.z);
     }
-  }, [isDraggingAny, isDragging, api, velocityHistory, sharedDragVelocity]);
+  }, [isDraggingAny, isDragging, api, sharedDragVelocity, dragStart, lastDragPosition, totalDragDistance]);
 
   // Handle drag end
   const handlePointerUp = useCallback(() => {
+    console.log('Pointer up - isDragging:', isDragging);
     if (isDragging) {
+      console.log('Ending drag with totalDragDistance:', totalDragDistance);
       setIsDragging(false);
-      setIsDraggingAny(false);
+      // Set isDraggingAny to false in a separate effect to allow throw calculation
+      setTimeout(() => setIsDraggingAny(false), 0);
       // Velocity application is now handled by useEffect above
     }
-  }, [isDragging, setIsDraggingAny]);
+  }, [isDragging, setIsDraggingAny, totalDragDistance]);
 
   const [, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [syncOffset, setSyncOffset] = useState<THREE.Vector3>(new THREE.Vector3());
@@ -170,8 +252,6 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   useEffect(() => {
     if (isDraggingAny) {
       api.mass.set(0); // Make all dice kinematic
-      api.velocity.set(0, 0, 0);
-      api.angularVelocity.set(0, 0, 0);
       
       // Store initial position and lift up - all dice get same lift height
       if (meshRef.current) {
@@ -208,18 +288,39 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         // Calculate velocity based on movement (only XZ plane for horizontal movement)
         const currentPos2D = new THREE.Vector3(intersectPoint.x, 0, intersectPoint.z);
         const lastPos2D = new THREE.Vector3(lastDragPosition.x, 0, lastDragPosition.z);
-        const velocity = currentPos2D.clone().sub(lastPos2D);
-        setDragVelocity(velocity);
+        const frameVelocity = currentPos2D.clone().sub(lastPos2D);
+        setDragVelocity(frameVelocity);
         
-        // Update shared data for other dice
+        // Track total distance moved
+        const frameDistance = frameVelocity.length();
+        setTotalDragDistance(prev => prev + frameDistance);
+        
+        // Update shared data for other dice using path-based velocity
         const totalDelta = intersectPoint.clone().sub(dragStart);
         setDragDelta(totalDelta);
-        setSharedDragVelocity(velocity);
+        
+        // Calculate path-based velocity for sharing - only update if meaningful movement
+        const pathDirection = totalDelta.clone();
+        pathDirection.y = 0; // Only horizontal movement
+        
+        // Only update shared velocity if we have meaningful movement to avoid erratic behavior
+        if (pathDirection.length() > 0.02 || totalDragDistance > 0.02) {
+          let pathBasedVelocity = new THREE.Vector3();
+          
+          if (pathDirection.length() > 0.001) {
+            pathDirection.normalize();
+            const speed = Math.min(totalDragDistance * 0.05, 0.3); 
+            pathBasedVelocity = pathDirection.multiplyScalar(speed);
+          }
+          
+          setSharedDragVelocity(pathBasedVelocity);
+        }
+        // If movement is too small, keep the previous shared velocity (don't update to zero)
         setDraggedDicePosition(newPosition.clone());
         
-        // Store velocity history for smoother throwing
+        // Store velocity history for smoother throwing (simplified)
         setVelocityHistory(prev => {
-          const newHistory = [...prev, velocity.clone()];
+          const newHistory = [...prev, frameVelocity.clone()];
           return newHistory.slice(-10); // Keep last 10 samples
         });
         
