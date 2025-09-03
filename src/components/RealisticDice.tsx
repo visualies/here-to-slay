@@ -69,6 +69,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
   const [dragStart, setDragStart] = useState<THREE.Vector3>(new THREE.Vector3());
   const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastDragPosition, setLastDragPosition] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [velocityHistory, setVelocityHistory] = useState<THREE.Vector3[]>([]);
   const { camera, raycaster, pointer } = useThree();
 
   // Handle drag start
@@ -86,6 +87,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
       setDragStart(intersection.point.clone());
       setLastDragPosition(intersection.point.clone());
       setDragVelocity(new THREE.Vector3());
+      setVelocityHistory([]);
     }
   }, []);
 
@@ -94,22 +96,36 @@ export function RealisticDice({ position, onResult }: DiceProps) {
     if (isDragging) {
       setIsDragging(false);
       
-      // Apply throw force based on actual drag velocity and direction
-      const throwForce = dragVelocity.clone().multiplyScalar(20); // Scale up the velocity
-      throwForce.y += 5; // Add some upward force
+      // Calculate average velocity from recent history for smoother throwing
+      let avgVelocity = new THREE.Vector3();
+      if (velocityHistory.length > 0) {
+        // Use the last few velocity samples to get a smooth average
+        const recentSamples = velocityHistory.slice(-3); // Last 3 frames
+        for (const vel of recentSamples) {
+          avgVelocity.add(vel);
+        }
+        avgVelocity.divideScalar(recentSamples.length);
+      }
+      
+      // Scale up the velocity for throwing force (only horizontal movement)
+      const throwForce = new THREE.Vector3(
+        avgVelocity.x * 25, // X movement
+        5, // Fixed upward force
+        avgVelocity.z * 25  // Z movement
+      );
       
       api.velocity.set(throwForce.x, throwForce.y, throwForce.z);
       
       // Add rotation based on drag direction
       const rotationForce = new THREE.Vector3(
-        dragVelocity.z * 10, // Roll around X axis based on Z movement
-        dragVelocity.x * 10, // Roll around Y axis based on X movement
-        dragVelocity.x * 5   // Some spin around Z axis
+        -avgVelocity.z * 10, // Roll around X axis based on Z movement
+        avgVelocity.x * 10,  // Roll around Y axis based on X movement
+        avgVelocity.x * 5    // Some spin around Z axis
       );
       
       api.angularVelocity.set(rotationForce.x, rotationForce.y, rotationForce.z);
     }
-  }, [isDragging, api, dragVelocity]);
+  }, [isDragging, api, velocityHistory]);
 
   // Handle global pointer events using useFrame for continuous tracking
   useFrame(() => {
@@ -117,18 +133,29 @@ export function RealisticDice({ position, onResult }: DiceProps) {
       // Update raycaster with current pointer position
       raycaster.setFromCamera(pointer, camera);
       
-      // Cast ray onto an invisible plane at dice height for smooth dragging
-      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      // Cast ray onto an invisible plane at ground level for smooth dragging
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // Ground level plane
       const intersectPoint = new THREE.Vector3();
       raycaster.ray.intersectPlane(plane, intersectPoint);
       
       if (intersectPoint) {
+        // Keep dice at a reasonable height while dragging
         const newPosition = intersectPoint.clone().add(dragOffset);
+        newPosition.y = Math.max(newPosition.y, 1); // Don't go below height 1
         api.position.set(newPosition.x, newPosition.y, newPosition.z);
         
-        // Calculate velocity based on movement
-        const velocity = intersectPoint.clone().sub(lastDragPosition);
+        // Calculate velocity based on movement (only XZ plane for horizontal movement)
+        const currentPos2D = new THREE.Vector3(intersectPoint.x, 0, intersectPoint.z);
+        const lastPos2D = new THREE.Vector3(lastDragPosition.x, 0, lastDragPosition.z);
+        const velocity = currentPos2D.clone().sub(lastPos2D);
         setDragVelocity(velocity);
+        
+        // Store velocity history for smoother throwing
+        setVelocityHistory(prev => {
+          const newHistory = [...prev, velocity.clone()];
+          return newHistory.slice(-10); // Keep last 10 samples
+        });
+        
         setLastDragPosition(intersectPoint);
       }
     }
