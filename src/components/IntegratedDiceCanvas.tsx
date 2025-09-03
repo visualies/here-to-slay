@@ -27,9 +27,15 @@ function GridGround() {
         <meshBasicMaterial transparent opacity={0} />
       </mesh>
       
+      {/* Shadow receiving plane - transparent with visible shadows */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.09, 0]} receiveShadow>
+        <planeGeometry args={[gridSize, gridSize]} />
+        <shadowMaterial transparent opacity={0.3} />
+      </mesh>
+      
       {/* Visible grid */}
       {DEBUG_SHOW_BOUNDARIES && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.09, 0]} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
           <planeGeometry args={[gridSize, gridSize]} />
           <meshStandardMaterial 
             color="#f0f0f0" 
@@ -301,6 +307,7 @@ export function IntegratedDiceCanvas() {
               setDraggedDicePosition={setDraggedDicePosition}
               diceInSync={diceInSync}
               setDiceInSync={setDiceInSync}
+              showDebug={DEBUG_SHOW_BOUNDARIES}
             />
           ))}
         </Physics>

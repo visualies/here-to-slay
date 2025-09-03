@@ -19,6 +19,7 @@ interface DiceProps {
   setDraggedDicePosition: (position: THREE.Vector3) => void;
   diceInSync: boolean;
   setDiceInSync: (inSync: boolean) => void;
+  showDebug?: boolean;
 }
 
 // 3D Dice Model Component
@@ -35,10 +36,18 @@ function DiceModel() {
   // Scale the model appropriately
   clonedObj.scale.set(0.12, 0.12, 0.12);
   
+  // Enable shadow casting for all meshes in the object
+  clonedObj.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+  
   return <primitive object={clonedObj} />;
 }
 
-export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync }: DiceProps) {
+export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync, showDebug = false }: DiceProps) {
   // Use simple box physics
   const [ref, api] = useBox(() => ({
     mass: 1,
@@ -313,12 +322,13 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   return (
     <group ref={ref}>
       {/* 3D Dice Model with physics */}
-      {/* Visible transparent collision box */}
+      {/* Collision box - visible only in debug mode */}
       <mesh
         ref={meshRef}
         onPointerDown={handlePointerDown}
         castShadow
         receiveShadow
+        visible={showDebug}
       >
         <boxGeometry args={[0.3, 0.3, 0.3]} />
         <meshStandardMaterial 
@@ -330,7 +340,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       </mesh>
       
       {/* 3D Dice Model - visual only */}
-      <group>
+      <group castShadow receiveShadow>
         <DiceModel />
       </group>
     </group>
