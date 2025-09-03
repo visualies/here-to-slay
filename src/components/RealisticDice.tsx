@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useBox } from "@react-three/cannon";
 import { Text } from "@react-three/drei";
@@ -69,6 +69,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
   const [dragStart, setDragStart] = useState<THREE.Vector3>(new THREE.Vector3());
   const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastDragPosition, setLastDragPosition] = useState<THREE.Vector3>(new THREE.Vector3());
+  const { camera, raycaster, pointer } = useThree();
 
   // Handle drag start
   const handlePointerDown = useCallback((event: any) => {
@@ -89,7 +90,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
   }, []);
 
   // Handle drag end
-  const handlePointerUp = useCallback((event: any) => {
+  const handlePointerUp = useCallback(() => {
     if (isDragging) {
       setIsDragging(false);
       
@@ -110,22 +111,28 @@ export function RealisticDice({ position, onResult }: DiceProps) {
     }
   }, [isDragging, api, dragVelocity]);
 
-  // Handle drag move
-  const handlePointerMove = useCallback((event: any) => {
+  // Handle global pointer events using useFrame for continuous tracking
+  useFrame(() => {
     if (isDragging && meshRef.current) {
-      const intersection = event.intersections[0];
-      if (intersection) {
-        const newPosition = intersection.point.clone().add(dragOffset);
+      // Update raycaster with current pointer position
+      raycaster.setFromCamera(pointer, camera);
+      
+      // Cast ray onto an invisible plane at dice height for smooth dragging
+      const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const intersectPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(plane, intersectPoint);
+      
+      if (intersectPoint) {
+        const newPosition = intersectPoint.clone().add(dragOffset);
         api.position.set(newPosition.x, newPosition.y, newPosition.z);
         
         // Calculate velocity based on movement
-        const currentPosition = intersection.point.clone();
-        const velocity = currentPosition.clone().sub(lastDragPosition);
+        const velocity = intersectPoint.clone().sub(lastDragPosition);
         setDragVelocity(velocity);
-        setLastDragPosition(currentPosition);
+        setLastDragPosition(intersectPoint);
       }
     }
-  }, [isDragging, dragOffset, api, lastDragPosition]);
+  });
 
   // Detect dice result and stability
   useFrame(() => {
@@ -168,14 +175,24 @@ export function RealisticDice({ position, onResult }: DiceProps) {
     }
   });
 
+  // Add global event listeners for pointer up to handle cases where pointer leaves the dice
+  useEffect(() => {
+    const handleGlobalPointerUp = () => {
+      if (isDragging) {
+        handlePointerUp();
+      }
+    };
+
+    document.addEventListener('pointerup', handleGlobalPointerUp);
+    return () => document.removeEventListener('pointerup', handleGlobalPointerUp);
+  }, [isDragging, handlePointerUp]);
+
   return (
     <group ref={ref}>
       {/* Main dice body */}
       <mesh
         ref={meshRef}
         onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerMove={handlePointerMove}
         castShadow
         receiveShadow
       >
