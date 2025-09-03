@@ -9,6 +9,13 @@ import * as THREE from "three";
 interface DiceProps {
   position: [number, number, number];
   onResult: (value: number) => void;
+  isDraggingAny: boolean;
+  setIsDraggingAny: (dragging: boolean) => void;
+  diceIndex: number;
+  dragDelta: THREE.Vector3;
+  setDragDelta: (delta: THREE.Vector3) => void;
+  sharedDragVelocity: THREE.Vector3;
+  setSharedDragVelocity: (velocity: THREE.Vector3) => void;
 }
 
 // Dice face component with dots
@@ -53,12 +60,12 @@ function DiceFace({
   );
 }
 
-export function RealisticDice({ position, onResult }: DiceProps) {
+export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, diceIndex, dragDelta, setDragDelta, sharedDragVelocity, setSharedDragVelocity }: DiceProps) {
   const [ref, api] = useBox(() => ({
     mass: 1,
     position,
     args: [0.6, 0.6, 0.6],
-    material: { friction: 0.3, restitution: 0.4 },
+    material: { friction: 0.3, restitution: 0.7 },
   }));
 
   const meshRef = useRef<THREE.Mesh>(null);
@@ -76,6 +83,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
   const handlePointerDown = useCallback((event: any) => {
     event.stopPropagation();
     setIsDragging(true);
+    setIsDraggingAny(true);
     setIsStable(false);
     
     // Calculate offset from dice center to mouse position
@@ -88,15 +96,21 @@ export function RealisticDice({ position, onResult }: DiceProps) {
       setLastDragPosition(intersection.point.clone());
       setDragVelocity(new THREE.Vector3());
       setVelocityHistory([]);
-    }
-  }, []);
-
-  // Handle drag end
-  const handlePointerUp = useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
       
-      // Calculate average velocity from recent history for smoother throwing
+      // Lift the dice up slightly and store drag start position
+      api.position.set(worldPosition.x, worldPosition.y + 0.5, worldPosition.z);
+      api.velocity.set(0, 0, 0); // Stop any current movement
+      api.angularVelocity.set(0, 0, 0); // Stop any rotation
+      
+      // Reset drag delta when starting new drag
+      setDragDelta(new THREE.Vector3());
+    }
+  }, [api, setIsDraggingAny, diceIndex]);
+
+  // Apply throw velocity when any dice drag ends
+  useEffect(() => {
+    if (!isDraggingAny && (isDragging || sharedDragVelocity.length() > 0)) {
+      // Calculate average velocity for throwing
       let avgVelocity = new THREE.Vector3();
       if (velocityHistory.length > 0) {
         // Use the last few velocity samples to get a smooth average
@@ -105,27 +119,61 @@ export function RealisticDice({ position, onResult }: DiceProps) {
           avgVelocity.add(vel);
         }
         avgVelocity.divideScalar(recentSamples.length);
+      } else {
+        // Use shared velocity for non-dragged dice  
+        avgVelocity = sharedDragVelocity.clone();
       }
       
       // Scale up the velocity for throwing force (only horizontal movement)
       const throwForce = new THREE.Vector3(
-        avgVelocity.x * 25, // X movement
-        5, // Fixed upward force
-        avgVelocity.z * 25  // Z movement
+        avgVelocity.x * 40, // Increased X movement multiplier
+        8, // Increased upward force
+        avgVelocity.z * 40  // Increased Z movement multiplier
       );
       
       api.velocity.set(throwForce.x, throwForce.y, throwForce.z);
       
-      // Add rotation based on drag direction
+      // Add rotation based on drag direction with increased intensity
       const rotationForce = new THREE.Vector3(
-        -avgVelocity.z * 10, // Roll around X axis based on Z movement
-        avgVelocity.x * 10,  // Roll around Y axis based on X movement
-        avgVelocity.x * 5    // Some spin around Z axis
+        -avgVelocity.z * 15, // Increased roll around X axis
+        avgVelocity.x * 15,  // Increased roll around Y axis
+        avgVelocity.x * 10   // Increased spin around Z axis
       );
       
       api.angularVelocity.set(rotationForce.x, rotationForce.y, rotationForce.z);
     }
-  }, [isDragging, api, velocityHistory]);
+  }, [isDraggingAny, api, velocityHistory, sharedDragVelocity]);
+
+  // Handle drag end
+  const handlePointerUp = useCallback(() => {
+    if (isDragging) {
+      setIsDragging(false);
+      setIsDraggingAny(false);
+      // Velocity application is now handled by useEffect above
+    }
+  }, [isDragging, setIsDraggingAny]);
+
+  const [initialPosition, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
+
+  // Make all dice kinematic when any is dragged, and lift them up
+  useEffect(() => {
+    if (isDraggingAny) {
+      api.mass.set(0); // Make all dice kinematic
+      api.velocity.set(0, 0, 0);
+      api.angularVelocity.set(0, 0, 0);
+      
+      // Store initial position and lift up
+      if (meshRef.current) {
+        const worldPos = new THREE.Vector3();
+        meshRef.current.getWorldPosition(worldPos);
+        setInitialPosition(worldPos.clone());
+        api.position.set(worldPos.x, worldPos.y + (isDragging ? 0.5 : 0.3), worldPos.z);
+      }
+    } else {
+      // Re-enable physics when not dragging
+      api.mass.set(1);
+    }
+  }, [isDraggingAny, isDragging, api]);
 
   // Handle global pointer events using useFrame for continuous tracking
   useFrame(() => {
@@ -141,7 +189,7 @@ export function RealisticDice({ position, onResult }: DiceProps) {
       if (intersectPoint) {
         // Keep dice at a reasonable height while dragging
         const newPosition = intersectPoint.clone().add(dragOffset);
-        newPosition.y = Math.max(newPosition.y, 1); // Don't go below height 1
+        newPosition.y = Math.max(newPosition.y, 1.5); // Keep elevated while dragging
         api.position.set(newPosition.x, newPosition.y, newPosition.z);
         
         // Calculate velocity based on movement (only XZ plane for horizontal movement)
@@ -149,6 +197,11 @@ export function RealisticDice({ position, onResult }: DiceProps) {
         const lastPos2D = new THREE.Vector3(lastDragPosition.x, 0, lastDragPosition.z);
         const velocity = currentPos2D.clone().sub(lastPos2D);
         setDragVelocity(velocity);
+        
+        // Update shared drag delta for other dice (cumulative movement from start)
+        const totalDelta = intersectPoint.clone().sub(dragStart);
+        setDragDelta(totalDelta);
+        setSharedDragVelocity(velocity);
         
         // Store velocity history for smoother throwing
         setVelocityHistory(prev => {
@@ -158,6 +211,11 @@ export function RealisticDice({ position, onResult }: DiceProps) {
         
         setLastDragPosition(intersectPoint);
       }
+    } else if (isDraggingAny && !isDragging && dragDelta.length() > 0) {
+      // This dice is not being dragged but should follow the drag movement
+      const newPosition = initialPosition.clone().add(dragDelta);
+      newPosition.y = Math.max(newPosition.y, 1.3); // Keep elevated
+      api.position.set(newPosition.x, newPosition.y, newPosition.z);
     }
   });
 
