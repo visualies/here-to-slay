@@ -4,14 +4,6 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 
 // Game state types
-export interface DiceState {
-  position: [number, number, number];
-  velocity: [number, number, number];
-  angularVelocity: [number, number, number];
-  result: number;
-  isStable: boolean;
-  timestamp: number;
-}
 
 export interface PlayerPresence {
   id: string;
@@ -75,7 +67,6 @@ export class MultiplayerGame {
   public doc: Y.Doc;
   public provider: WebsocketProvider;
   public gameState: Y.Map<any>;
-  public diceState: Y.Array<DiceState>;
   public players: Y.Map<PlayerPresence>;
   public awareness: any;
   private playerId: string;
