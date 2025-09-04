@@ -19,23 +19,6 @@ function GridGround() {
         <shadowMaterial transparent opacity={0.2} />
       </mesh>
       
-      {/* Visible grid */}
-      {DEBUG_SHOW_BOUNDARIES && (
-        <>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
-            <planeGeometry args={[gridSize, gridSize]} />
-            <meshStandardMaterial 
-              color="#f0f0f0" 
-              transparent 
-              opacity={0.8}
-            />
-          </mesh>
-          <gridHelper 
-            args={[gridSize, Math.floor(gridSize / 2), '#cccccc', '#dddddd']} 
-            position={[0, -0.08, 0]} 
-          />
-        </>
-      )}
     </>
   );
 }
@@ -52,8 +35,6 @@ function CameraController() {
   return null;
 }
 
-// Debug flag to show/hide visual elements
-const DEBUG_SHOW_BOUNDARIES = false;
 
 // Camera perspective toggle
 const USE_ORTHOGRAPHIC_CAMERA = true;
@@ -151,7 +132,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
             onResult={(value) => handleDiceResult(value, i)}
             serverDiceManager={diceManager}
             serverState={diceStates[diceId] || null}
-            showDebug={DEBUG_SHOW_BOUNDARIES}
+            showDebug={false}
           />
         );
       })}
