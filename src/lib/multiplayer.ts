@@ -79,17 +79,11 @@ export class MultiplayerGame {
     
     // Initialize shared data structures
     this.gameState = this.doc.getMap('gameState');
-    this.diceState = this.doc.getArray('diceState');
     this.players = this.doc.getMap('players');
     
     // Connect to WebSocket provider with room parameter
     this.provider = new WebsocketProvider(`ws://localhost:1234?room=${roomId}`, roomId, this.doc);
     this.awareness = this.provider.awareness;
-    
-    // Initialize dice state if empty
-    if (this.diceState.length === 0) {
-      this.initializeDiceState();
-    }
     
     // Set up player presence
     this.setupPlayerPresence();
@@ -104,28 +98,6 @@ export class MultiplayerGame {
     return Math.random().toString(36).substr(2, 9);
   }
   
-  private initializeDiceState() {
-    const initialDice: DiceState[] = [
-      {
-        position: [-0.6, 2, 0],
-        velocity: [0, 0, 0],
-        angularVelocity: [0, 0, 0],
-        result: 1,
-        isStable: true,
-        timestamp: Date.now()
-      },
-      {
-        position: [0.6, 2, 0],
-        velocity: [0, 0, 0],
-        angularVelocity: [0, 0, 0],
-        result: 1,
-        isStable: true,
-        timestamp: Date.now()
-      }
-    ];
-    
-    initialDice.forEach(dice => this.diceState.push([dice]));
-  }
   
   private setupPlayerPresence() {
     const playerColors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff'];
@@ -166,50 +138,6 @@ export class MultiplayerGame {
     }, 5000);
   }
   
-  // Update dice state (called when local dice changes)
-  updateDiceState(diceIndex: number, newState: Partial<DiceState>) {
-    // Ensure we have a valid dice entry at this index
-    while (this.diceState.length <= diceIndex) {
-      this.diceState.push([{
-        position: [0, 2, 0],
-        velocity: [0, 0, 0],
-        angularVelocity: [0, 0, 0],
-        result: 1,
-        isStable: true,
-        timestamp: Date.now()
-      }]);
-    }
-    
-    const currentDice = this.diceState.get(diceIndex) as unknown as DiceState[] | undefined;
-    if (currentDice && currentDice[0]) {
-      const updatedDice = {
-        ...currentDice[0],
-        ...newState,
-        timestamp: Date.now()
-      };
-      this.diceState.delete(diceIndex, 1);
-      this.diceState.insert(diceIndex, [updatedDice]);
-    } else {
-      // Create new dice state if it doesn't exist
-      const newDice: DiceState = {
-        position: [0, 2, 0],
-        velocity: [0, 0, 0],
-        angularVelocity: [0, 0, 0],
-        result: 1,
-        isStable: true,
-        timestamp: Date.now(),
-        ...newState
-      };
-      this.diceState.delete(diceIndex, 1);
-      this.diceState.insert(diceIndex, [newDice]);
-    }
-  }
-  
-  // Get current dice state
-  getDiceState(diceIndex: number): DiceState | null {
-    const dice = this.diceState.get(diceIndex) as unknown as DiceState[] | undefined;
-    return dice ? dice[0] : null;
-  }
   
   // Update cursor position for presence
   updateCursor(x: number, y: number) {
@@ -229,25 +157,6 @@ export class MultiplayerGame {
     return players;
   }
   
-  // Subscribe to dice state changes
-  onDiceStateChange(callback: (diceIndex: number, diceState: DiceState) => void) {
-    const observer = (event: any) => {
-      event.changes.delta.forEach((change: any, index: number) => {
-        if (change.insert && Array.isArray(change.insert)) {
-          change.insert.forEach((dice: DiceState, i: number) => {
-            callback(index + i, dice);
-          });
-        }
-      });
-    };
-    
-    this.diceState.observe(observer);
-    
-    // Return cleanup function
-    return () => {
-      this.diceState.unobserve(observer);
-    };
-  }
   
   // Subscribe to player changes
   onPlayersChange(callback: (players: PlayerPresence[]) => void) {
