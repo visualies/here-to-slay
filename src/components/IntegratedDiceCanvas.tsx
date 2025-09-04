@@ -196,7 +196,7 @@ const DEBUG_SHOW_BOUNDARIES = false;
 export function IntegratedDiceCanvas({ onDiceResults }: { 
   onDiceResults?: (results: number[]) => void;
 }) {
-  const [diceCount, setDiceCount] = useState(2);
+  const [diceCount] = useState(2);
   const [diceResults, setDiceResults] = useState<number[]>(Array(2).fill(0));
   const [isDraggingAny, setIsDraggingAny] = useState(false);
   const [, setDragDelta] = useState<THREE.Vector3>(new THREE.Vector3());

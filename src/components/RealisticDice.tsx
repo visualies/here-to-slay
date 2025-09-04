@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useFrame, useThree, useLoader } from "@react-three/fiber";
+import { useFrame, useThree, useLoader, ThreeEvent } from "@react-three/fiber";
 import { useBox } from "@react-three/cannon";
-import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader";
-import { MTLLoader } from "three/examples/jsm/loaders/MTLLoader";
+import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
+import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
 
 // Configurable randomness strength (0 = no randomness, 1 = full randomness)
@@ -48,20 +48,20 @@ function DiceModel({ showDebugHandles = false }: { showDebugHandles?: boolean })
       if (child.material) {
         if (Array.isArray(child.material)) {
           child.material.forEach(mat => {
-            if (mat instanceof THREE.Material && (mat as any).color) {
+            if (mat instanceof THREE.Material && 'color' in mat) {
               if (mat.name === 'black') {
-                (mat as any).color = new THREE.Color('#000000');
+                (mat as THREE.Material & { color: THREE.Color }).color = new THREE.Color('#000000');
               } else {
-                (mat as any).color = new THREE.Color('#f8f8f8');
+                (mat as THREE.Material & { color: THREE.Color }).color = new THREE.Color('#f8f8f8');
               }
             }
           });
         } else {
-          if ((child.material as any).color) {
+          if ('color' in child.material) {
             if (child.material.name === 'black') {
-              (child.material as any).color = new THREE.Color('#000000');
+              (child.material as THREE.Material & { color: THREE.Color }).color = new THREE.Color('#000000');
             } else {
-              (child.material as any).color = new THREE.Color('#f8f8f8');
+              (child.material as THREE.Material & { color: THREE.Color }).color = new THREE.Color('#f8f8f8');
             }
           }
         }
@@ -106,9 +106,9 @@ function DiceDebugHandles() {
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         
         return (
-          <line key={`${handle.name}-${index}`} geometry={geometry}>
-            <lineBasicMaterial color={handle.color} linewidth={3} />
-          </line>
+          <mesh key={`${handle.name}-${index}`}>
+            <primitive object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: handle.color }))} />
+          </mesh>
         );
       })}
     </group>
@@ -130,17 +130,13 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
   const [lastResult, setLastResult] = useState<number | null>(null);
   const [isStable, setIsStable] = useState(false);
   const [dragStart, setDragStart] = useState<THREE.Vector3>(new THREE.Vector3());
-  const [dragStartTime, setDragStartTime] = useState<number>(0);
   const [, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastDragPosition, setLastDragPosition] = useState<THREE.Vector3>(new THREE.Vector3());
-  const [velocityHistory, setVelocityHistory] = useState<THREE.Vector3[]>([]);
   const [totalDragDistance, setTotalDragDistance] = useState<number>(0);
-  const [lastGoodVelocity, setLastGoodVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
-  const [lastGoodVelocityTime, setLastGoodVelocityTime] = useState<number>(0);
   const { camera, raycaster, pointer } = useThree();
 
   // Handle drag start
-  const handlePointerDown = useCallback((event: THREE.Event) => {
+  const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     console.log('Pointer down - starting drag');
     setIsDragging(true);
@@ -154,13 +150,9 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       meshRef.current.getWorldPosition(worldPosition);
       setDragOffset(worldPosition.clone().sub(intersection.point));
       setDragStart(intersection.point.clone());
-      setDragStartTime(performance.now());
       setLastDragPosition(intersection.point.clone());
       setDragVelocity(new THREE.Vector3());
-      setVelocityHistory([]);
       setTotalDragDistance(0);
-      setLastGoodVelocity(new THREE.Vector3());
-      setLastGoodVelocityTime(0);
       
       // Lift the dice up slightly and store drag start position
       api.position.set(worldPosition.x, worldPosition.y + 0.5, worldPosition.z);
@@ -338,7 +330,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
           
           if (recentDirection.length() > 0.001) {
             // Calculate based on recent movement direction for more responsive end direction
-            let dragDirection = recentDirection.clone();
+            const dragDirection = recentDirection.clone();
             
             // Handle short drags the same way as in the throw effect
             if (totalDragDistance <= 0.05) {
@@ -360,11 +352,6 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         // If movement is too small, keep the previous shared velocity (don't update to zero)
         setDraggedDicePosition(newPosition.clone());
         
-        // Store velocity history for smoother throwing (shorter window for better end direction)
-        setVelocityHistory(prev => {
-          const newHistory = [...prev, frameVelocity.clone()];
-          return newHistory.slice(-3); // Keep only last 3 samples for more responsive end direction
-        });
         
         setLastDragPosition(intersectPoint);
       }
