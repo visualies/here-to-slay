@@ -188,13 +188,16 @@ function CameraController() {
   return null;
 }
 
+
 // Debug flag to show/hide visual elements
 const DEBUG_SHOW_BOUNDARIES = false;
 
 // Main integrated dice canvas component  
-export function IntegratedDiceCanvas() {
-  const [diceResults, setDiceResults] = useState<number[]>([]);
+export function IntegratedDiceCanvas({ onDiceResults }: { 
+  onDiceResults?: (results: number[]) => void;
+}) {
   const [diceCount, setDiceCount] = useState(2);
+  const [diceResults, setDiceResults] = useState<number[]>(Array(2).fill(0));
   const [isDraggingAny, setIsDraggingAny] = useState(false);
   const [, setDragDelta] = useState<THREE.Vector3>(new THREE.Vector3());
   const [dragVelocity, setDragVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
@@ -209,9 +212,10 @@ export function IntegratedDiceCanvas() {
     });
   }, []);
 
-  const resetDice = useCallback(() => {
-    setDiceResults([]);
-  }, []);
+  // Notify parent component when dice results change (live updates)
+  useEffect(() => {
+    onDiceResults?.(diceResults);
+  }, [diceResults, onDiceResults]);
 
   return (
     <>

@@ -26,7 +26,7 @@ interface DiceProps {
 }
 
 // 3D Dice Model Component
-function DiceModel() {
+function DiceModel({ showDebugHandles = false }: { showDebugHandles?: boolean }) {
   const materials = useLoader(MTLLoader, '/dice.mtl');
   const obj = useLoader(OBJLoader, '/cube.obj', (loader) => {
     materials.preload();
@@ -69,7 +69,50 @@ function DiceModel() {
     }
   });
   
-  return <primitive object={clonedObj} />;
+  return (
+    <>
+      <primitive object={clonedObj} />
+      {showDebugHandles && <DiceDebugHandles />}
+    </>
+  );
+}
+
+// Debug handles component - shows colored lines from dice center to each face
+function DiceDebugHandles() {
+  // Define handle directions and colors for each face
+  const handles = [
+    { direction: [0, 1, 0], color: '#ff0000', name: 'top' },      // Red - Top face (Y+)
+    { direction: [0, -1, 0], color: '#00ff00', name: 'bottom' },   // Green - Bottom face (Y-)
+    { direction: [1, 0, 0], color: '#0000ff', name: 'right' },     // Blue - Right face (X+)
+    { direction: [-1, 0, 0], color: '#ffff00', name: 'left' },     // Yellow - Left face (X-)
+    { direction: [0, 0, 1], color: '#ff00ff', name: 'front' },     // Magenta - Front face (Z+)
+    { direction: [0, 0, -1], color: '#00ffff', name: 'back' },     // Cyan - Back face (Z-)
+  ];
+
+  const handleLength = 0.3; // Length of each handle
+
+  return (
+    <group>
+      {handles.map((handle, index) => {
+        // Calculate end point of the handle
+        const endPoint = new THREE.Vector3(
+          handle.direction[0] * handleLength,
+          handle.direction[1] * handleLength,
+          handle.direction[2] * handleLength
+        );
+        
+        // Create geometry for the line
+        const points = [new THREE.Vector3(0, 0, 0), endPoint];
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
+        
+        return (
+          <line key={`${handle.name}-${index}`} geometry={geometry}>
+            <lineBasicMaterial color={handle.color} linewidth={3} />
+          </line>
+        );
+      })}
+    </group>
+  );
 }
 
 export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync, showDebug = false }: DiceProps) {
@@ -388,42 +431,75 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
     }
   });
 
+  // Track dice velocity for stability detection
+  const [velocity, setVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [angularVelocity, setAngularVelocity] = useState<THREE.Vector3>(new THREE.Vector3());
+  
+
+  // Subscribe to physics velocity for stability detection
+  useEffect(() => {
+    const unsubscribeVel = api.velocity.subscribe((v) => setVelocity(new THREE.Vector3(...v)));
+    const unsubscribeAngVel = api.angularVelocity.subscribe((av) => setAngularVelocity(new THREE.Vector3(...av)));
+    
+    return () => {
+      unsubscribeVel();
+      unsubscribeAngVel();
+    };
+  }, [api]);
+
   // Detect dice result and stability
   useFrame(() => {
-    if (meshRef.current && !isDragging) {
-      const rotation = meshRef.current.rotation;
-      const up = new THREE.Vector3(0, 1, 0);
-      const worldUp = up.clone().applyEuler(rotation);
+    if (meshRef.current) {
+      // Check if dice is stable based on velocity
+      const linearSpeed = velocity.length();
+      const angularSpeed = angularVelocity.length();
+      const currentlyStable = linearSpeed < 0.1 && angularSpeed < 0.5;
       
-      // Check if dice is stable (not moving much)
-      // Use a simple approach to check if dice is moving
-      const isMoving = !isStable; // Assume moving if not stable
+      // Use dot product method for proper face detection
+      const upVector = new THREE.Vector3(0, 1, 0);
       
-      if (!isMoving && !isStable) {
+      // Define cube face normals in local coordinates
+      const faceNormals = [
+        { normal: new THREE.Vector3(0, 1, 0), value: 3 },   // Top face - Red
+        { normal: new THREE.Vector3(0, -1, 0), value: 4 },  // Bottom face - Green
+        { normal: new THREE.Vector3(1, 0, 0), value: 1 },   // Right face - Blue
+        { normal: new THREE.Vector3(-1, 0, 0), value: 6 },  // Left face - Yellow
+        { normal: new THREE.Vector3(0, 0, 1), value: 2 },   // Front face - Magenta
+        { normal: new THREE.Vector3(0, 0, -1), value: 5 }   // Back face - Cyan
+      ];
+      
+      // Get the dice's world matrix to transform normals
+      const worldMatrix = meshRef.current.matrixWorld;
+      const normalMatrix = new THREE.Matrix3().getNormalMatrix(worldMatrix);
+      
+      let maxDot = -1;
+      let result = 1;
+      
+      // Find the face normal that best aligns with the world up vector
+      for (const face of faceNormals) {
+        // Transform the face normal to world space
+        const worldNormal = face.normal.clone().applyMatrix3(normalMatrix).normalize();
+        
+        // Calculate dot product with up vector
+        const dotProduct = worldNormal.dot(upVector);
+        
+        // The face with the highest dot product is facing up
+        if (dotProduct > maxDot) {
+          maxDot = dotProduct;
+          result = face.value;
+        }
+      }
+      
+      // Update result live (every frame)
+      if (result !== lastResult) {
+        setLastResult(result);
+        onResult(result);
+      }
+      
+      // Update stability state
+      if (currentlyStable && !isStable) {
         setIsStable(true);
-        
-        // Determine which face is pointing up based on rotation
-        const absX = Math.abs(worldUp.x);
-        const absY = Math.abs(worldUp.y);
-        const absZ = Math.abs(worldUp.z);
-        
-        let result: number;
-        if (absY > absX && absY > absZ) {
-          // Top or bottom face
-          result = worldUp.y > 0 ? 6 : 1;
-        } else if (absX > absZ) {
-          // Left or right face
-          result = worldUp.x > 0 ? 4 : 3;
-        } else {
-          // Front or back face
-          result = worldUp.z > 0 ? 2 : 5;
-        }
-        
-        if (result !== lastResult) {
-          setLastResult(result);
-          onResult(result);
-        }
-      } else if (isMoving && isStable) {
+      } else if (!currentlyStable && isStable) {
         setIsStable(false);
       }
     }
@@ -463,7 +539,7 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
       
       {/* 3D Dice Model - visual only */}
       <group castShadow receiveShadow>
-        <DiceModel />
+        <DiceModel showDebugHandles={showDebug} />
       </group>
     </group>
   );

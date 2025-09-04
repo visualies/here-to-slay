@@ -1,10 +1,18 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { PlayerArea } from "./PlayerArea";
 import { CenterArea } from "./CenterArea";
 import { IntegratedDiceCanvas } from "./IntegratedDiceCanvas";
 
 export default function GameBoard() {
+  const [diceResults, setDiceResults] = useState<number[]>([]);
+
+  const handleDiceResults = useCallback((results: number[]) => {
+    setDiceResults(results);
+  }, []);
+
+
   return (
     <div className="w-full h-screen bg-white relative">
       {/* Dotted background pattern */}
@@ -40,12 +48,16 @@ export default function GameBoard() {
         
         {/* Center area */}
         <div className="col-start-2 row-start-2 flex items-center justify-center">
-          <CenterArea />
+          <CenterArea 
+            diceResults={diceResults} 
+          />
         </div>
       </div>
       
       {/* Integrated dice canvas - covers the entire game board */}
-      <IntegratedDiceCanvas />
+      <IntegratedDiceCanvas 
+        onDiceResults={handleDiceResults}
+      />
     </div>
   );
 }
