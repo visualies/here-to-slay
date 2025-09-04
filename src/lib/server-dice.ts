@@ -1,5 +1,29 @@
 "use client";
 
+// Coordinate transformation utilities for responsive boundaries
+export const FIELD_SIZE = 5; // Server field half-size (-5 to +5)
+
+export interface CoordinateTransformer {
+  serverToClient: (serverX: number, serverZ: number) => { x: number; z: number };
+  clientToServer: (clientX: number, clientZ: number) => { x: number; z: number };
+}
+
+export function createCoordinateTransformer(viewportWidth: number, viewportHeight: number): CoordinateTransformer {
+  return {
+    // Transform server coordinates (-5 to +5) to client viewport coordinates
+    serverToClient: (serverX: number, serverZ: number) => ({
+      x: (serverX / FIELD_SIZE) * (viewportWidth / 2),
+      z: (serverZ / FIELD_SIZE) * (viewportHeight / 2)
+    }),
+    
+    // Transform client viewport coordinates to server coordinates (-5 to +5)
+    clientToServer: (clientX: number, clientZ: number) => ({
+      x: (clientX / (viewportWidth / 2)) * FIELD_SIZE,
+      z: (clientZ / (viewportHeight / 2)) * FIELD_SIZE
+    })
+  };
+}
+
 export interface ServerDiceState {
   position: [number, number, number];
   rotation: [number, number, number, number]; // quaternion
@@ -46,7 +70,7 @@ export class ServerDiceManager {
               console.log(`[DEBUG] ServerDiceManager - Received dice states:`, message.data);
               this.onStatesUpdate(message.data);
             }
-          } catch (e) {
+          } catch {
             // Not valid JSON, ignore
           }
         }
@@ -78,7 +102,7 @@ export class ServerDiceManager {
   }
 
   // Legacy method for compatibility - no longer needed but kept for existing code
-  setupWebSocket(ws: WebSocket) {
+  setupWebSocket(_ws: WebSocket) {
     console.log(`[DEBUG] ServerDiceManager - setupWebSocket called but using dedicated dice server instead`);
     // This method is now a no-op since we connect to dedicated dice server
   }

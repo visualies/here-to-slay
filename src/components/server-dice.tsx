@@ -5,7 +5,7 @@ import { useFrame, useThree, useLoader, ThreeEvent } from "@react-three/fiber";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
-import { ServerDiceManager, ServerDiceState } from "../lib/server-dice";
+import { ServerDiceManager, ServerDiceState, createCoordinateTransformer } from "../lib/server-dice";
 
 interface ServerDiceProps {
   diceId: string;
@@ -17,7 +17,7 @@ interface ServerDiceProps {
 }
 
 // 3D Dice Model Component (reused from realistic-dice)
-function DiceModel({ showDebugHandles = false }: { showDebugHandles?: boolean }) {
+function DiceModel() {
   const materials = useLoader(MTLLoader, '/dice.mtl');
   const obj = useLoader(OBJLoader, '/cube.obj', (loader) => {
     materials.preload();
@@ -65,7 +65,10 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   const isDraggingRef = useRef(false); // Immediate reference for useFrame
   const [dragOffset, setDragOffset] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastResult, setLastResult] = useState<number>(1);
-  const { camera, raycaster, pointer } = useThree();
+  const { camera, raycaster, pointer, viewport } = useThree();
+  
+  // Create coordinate transformer for responsive boundaries
+  const transformer = createCoordinateTransformer(viewport.width, viewport.height);
   
   // Movement tracking for throw velocity calculation
   const positionHistory = useRef<Array<{position: THREE.Vector3, time: number}>>([]);
@@ -80,11 +83,14 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   // Update dice visual state when server state changes
   useEffect(() => {
     if (serverState && groupRef.current && !isDragging) {
-      // Update position
+      // Transform server coordinates to client coordinates for rendering
+      const clientPos = transformer.serverToClient(serverState.position[0], serverState.position[2]);
+      
+      // Update position with transformed coordinates
       groupRef.current.position.set(
-        serverState.position[0],
-        serverState.position[1],
-        serverState.position[2]
+        clientPos.x,
+        serverState.position[1], // Y remains unchanged (height)
+        clientPos.z
       );
       
       // Update rotation
@@ -102,7 +108,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         // Server result received
       }
     }
-  }, [serverState, isDragging, lastResult, onResult, diceId]);
+  }, [serverState, isDragging, lastResult, onResult, diceId, transformer]);
 
   // Handle drag start
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -160,16 +166,21 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
       return [0, 0, 0];
     }
     
-    // Average velocity
-    const velocity = totalDelta.divideScalar(totalTime);
+    // Average velocity in client coordinates
+    const clientVelocity = totalDelta.divideScalar(totalTime);
     
-    // Use raw velocity without scaling or force boost
+    // Transform velocity from client coordinates to server coordinates
+    // For velocity, we need to scale by the coordinate transformation ratios
+    const serverVelX = (clientVelocity.x / (viewport.width / 2)) * 5;
+    const serverVelZ = (clientVelocity.z / (viewport.height / 2)) * 5;
+    
+    // Use transformed velocity for server physics
     return [
-      velocity.x,
-      velocity.y,
-      velocity.z
+      serverVelX,
+      clientVelocity.y, // Y velocity remains unchanged
+      serverVelZ
     ];
-  }, []);
+  }, [viewport.width, viewport.height]);
 
   // Handle drag end
   const handlePointerUp = useCallback(() => {
@@ -231,8 +242,11 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         // Update last position
         lastPosition.current.copy(newPosition);
         
-        // Send position to server
-        serverDiceManager.moveDice(diceId, [newPosition.x, newPosition.y, newPosition.z], true);
+        // Transform client coordinates back to server coordinates before sending
+        const serverPos = transformer.clientToServer(newPosition.x, newPosition.z);
+        
+        // Send transformed position to server
+        serverDiceManager.moveDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
       }
     }
   });
@@ -313,7 +327,6 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
           setDiceManager(manager);
           
           // Set up state update handler that updates both local state and calls callback
-          const originalOnStatesUpdate = manager['onStatesUpdate'];
           manager['onStatesUpdate'] = (states: any) => {
             console.log(`[DEBUG] useServerDiceStates - Received dice states:`, states);
             setDiceStates(states);

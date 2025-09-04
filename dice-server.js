@@ -28,6 +28,33 @@ class DicePhysicsWorld {
     this.groundBody.position.set(0, -0.1, 0)
     this.world.add(this.groundBody)
     
+    // 10x10 Playing field boundaries (center origin: -5 to +5)
+    const FIELD_SIZE = 5 // Half-size (center to edge)
+    
+    // Left wall (X = -5)
+    const leftWall = new CANNON.Body({ mass: 0 })
+    leftWall.addShape(new CANNON.Box(new CANNON.Vec3(0.1, 5, FIELD_SIZE)))
+    leftWall.position.set(-FIELD_SIZE, 0, 0)
+    this.world.add(leftWall)
+    
+    // Right wall (X = +5)
+    const rightWall = new CANNON.Body({ mass: 0 })
+    rightWall.addShape(new CANNON.Box(new CANNON.Vec3(0.1, 5, FIELD_SIZE)))
+    rightWall.position.set(FIELD_SIZE, 0, 0)
+    this.world.add(rightWall)
+    
+    // Front wall (Z = -5)
+    const frontWall = new CANNON.Body({ mass: 0 })
+    frontWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE, 5, 0.1)))
+    frontWall.position.set(0, 0, -FIELD_SIZE)
+    this.world.add(frontWall)
+    
+    // Back wall (Z = +5)
+    const backWall = new CANNON.Body({ mass: 0 })
+    backWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE, 5, 0.1)))
+    backWall.position.set(0, 0, FIELD_SIZE)
+    this.world.add(backWall)
+    
     // Dice storage
     this.dice = new Map() // diceId -> { body, lastUpdate, result }
     this.lastPhysicsStep = Date.now()

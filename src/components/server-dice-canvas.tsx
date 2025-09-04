@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { ServerDice, useServerDiceStates } from "./server-dice";
 import { DebugPanel } from "./debug-panel";
+import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
 
 // Ground plane with visible grid (reused from integrated-dice-canvas)
 function GridGround() {
@@ -20,6 +21,66 @@ function GridGround() {
       </mesh>
       
     </>
+  );
+}
+
+// Responsive boundary visualization with red lines and padding
+function BoundaryLines() {
+  const { viewport } = useThree();
+  
+  // Calculate boundary positions with coordinate transformation
+  const transformer = createCoordinateTransformer(viewport.width, viewport.height);
+  
+  // Server boundary coordinates (-5 to +5)
+  const serverBounds = {
+    left: -FIELD_SIZE,
+    right: FIELD_SIZE, 
+    front: -FIELD_SIZE,
+    back: FIELD_SIZE
+  };
+  
+  // Transform to client coordinates and add padding
+  const PADDING_RATIO = 0.05; // 5% padding from viewport edges
+  const paddingX = viewport.width * PADDING_RATIO;
+  const paddingZ = viewport.height * PADDING_RATIO;
+  
+  const clientBounds = {
+    left: transformer.serverToClient(serverBounds.left, 0).x + paddingX,
+    right: transformer.serverToClient(serverBounds.right, 0).x - paddingX,
+    front: transformer.serverToClient(0, serverBounds.front).z + paddingZ,
+    back: transformer.serverToClient(0, serverBounds.back).z - paddingZ
+  };
+  
+  // Create boundary lines using mesh with thin boxes (more reliable than line geometry)
+  const lineThickness = 0.05;
+  const lineHeight = 0.1;
+  
+  return (
+    <group>
+      {/* Left boundary line */}
+      <mesh position={[clientBounds.left, lineHeight / 2, (clientBounds.front + clientBounds.back) / 2]}>
+        <boxGeometry args={[lineThickness, lineHeight, Math.abs(clientBounds.back - clientBounds.front)]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+      
+      {/* Right boundary line */}
+      <mesh position={[clientBounds.right, lineHeight / 2, (clientBounds.front + clientBounds.back) / 2]}>
+        <boxGeometry args={[lineThickness, lineHeight, Math.abs(clientBounds.back - clientBounds.front)]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+      
+      {/* Front boundary line */}
+      <mesh position={[(clientBounds.left + clientBounds.right) / 2, lineHeight / 2, clientBounds.front]}>
+        <boxGeometry args={[Math.abs(clientBounds.right - clientBounds.left), lineHeight, lineThickness]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+      
+      {/* Back boundary line */}
+      <mesh position={[(clientBounds.left + clientBounds.right) / 2, lineHeight / 2, clientBounds.back]}>
+        <boxGeometry args={[Math.abs(clientBounds.right - clientBounds.left), lineHeight, lineThickness]} />
+        <meshBasicMaterial color="red" />
+      </mesh>
+    </group>
   );
 }
 
@@ -48,7 +109,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
   const [diceResults, setDiceResults] = useState<number[]>(Array(2).fill(0));
 
   // Use server dice manager
-  const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(roomId, (states) => {
+  const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(roomId, () => {
     // Received dice states
   });
 
@@ -120,6 +181,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
       />
 
       <GridGround />
+      <BoundaryLines />
       
       {/* Server-controlled dice */}
       {Array.from({ length: diceCount }, (_, i) => {
