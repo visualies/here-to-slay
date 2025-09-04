@@ -1,0 +1,142 @@
+"use client";
+
+export interface ServerDiceState {
+  position: [number, number, number];
+  rotation: [number, number, number, number]; // quaternion
+  result: number;
+  isStable: boolean;
+  lastUpdate: number;
+}
+
+export interface ServerDiceStates {
+  [diceId: string]: ServerDiceState;
+}
+
+export class ServerDiceManager {
+  private roomId: string;
+  private onStatesUpdate: (states: ServerDiceStates) => void;
+  private initialized: boolean = false;
+  private ws: WebSocket | null = null;
+  private messageHandler: ((event: MessageEvent) => void) | null = null;
+  private diceServerUrl: string = 'ws://localhost:1235';
+  private diceApiUrl: string = 'http://localhost:1235';
+
+  constructor(roomId: string, onStatesUpdate: (states: ServerDiceStates) => void) {
+    this.roomId = roomId;
+    this.onStatesUpdate = onStatesUpdate;
+    this.initialized = true;
+    
+    // Automatically connect to dedicated dice server
+    this.connectToDiceServer();
+  }
+
+  // Connect to dedicated dice physics server
+  private connectToDiceServer() {
+    try {
+      const wsUrl = `${this.diceServerUrl}?room=${this.roomId}`;
+      console.log(`[DEBUG] ServerDiceManager - Connecting to dice server: ${wsUrl}`);
+      
+      this.ws = new WebSocket(wsUrl);
+      
+      this.messageHandler = (event: MessageEvent) => {
+        if (typeof event.data === 'string') {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'dice-states') {
+              console.log(`[DEBUG] ServerDiceManager - Received dice states:`, message.data);
+              this.onStatesUpdate(message.data);
+            }
+          } catch (e) {
+            // Not valid JSON, ignore
+          }
+        }
+      };
+      
+      this.ws.addEventListener('message', this.messageHandler);
+      
+      this.ws.addEventListener('open', () => {
+        console.log(`[DEBUG] ServerDiceManager - Connected to dice server for room ${this.roomId}`);
+      });
+      
+      this.ws.addEventListener('close', () => {
+        console.log(`[DEBUG] ServerDiceManager - Disconnected from dice server for room ${this.roomId}`);
+        // Attempt to reconnect after 2 seconds
+        setTimeout(() => {
+          if (this.initialized) {
+            this.connectToDiceServer();
+          }
+        }, 2000);
+      });
+      
+      this.ws.addEventListener('error', (error) => {
+        console.error(`[DEBUG] ServerDiceManager - Dice server connection error:`, error);
+      });
+      
+    } catch (error) {
+      console.error('[DEBUG] ServerDiceManager - Failed to connect to dice server:', error);
+    }
+  }
+
+  // Legacy method for compatibility - no longer needed but kept for existing code
+  setupWebSocket(ws: WebSocket) {
+    console.log(`[DEBUG] ServerDiceManager - setupWebSocket called but using dedicated dice server instead`);
+    // This method is now a no-op since we connect to dedicated dice server
+  }
+
+  // Clean up WebSocket connection
+  cleanup() {
+    if (this.ws && this.messageHandler) {
+      this.ws.removeEventListener('message', this.messageHandler);
+      this.messageHandler = null;
+    }
+    this.ws = null;
+  }
+
+  // Dice are automatically created by the server, no need for client-side addition
+
+  // Move dice on server (kinematic mode)
+  async moveDice(diceId: string, position: [number, number, number], isKinematic: boolean = true) {
+    if (!this.initialized) return;
+
+    try {
+      await fetch(`${this.diceApiUrl}/api/dice/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: this.roomId, diceId, position, isKinematic })
+      });
+    } catch (error) {
+      console.error('[ServerDiceManager] Failed to move dice:', error);
+    }
+  }
+
+  // Throw dice on server
+  async throwDice(diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) {
+    if (!this.initialized) {
+      console.warn('[ServerDiceManager] Not initialized, cannot throw dice');
+      return;
+    }
+
+    try {
+      await fetch(`${this.diceApiUrl}/api/dice/throw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: this.roomId, diceId, velocity, angularVelocity })
+      });
+      
+      console.log(`[DEBUG] ServerDiceManager - Dice ${diceId} thrown successfully`);
+    } catch (error) {
+      console.error('[ServerDiceManager] Failed to throw dice:', error);
+    }
+  }
+
+  // Check if connected and ready
+  isReady(): boolean {
+    return this.initialized;
+  }
+
+  // Cleanup
+  disconnect() {
+    this.cleanup();
+    this.initialized = false;
+  }
+}

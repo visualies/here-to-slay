@@ -5,6 +5,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, usePlane } from "@react-three/cannon";
 import * as THREE from "three";
 import { RealisticDice } from "./realistic-dice";
+import { MultiplayerGame } from "../lib/multiplayer";
 
 // Ground plane with visible grid
 function GridGround() {
@@ -196,8 +197,9 @@ const DEBUG_SHOW_BOUNDARIES = false;
 const USE_ORTHOGRAPHIC_CAMERA = true;
 
 // Main integrated dice canvas component  
-export function IntegratedDiceCanvas({ onDiceResults }: { 
+export function IntegratedDiceCanvas({ onDiceResults, multiplayerGame }: { 
   onDiceResults?: (results: number[]) => void;
+  multiplayerGame?: MultiplayerGame;
 }) {
   const [diceCount] = useState(2);
   const [diceResults, setDiceResults] = useState<number[]>(Array(2).fill(0));
@@ -281,6 +283,8 @@ export function IntegratedDiceCanvas({ onDiceResults }: {
               diceInSync={diceInSync}
               setDiceInSync={setDiceInSync}
               showDebug={DEBUG_SHOW_BOUNDARIES}
+              diceId={`dice-${i}`}
+              multiplayerGame={multiplayerGame}
             />
           ))}
         </Physics>

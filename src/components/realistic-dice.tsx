@@ -6,6 +6,7 @@ import { useBox } from "@react-three/cannon";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
+import { MultiplayerGame, DicePosition } from "../lib/multiplayer";
 
 // Configurable randomness strength (0 = no randomness, 1 = full randomness)
 const DICE_RANDOMNESS_STRENGTH = 0.3;
@@ -23,6 +24,8 @@ interface DiceProps {
   diceInSync: boolean;
   setDiceInSync: (inSync: boolean) => void;
   showDebug?: boolean;
+  diceId: string;
+  multiplayerGame?: MultiplayerGame;
 }
 
 // 3D Dice Model Component
@@ -115,7 +118,7 @@ function DiceDebugHandles() {
   );
 }
 
-export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync, showDebug = false }: DiceProps) {
+export function RealisticDice({ position, onResult, isDraggingAny, setIsDraggingAny, setDragDelta, sharedDragVelocity, setSharedDragVelocity, draggedDicePosition, setDraggedDicePosition, diceInSync, setDiceInSync, showDebug = false, diceId, multiplayerGame }: DiceProps) {
   // Use simple box physics
   const [ref, api] = useBox(() => ({
     mass: 1,
@@ -267,6 +270,67 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
 
   const [, setInitialPosition] = useState<THREE.Vector3>(new THREE.Vector3());
   const [syncOffset, setSyncOffset] = useState<THREE.Vector3>(new THREE.Vector3());
+  const [isHost, setIsHost] = useState(false);
+  const [remotePosition, setRemotePosition] = useState<DicePosition | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState(0);
+
+  // Check host status and subscribe to dice position updates
+  useEffect(() => {
+    if (!multiplayerGame) {
+      console.log(`[${diceId}] No multiplayer game instance`);
+      return;
+    }
+
+    // Update host status
+    const updateHostStatus = () => {
+      const hostStatus = multiplayerGame.isHost();
+      console.log(`[${diceId}] Host status: ${hostStatus}`);
+      setIsHost(hostStatus);
+    };
+
+    // Check initially
+    updateHostStatus();
+
+    // Subscribe to dice position changes from other players
+    const cleanup = multiplayerGame.onDicePositionChange((positions) => {
+      console.log(`[${diceId}] Received position update:`, positions);
+      const dicePos = positions.get(diceId);
+      if (dicePos && dicePos.timestamp > lastSyncTime) {
+        console.log(`[${diceId}] Setting remote position:`, dicePos);
+        setRemotePosition(dicePos);
+        setLastSyncTime(dicePos.timestamp);
+      }
+    });
+
+    // Re-check host status periodically (player connections change)
+    const interval = setInterval(updateHostStatus, 1000);
+
+    return () => {
+      cleanup();
+      clearInterval(interval);
+    };
+  }, [multiplayerGame, diceId, lastSyncTime]);
+
+  // Sync position to other players when host is dragging
+  const syncPosition = useCallback((pos: THREE.Vector3) => {
+    if (!multiplayerGame || !isHost) {
+      console.log(`[${diceId}] Not syncing position - multiplayerGame: ${!!multiplayerGame}, isHost: ${isHost}`);
+      return;
+    }
+    
+    const now = Date.now();
+    // Throttle updates to 60fps
+    if (now - lastSyncTime < 16) return;
+    
+    console.log(`[${diceId}] Syncing position:`, pos);
+    multiplayerGame.updateDicePosition(diceId, {
+      x: pos.x,
+      y: pos.y,
+      z: pos.z,
+      timestamp: now
+    });
+    setLastSyncTime(now);
+  }, [multiplayerGame, isHost, diceId, lastSyncTime]);
 
   // Make all dice kinematic when any is dragged, and lift them up
   useEffect(() => {
@@ -304,6 +368,9 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         const newPosition = intersectPoint.clone().add(dragOffset);
         newPosition.y = Math.max(newPosition.y, 1.5); // Keep elevated while dragging
         api.position.set(newPosition.x, newPosition.y, newPosition.z);
+        
+        // Sync position if this player is the host
+        syncPosition(newPosition);
         
         // Calculate velocity based on movement (only XZ plane for horizontal movement)
         const currentPos2D = new THREE.Vector3(intersectPoint.x, 0, intersectPoint.z);
@@ -356,8 +423,13 @@ export function RealisticDice({ position, onResult, isDraggingAny, setIsDragging
         setLastDragPosition(intersectPoint);
       }
     } else if (isDraggingAny && !isDragging) {
-      // This dice is not being dragged - should follow the dragged dice
-      if (draggedDicePosition.length() > 0 && meshRef.current) {
+      // Non-host players: follow remote position from host
+      if (!isHost && remotePosition && multiplayerGame) {
+        const remotePos = new THREE.Vector3(remotePosition.x, remotePosition.y, remotePosition.z);
+        console.log(`[${diceId}] Non-host following remote position:`, remotePos);
+        api.position.set(remotePos.x, remotePos.y, remotePos.z);
+      } else if (isHost && draggedDicePosition.length() > 0 && meshRef.current) {
+        // Host: This dice is not being dragged - should follow the dragged dice
         const currentPos = new THREE.Vector3();
         meshRef.current.getWorldPosition(currentPos);
         

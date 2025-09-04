@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { PlayerArea } from "./player-area";
 import { CenterArea } from "./center-area";
-import { IntegratedDiceCanvas } from "./integrated-dice-canvas";
+import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
 import { disconnectMultiplayer } from "../lib/multiplayer";
@@ -92,9 +92,10 @@ export default function GameBoard() {
         </div>
       </div>
       
-      {/* Integrated dice canvas - covers the entire game board */}
-      <IntegratedDiceCanvas 
+      {/* Server-controlled dice canvas - covers the entire game board */}
+      <ServerDiceCanvas 
         onDiceResults={handleDiceResults}
+        roomId={currentRoomId}
       />
     </div>
   );

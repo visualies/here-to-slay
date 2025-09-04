@@ -118,6 +118,14 @@ const server = http.createServer((request, response) => {
     return
   }
 
+  // Test endpoint
+  if (pathname === '/api/test' && request.method === 'GET') {
+    response.writeHead(200, { 'Content-Type': 'application/json' })
+    response.end(JSON.stringify({ status: 'ok', timestamp: Date.now() }))
+    return
+  }
+
+
   // Default response
   response.writeHead(200, { 'Content-Type': 'text/plain' })
   response.end('Here-to-Slay Room-based WebSocket Server\n\nAPI Endpoints:\n- POST /api/create-room\n- POST /api/join-room\n- GET /api/room-info?id=ROOMID\n- GET /api/active-rooms\n')
@@ -138,12 +146,13 @@ function getYDoc(roomId) {
   return docs.get(roomId)
 }
 
+
 wss.on('connection', (ws, req) => {
   try {
     const urlObj = new URL(req.url, `http://${req.headers.host}`)
     const roomId = urlObj.searchParams.get('room') || 'default'
     
-    console.log(`🔌 New WebSocket connection to room ${roomId} from:`, req.socket.remoteAddress)
+    console.log(`[DEBUG] GameServer - WebSocket connection for room ${roomId}`)
     
     // Track room connections
     if (!roomConnections.has(roomId)) {
@@ -157,10 +166,10 @@ wss.on('connection', (ws, req) => {
     // Get or create Y.Doc for this room
     const ydoc = getYDoc(roomId)
     
-    // Handle Yjs sync messages
+    // Handle WebSocket messages (Yjs sync only)
     const messageHandler = (message) => {
       try {
-        // Relay message to all other connections in the same room
+        // Relay all messages to other connections (Yjs handles its own protocol)
         if (roomConnections.has(roomId)) {
           roomConnections.get(roomId).forEach(client => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -182,17 +191,17 @@ wss.on('connection', (ws, req) => {
           roomConnections.delete(roomId)
           // Clean up Y.Doc if no connections
           docs.delete(roomId)
+          console.log(`[DEBUG] GameServer - Cleaned up room ${roomId}`)
         }
       }
-      console.log(`🔌 Connection closed for room ${roomId}`)
     })
     
     ws.on('error', (error) => {
-      console.error(`WebSocket error for room ${roomId}:`, error)
+      console.error(`[DEBUG] GameServer - WebSocket error for room ${roomId}:`, error)
     })
     
   } catch (error) {
-    console.error('Error setting up WebSocket connection:', error)
+    console.error('[DEBUG] GameServer - Error setting up WebSocket connection:', error)
     ws.close()
   }
 })

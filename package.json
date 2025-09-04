@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"next dev\"",
+    "dev": "concurrently \"node server.js\" \"node dice-server.js\" \"next dev\"",
     "dev:client-only": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "server": "node server.js"
+    "server": "node server.js",
+    "dice-server": "node dice-server.js"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
@@ -17,6 +18,7 @@
     "@react-three/fiber": "^9.3.0",
     "@types/three": "^0.179.0",
     "better-sqlite3": "^12.2.0",
+    "cannon": "^0.6.2",
     "cannon-es": "^0.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
