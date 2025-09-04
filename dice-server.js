@@ -18,7 +18,12 @@ class DicePhysicsWorld {
     this.roomId = roomId
     this.world = new CANNON.World()
     this.world.gravity.set(0, -19.64, 0)
-    this.world.broadphase = new CANNON.NaiveBroadphase()
+    
+    // Use better broadphase and solver for more accurate collision detection
+    this.world.broadphase = new CANNON.SAPBroadphase(this.world)
+    this.world.solver.iterations = 20 // More solver iterations for better accuracy
+    this.world.defaultContactMaterial.friction = 0.4
+    this.world.defaultContactMaterial.restitution = 0.3
     
     // Ground plane
     const groundShape = new CANNON.Plane()
@@ -30,29 +35,31 @@ class DicePhysicsWorld {
     
     // 10x10 Playing field boundaries (center origin: -5 to +5)
     const FIELD_SIZE = 5 // Half-size (center to edge)
+    const WALL_THICKNESS = 1.0 // Thick walls to prevent tunneling
+    const WALL_HEIGHT = 10 // Taller walls
     
     // Left wall (X = -5)
     const leftWall = new CANNON.Body({ mass: 0 })
-    leftWall.addShape(new CANNON.Box(new CANNON.Vec3(0.1, 5, FIELD_SIZE)))
-    leftWall.position.set(-FIELD_SIZE, 0, 0)
+    leftWall.addShape(new CANNON.Box(new CANNON.Vec3(WALL_THICKNESS, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)))
+    leftWall.position.set(-FIELD_SIZE - WALL_THICKNESS, WALL_HEIGHT, 0)
     this.world.add(leftWall)
     
-    // Right wall (X = +5)
+    // Right wall (X = +5)  
     const rightWall = new CANNON.Body({ mass: 0 })
-    rightWall.addShape(new CANNON.Box(new CANNON.Vec3(0.1, 5, FIELD_SIZE)))
-    rightWall.position.set(FIELD_SIZE, 0, 0)
+    rightWall.addShape(new CANNON.Box(new CANNON.Vec3(WALL_THICKNESS, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)))
+    rightWall.position.set(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, 0)
     this.world.add(rightWall)
     
     // Front wall (Z = -5)
     const frontWall = new CANNON.Body({ mass: 0 })
-    frontWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE, 5, 0.1)))
-    frontWall.position.set(0, 0, -FIELD_SIZE)
+    frontWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)))
+    frontWall.position.set(0, WALL_HEIGHT, -FIELD_SIZE - WALL_THICKNESS)
     this.world.add(frontWall)
     
     // Back wall (Z = +5)
     const backWall = new CANNON.Body({ mass: 0 })
-    backWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE, 5, 0.1)))
-    backWall.position.set(0, 0, FIELD_SIZE)
+    backWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)))
+    backWall.position.set(0, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)
     this.world.add(backWall)
     
     // Dice storage
@@ -74,6 +81,10 @@ class DicePhysicsWorld {
     body.addShape(shape)
     body.position.set(position[0], position[1], position[2])
     body.material = new CANNON.Material({ friction: 0.3, restitution: 0.7 })
+    
+    // Enable continuous collision detection for fast-moving dice
+    body.ccdSpeedThreshold = 1  // Enable CCD when velocity > 1 unit/s
+    body.ccdIterations = 10     // Number of CCD iterations
     
     this.world.add(body)
     this.dice.set(diceId, {
@@ -104,6 +115,28 @@ class DicePhysicsWorld {
     const dice = this.dice.get(diceId)
     if (!dice) return
     
+    // Limit maximum velocity to prevent tunneling
+    const MAX_VELOCITY = 15 // Maximum velocity in units/second
+    const MAX_ANGULAR_VELOCITY = 20 // Maximum angular velocity
+    
+    // Clamp linear velocity
+    const velMagnitude = Math.sqrt(velocity[0]**2 + velocity[1]**2 + velocity[2]**2)
+    if (velMagnitude > MAX_VELOCITY) {
+      const scale = MAX_VELOCITY / velMagnitude
+      velocity[0] *= scale
+      velocity[1] *= scale  
+      velocity[2] *= scale
+    }
+    
+    // Clamp angular velocity  
+    const angularMagnitude = Math.sqrt(angularVelocity[0]**2 + angularVelocity[1]**2 + angularVelocity[2]**2)
+    if (angularMagnitude > MAX_ANGULAR_VELOCITY) {
+      const scale = MAX_ANGULAR_VELOCITY / angularMagnitude
+      angularVelocity[0] *= scale
+      angularVelocity[1] *= scale
+      angularVelocity[2] *= scale
+    }
+    
     dice.body.type = CANNON.Body.DYNAMIC
     dice.body.velocity.set(velocity[0], velocity[1], velocity[2])
     dice.body.angularVelocity.set(angularVelocity[0], angularVelocity[1], angularVelocity[2])
@@ -117,8 +150,10 @@ class DicePhysicsWorld {
       const deltaTime = (now - this.lastPhysicsStep) / 1000
       this.lastPhysicsStep = now
       
-      // Step physics
-      this.world.step(Math.min(deltaTime, 1/60))
+      // Step physics with smaller time steps for better collision detection
+      const fixedTimeStep = 1/120 // 120 FPS physics for better accuracy
+      const maxSubSteps = 5
+      this.world.step(fixedTimeStep, deltaTime, maxSubSteps)
       
       // Update dice results and check stability
       this.dice.forEach((dice, diceId) => {
