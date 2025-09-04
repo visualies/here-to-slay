@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { Physics, usePlane } from "@react-three/cannon";
 import * as THREE from "three";
-import { RealisticDice } from "./RealisticDice";
+import { RealisticDice } from "./realistic-dice";
 
 // Ground plane with visible grid
 function GridGround() {

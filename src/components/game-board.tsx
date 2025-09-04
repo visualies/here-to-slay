@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { PlayerArea } from "./PlayerArea";
-import { CenterArea } from "./CenterArea";
-import { IntegratedDiceCanvas } from "./IntegratedDiceCanvas";
-import { MultiplayerPresence } from "./MultiplayerPresence";
-import { RoomManager } from "./RoomManager";
+import { PlayerArea } from "./player-area";
+import { CenterArea } from "./center-area";
+import { IntegratedDiceCanvas } from "./integrated-dice-canvas";
+import { MultiplayerPresence } from "./multiplayer-presence";
+import { RoomManager } from "./room-manager";
 import { disconnectMultiplayer } from "../lib/multiplayer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

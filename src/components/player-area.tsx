@@ -1,4 +1,4 @@
-import { CardSlot } from "./CardSlot";
+import { CardSlot } from "./card-slot";
 
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
