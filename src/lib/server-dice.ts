@@ -58,7 +58,6 @@ export class ServerDiceManager {
   private connectToDiceServer() {
     try {
       const wsUrl = `${this.diceServerUrl}?room=${this.roomId}`;
-      console.log(`[DEBUG] ServerDiceManager - Connecting to dice server: ${wsUrl}`);
       
       this.ws = new WebSocket(wsUrl);
       
@@ -67,7 +66,6 @@ export class ServerDiceManager {
           try {
             const message = JSON.parse(event.data);
             if (message.type === 'dice-states') {
-              console.log(`[DEBUG] ServerDiceManager - Received dice states:`, message.data);
               this.onStatesUpdate(message.data);
             }
           } catch {
@@ -79,11 +77,9 @@ export class ServerDiceManager {
       this.ws.addEventListener('message', this.messageHandler);
       
       this.ws.addEventListener('open', () => {
-        console.log(`[DEBUG] ServerDiceManager - Connected to dice server for room ${this.roomId}`);
       });
       
       this.ws.addEventListener('close', () => {
-        console.log(`[DEBUG] ServerDiceManager - Disconnected from dice server for room ${this.roomId}`);
         // Attempt to reconnect after 2 seconds
         setTimeout(() => {
           if (this.initialized) {
@@ -103,7 +99,6 @@ export class ServerDiceManager {
 
   // Legacy method for compatibility - no longer needed but kept for existing code
   setupWebSocket(_ws: WebSocket) {
-    console.log(`[DEBUG] ServerDiceManager - setupWebSocket called but using dedicated dice server instead`);
     // This method is now a no-op since we connect to dedicated dice server
   }
 
@@ -147,7 +142,6 @@ export class ServerDiceManager {
         body: JSON.stringify({ roomId: this.roomId, diceId, velocity, angularVelocity })
       });
       
-      console.log(`[DEBUG] ServerDiceManager - Dice ${diceId} thrown successfully`);
     } catch (error) {
       console.error('[ServerDiceManager] Failed to throw dice:', error);
     }

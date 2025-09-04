@@ -150,7 +150,13 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
         ...(USE_ORTHOGRAPHIC_CAMERA ? { zoom: 150 } : { fov: 50 })
       }}
       shadows
-      gl={{ antialias: true, alpha: true }}
+      gl={{ 
+        antialias: true, 
+        alpha: true,
+        stencil: false,
+        depth: true
+      }}
+      frameloop="always"
       style={{ 
         position: 'absolute',
         top: 0,

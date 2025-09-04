@@ -77,38 +77,51 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
 
   // Dice are automatically spawned by the server, no need to add them
   useEffect(() => {
-    console.log(`[DEBUG] ServerDice - Component mounted for dice ${diceId}, waiting for server state`);
   }, [diceId]);
 
-  // Update dice visual state when server state changes
-  useEffect(() => {
+  // Optimized dice visual state updates using useFrame for smoother rendering
+  const lastServerState = useRef<ServerDiceState | null>(null);
+  
+  useFrame(() => {
     if (serverState && groupRef.current && !isDragging) {
-      // Transform server coordinates to client coordinates for rendering
-      const clientPos = transformer.serverToClient(serverState.position[0], serverState.position[2]);
-      
-      // Update position with transformed coordinates
-      groupRef.current.position.set(
-        clientPos.x,
-        serverState.position[1], // Y remains unchanged (height)
-        clientPos.z
-      );
-      
-      // Update rotation
-      groupRef.current.quaternion.set(
-        serverState.rotation[0],
-        serverState.rotation[1],
-        serverState.rotation[2],
-        serverState.rotation[3]
-      );
+      // Only update if state has actually changed to avoid unnecessary re-renders
+      if (!lastServerState.current || 
+          serverState.position[0] !== lastServerState.current.position[0] ||
+          serverState.position[1] !== lastServerState.current.position[1] ||
+          serverState.position[2] !== lastServerState.current.position[2] ||
+          serverState.rotation[0] !== lastServerState.current.rotation[0] ||
+          serverState.rotation[1] !== lastServerState.current.rotation[1] ||
+          serverState.rotation[2] !== lastServerState.current.rotation[2] ||
+          serverState.rotation[3] !== lastServerState.current.rotation[3]) {
+        
+        // Transform server coordinates to client coordinates for rendering
+        const clientPos = transformer.serverToClient(serverState.position[0], serverState.position[2]);
+        
+        // Update position with transformed coordinates
+        groupRef.current.position.set(
+          clientPos.x,
+          serverState.position[1], // Y remains unchanged (height)
+          clientPos.z
+        );
+        
+        // Update rotation
+        groupRef.current.quaternion.set(
+          serverState.rotation[0],
+          serverState.rotation[1],
+          serverState.rotation[2],
+          serverState.rotation[3]
+        );
+        
+        lastServerState.current = { ...serverState };
+      }
 
       // Update result
       if (serverState.result !== lastResult) {
         setLastResult(serverState.result);
         onResult(serverState.result);
-        // Server result received
       }
     }
-  }, [serverState, isDragging, lastResult, onResult, diceId, transformer]);
+  });
 
   // Handle drag start
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
@@ -198,7 +211,6 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
           (Math.random() - 0.5) * 10
         ];
         
-        console.log(`[DEBUG] ServerDice - Throwing dice ${diceId} with velocity:`, throwVelocity, 'angular:', angularVelocity);
         
         // Use throwDice instead of moveDice for physics-based throwing
         serverDiceManager.throwDice(diceId, throwVelocity, angularVelocity);
@@ -209,7 +221,10 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
     }
   }, [isDragging, diceId, serverDiceManager, calculateThrowVelocity]);
 
-  // Handle dragging movement
+  // Optimized drag handling with throttled server updates
+  const lastServerUpdate = useRef<number>(0);
+  const SERVER_UPDATE_THROTTLE = 16; // Update server every 16ms (60fps) instead of every frame
+  
   useFrame(() => {
     if (isDraggingRef.current && meshRef.current) {
       // Update raycaster with current pointer position
@@ -242,11 +257,15 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         // Update last position
         lastPosition.current.copy(newPosition);
         
-        // Transform client coordinates back to server coordinates before sending
-        const serverPos = transformer.clientToServer(newPosition.x, newPosition.z);
-        
-        // Send transformed position to server
-        serverDiceManager.moveDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
+        // Throttle server updates for better performance
+        if (currentTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
+          // Transform client coordinates back to server coordinates before sending
+          const serverPos = transformer.clientToServer(newPosition.x, newPosition.z);
+          
+          // Send transformed position to server
+          serverDiceManager.moveDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
+          lastServerUpdate.current = currentTime;
+        }
       }
     }
   });
@@ -298,7 +317,6 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
   useEffect(() => {
     if (!roomId) return;
 
-    console.log(`[DEBUG] useServerDiceStates - Setting up for room ${roomId}`);
 
     // Import the multiplayer game to get the integrated dice manager
     import('../lib/multiplayer').then(({ getMultiplayerGame }) => {
@@ -306,12 +324,10 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
       
       // Set up WebSocket connection callbacks
       multiplayerGame.onWebSocketConnected = () => {
-        console.log(`[DEBUG] useServerDiceStates - WebSocket connected for room ${roomId}`);
         setIsConnected(true);
       };
       
       multiplayerGame.onWebSocketDisconnected = () => {
-        console.log(`[DEBUG] useServerDiceStates - WebSocket disconnected for room ${roomId}`);
         setIsConnected(false);
       };
       
@@ -323,19 +339,16 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
         attempts++;
         const manager = multiplayerGame.getServerDiceManager();
         if (manager) {
-          console.log(`[DEBUG] useServerDiceStates - Found dice manager for room ${roomId} after ${attempts} attempts`);
           setDiceManager(manager);
           
           // Set up state update handler that updates both local state and calls callback
           manager['onStatesUpdate'] = (states: any) => {
-            console.log(`[DEBUG] useServerDiceStates - Received dice states:`, states);
             setDiceStates(states);
             setLastUpdate(Date.now());
             onStatesUpdate?.(states);
             // Don't call originalOnStatesUpdate to avoid duplicate processing
           };
         } else if (attempts < maxAttempts) {
-          console.log(`[DEBUG] useServerDiceStates - Dice manager not ready yet, checking again... (attempt ${attempts}/${maxAttempts})`);
           // Check again in 100ms
           setTimeout(checkForManager, 100);
         } else {
@@ -354,7 +367,6 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
   // Update server dice states for individual dice components
   const updateDiceState = useCallback((diceId: string, setState: (state: ServerDiceState | null) => void) => {
     const state = diceStates[diceId] || null;
-    console.log(`[DEBUG] useServerDiceStates - Updating dice ${diceId} state:`, state);
     setState(state);
   }, [diceStates]);
 

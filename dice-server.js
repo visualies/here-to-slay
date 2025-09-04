@@ -170,7 +170,7 @@ class DicePhysicsWorld {
         }
       })
       
-      setTimeout(step, 16) // 60 FPS
+      setTimeout(step, 8) // 120 FPS
     }
     step()
   }

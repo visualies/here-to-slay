@@ -97,12 +97,10 @@ export class MultiplayerGame {
     
     // Connect to WebSocket provider with room parameter
     const wsUrl = `ws://localhost:1234?room=${roomId}`;
-    console.log(`[DEBUG] MultiplayerGame - Connecting to WebSocket: ${wsUrl}`);
     
     // Test server connectivity first
     fetch('http://localhost:1234/api/test')
       .then(response => {
-        console.log(`[DEBUG] MultiplayerGame - Server test response:`, response.status);
       })
       .catch(error => {
         console.error(`[DEBUG] MultiplayerGame - Server test failed:`, error);
@@ -116,7 +114,6 @@ export class MultiplayerGame {
     
     // Handle connection events
     this.provider.on('status', (event: { status: string }) => {
-      console.log(`[DEBUG] MultiplayerGame - WebSocket status changed to: ${event.status}`);
       
       if (event.status === 'connected') {
         // Notify that WebSocket is connected
@@ -133,7 +130,6 @@ export class MultiplayerGame {
     });
     
     this.provider.on('connection-close', (event: any) => {
-      console.log(`[DEBUG] MultiplayerGame - WebSocket connection closed:`, event);
     });
     
     // Set up dice manager immediately (it will connect to dedicated server)
@@ -146,19 +142,15 @@ export class MultiplayerGame {
 
   private setupServerDiceManager() {
     if (this.serverDiceManager) {
-      console.log(`[DEBUG] MultiplayerGame - Server dice manager already exists`);
       return;
     }
     
-    console.log(`[DEBUG] MultiplayerGame - Setting up server dice manager for room ${this.roomId}`);
     
     // Create a dice manager that connects to dedicated dice server
     this.serverDiceManager = new ServerDiceManager(this.roomId, (states: ServerDiceStates) => {
-      console.log(`[DEBUG] MultiplayerGame - Received dice states from server:`, states);
       // Dice states are handled directly by the ServerDiceManager
     });
     
-    console.log(`[DEBUG] MultiplayerGame - Server dice manager created successfully`);
   }
 
   public getServerDiceManager(): ServerDiceManager | null {
