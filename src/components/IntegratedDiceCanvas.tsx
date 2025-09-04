@@ -28,7 +28,7 @@ function GridGround() {
       </mesh>
       
       {/* Shadow receiving plane - transparent with visible shadows */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.09, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.07, 0]} receiveShadow>
         <planeGeometry args={[gridSize, gridSize]} />
         <shadowMaterial transparent opacity={0.2} />
       </mesh>
@@ -192,6 +192,9 @@ function CameraController() {
 // Debug flag to show/hide visual elements
 const DEBUG_SHOW_BOUNDARIES = false;
 
+// Camera perspective toggle
+const USE_ORTHOGRAPHIC_CAMERA = true;
+
 // Main integrated dice canvas component  
 export function IntegratedDiceCanvas({ onDiceResults }: { 
   onDiceResults?: (results: number[]) => void;
@@ -221,7 +224,11 @@ export function IntegratedDiceCanvas({ onDiceResults }: {
     <>
       {/* Three.js Canvas - covers entire game board */}
       <Canvas
-        camera={{ position: [0, 12, 0], fov: 50 }}
+        {...(USE_ORTHOGRAPHIC_CAMERA && { orthographic: true })}
+        camera={{ 
+          position: [0, 12, 0], 
+          ...(USE_ORTHOGRAPHIC_CAMERA ? { zoom: 150 } : { fov: 50 })
+        }}
         shadows
         gl={{ antialias: true, alpha: true }}
         style={{ 
@@ -237,19 +244,19 @@ export function IntegratedDiceCanvas({ onDiceResults }: {
         <CameraController />
         
         {/* Lighting */}
-        <ambientLight intensity={1.2} />
+        <ambientLight intensity={0.8} />
         <directionalLight
-          position={[10, 10, 5]}
-          intensity={1}
+          position={[2, 15, 2]}
+          intensity={1.5}
           castShadow
-          shadow-mapSize-width={4096}
-          shadow-mapSize-height={4096}
+          shadow-mapSize-width={8192}
+          shadow-mapSize-height={8192}
           shadow-camera-far={20}
           shadow-camera-left={-10}
           shadow-camera-right={10}
           shadow-camera-top={10}
           shadow-camera-bottom={-10}
-          shadow-radius={3}
+          shadow-radius={0}
           shadow-bias={-0.0001}
         />
 
