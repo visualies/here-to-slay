@@ -62,6 +62,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false); // Immediate reference for useFrame
   const [dragOffset, setDragOffset] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastResult, setLastResult] = useState<number>(1);
   const [diceAdded, setDiceAdded] = useState(false);
@@ -103,8 +104,8 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   // Handle drag start
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    // Starting drag
     setIsDragging(true);
+    isDraggingRef.current = true; // Immediate update for useFrame
     
     const intersection = event.intersections[0];
     if (intersection && meshRef.current) {
@@ -117,7 +118,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   // Handle drag end
   const handlePointerUp = useCallback(() => {
     if (isDragging) {
-      // Ending drag
+      isDraggingRef.current = false; // IMMEDIATELY stop useFrame from sending updates
       setIsDragging(false);
       // TODO: Calculate throw velocity and send to server
       // For now, just release as kinematic
@@ -130,7 +131,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
 
   // Handle dragging movement
   useFrame(() => {
-    if (isDragging && meshRef.current) {
+    if (isDraggingRef.current && meshRef.current) {
       // Update raycaster with current pointer position
       raycaster.setFromCamera(pointer, camera);
       

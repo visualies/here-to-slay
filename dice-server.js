@@ -55,8 +55,6 @@ class DicePhysicsWorld {
       result: 1,
       isStable: false
     })
-    
-    console.log(`[DEBUG] DicePhysicsWorld - Dice ${diceId} added at position:`, position)
   }
   
   moveDice(diceId, position, isKinematic = true) {
@@ -84,8 +82,6 @@ class DicePhysicsWorld {
     dice.body.angularVelocity.set(angularVelocity[0], angularVelocity[1], angularVelocity[2])
     dice.lastUpdate = Date.now()
     dice.isStable = false
-    
-    console.log(`[DEBUG] DicePhysicsWorld - Dice ${diceId} thrown`)
   }
   
   startPhysicsLoop() {
