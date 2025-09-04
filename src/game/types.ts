@@ -33,7 +33,7 @@ export interface Action {
 export interface ActionParams {
   player: Player;
   target?: Player;
-  action: Action;
+  effect: Action;
 }
 
 export enum HeroClass {

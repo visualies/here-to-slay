@@ -3,23 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"node server.js\" \"next dev\"",
+    "dev:client-only": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "server": "node server.js"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.2.3",
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^10.7.4",
     "@react-three/fiber": "^9.3.0",
     "@types/three": "^0.179.0",
+    "better-sqlite3": "^12.2.0",
     "cannon-es": "^0.20.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "^0.542.0",
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "sqlite3": "^5.1.7",
     "tailwind-merge": "^3.3.1",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "ws": "^8.18.3",
+    "y-webrtc": "^10.3.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.27"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -27,6 +38,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",

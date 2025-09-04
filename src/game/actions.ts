@@ -1,4 +1,4 @@
-import { ActionParams, Player } from './types';
+import { ActionParams } from './types';
 
 type ActionRegistry = {
   [key: string]: (params: ActionParams) => void;
