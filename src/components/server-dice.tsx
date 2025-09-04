@@ -65,13 +65,16 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   const isDraggingRef = useRef(false); // Immediate reference for useFrame
   const [dragOffset, setDragOffset] = useState<THREE.Vector3>(new THREE.Vector3());
   const [lastResult, setLastResult] = useState<number>(1);
-  const [diceAdded, setDiceAdded] = useState(false);
   const { camera, raycaster, pointer } = useThree();
+  
+  // Movement tracking for throw velocity calculation
+  const positionHistory = useRef<Array<{position: THREE.Vector3, time: number}>>([]);
+  const lastPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  const velocityBufferSize = 5; // Number of recent positions to track
 
   // Dice are automatically spawned by the server, no need to add them
   useEffect(() => {
     console.log(`[DEBUG] ServerDice - Component mounted for dice ${diceId}, waiting for server state`);
-    setDiceAdded(true); // Mark as ready since server handles dice creation
   }, [diceId]);
 
   // Update dice visual state when server state changes
@@ -112,22 +115,88 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
       const worldPosition = new THREE.Vector3();
       meshRef.current.getWorldPosition(worldPosition);
       setDragOffset(worldPosition.clone().sub(intersection.point));
+      
+      // Initialize movement tracking
+      lastPosition.current.copy(worldPosition);
+      positionHistory.current = [{
+        position: worldPosition.clone(),
+        time: performance.now()
+      }];
     }
-  }, [diceId]);
+  }, []);
+
+  // Calculate throw velocity based on recent movement
+  const calculateThrowVelocity = useCallback((): [number, number, number] => {
+    if (positionHistory.current.length < 2) {
+      return [0, 0, 0]; // No movement to calculate
+    }
+    
+    const currentTime = performance.now();
+    const recentHistory = positionHistory.current.filter(
+      entry => currentTime - entry.time < 100 // Only use last 100ms of movement
+    );
+    
+    if (recentHistory.length < 2) {
+      return [0, 0, 0];
+    }
+    
+    // Calculate average velocity from recent positions
+    const totalDelta = new THREE.Vector3();
+    let totalTime = 0;
+    
+    for (let i = 1; i < recentHistory.length; i++) {
+      const current = recentHistory[i];
+      const previous = recentHistory[i - 1];
+      const deltaPos = current.position.clone().sub(previous.position);
+      const deltaTime = (current.time - previous.time) / 1000; // Convert to seconds
+      
+      if (deltaTime > 0) {
+        totalDelta.add(deltaPos);
+        totalTime += deltaTime;
+      }
+    }
+    
+    if (totalTime === 0) {
+      return [0, 0, 0];
+    }
+    
+    // Average velocity
+    const velocity = totalDelta.divideScalar(totalTime);
+    
+    // Use raw velocity without scaling or force boost
+    return [
+      velocity.x,
+      velocity.y,
+      velocity.z
+    ];
+  }, []);
 
   // Handle drag end
   const handlePointerUp = useCallback(() => {
     if (isDragging) {
       isDraggingRef.current = false; // IMMEDIATELY stop useFrame from sending updates
       setIsDragging(false);
-      // TODO: Calculate throw velocity and send to server
-      // For now, just release as kinematic
+      
       if (groupRef.current) {
-        const pos = groupRef.current.position;
-        serverDiceManager.moveDice(diceId, [pos.x, pos.y, pos.z], false); // Release to physics
+        const throwVelocity = calculateThrowVelocity();
+        
+        // Add some random angular velocity for realistic tumbling
+        const angularVelocity: [number, number, number] = [
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10,
+          (Math.random() - 0.5) * 10
+        ];
+        
+        console.log(`[DEBUG] ServerDice - Throwing dice ${diceId} with velocity:`, throwVelocity, 'angular:', angularVelocity);
+        
+        // Use throwDice instead of moveDice for physics-based throwing
+        serverDiceManager.throwDice(diceId, throwVelocity, angularVelocity);
       }
+      
+      // Clear position history
+      positionHistory.current = [];
     }
-  }, [isDragging, diceId, serverDiceManager]);
+  }, [isDragging, diceId, serverDiceManager, calculateThrowVelocity]);
 
   // Handle dragging movement
   useFrame(() => {
@@ -146,6 +215,21 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         
         // Update local position immediately for smooth dragging
         groupRef.current.position.copy(newPosition);
+        
+        // Track position for velocity calculation
+        const currentTime = performance.now();
+        positionHistory.current.push({
+          position: newPosition.clone(),
+          time: currentTime
+        });
+        
+        // Keep only recent positions
+        if (positionHistory.current.length > velocityBufferSize) {
+          positionHistory.current.shift();
+        }
+        
+        // Update last position
+        lastPosition.current.copy(newPosition);
         
         // Send position to server
         serverDiceManager.moveDice(diceId, [newPosition.x, newPosition.y, newPosition.z], true);
