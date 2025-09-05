@@ -100,6 +100,9 @@ function CameraController() {
 // Camera perspective toggle
 const USE_ORTHOGRAPHIC_CAMERA = true;
 
+// Debug mode - set to true to show red boundary lines
+const DEBUG_BOUNDARIES = false;
+
 // Main server dice canvas component  
 export function ServerDiceCanvas({ onDiceResults, roomId }: { 
   onDiceResults?: (results: number[]) => void;
@@ -187,7 +190,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
       />
 
       <GridGround />
-      <BoundaryLines />
+      {DEBUG_BOUNDARIES && <BoundaryLines />}
       
       {/* Server-controlled dice */}
       {Array.from({ length: diceCount }, (_, i) => {

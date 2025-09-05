@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function GameBoard() {
+  // Debug mode - set to true to show red border lines
+  const DEBUG_MODE = false;
+  
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
 
@@ -63,29 +66,29 @@ export default function GameBoard() {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[200px_1fr_200px] grid-cols-[200px_1fr_200px]">
+      <div className={`relative h-full grid grid-rows-[200px_1fr_200px] grid-cols-[200px_1fr_200px] ${DEBUG_MODE ? '[&>div]:border-2 [&>div]:border-red-500' : ''}`}>
         {/* Top player */}
-        <div className="col-start-2 row-start-1 flex items-end justify-center">
+        <div className={`col-start-2 row-start-1 flex items-end justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
           <PlayerArea position="top" />
         </div>
         
         {/* Right player */}
-        <div className="col-start-3 row-start-2 flex items-center justify-center">
+        <div className={`col-start-3 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
           <PlayerArea position="right" />
         </div>
         
         {/* Bottom player */}
-        <div className="col-start-2 row-start-3 flex items-start justify-center">
+        <div className={`col-start-2 row-start-3 flex items-start justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
           <PlayerArea position="bottom" />
         </div>
         
         {/* Left player */}
-        <div className="col-start-1 row-start-2 flex items-center justify-center">
+        <div className={`col-start-1 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
           <PlayerArea position="left" />
         </div>
         
         {/* Center area */}
-        <div className="col-start-2 row-start-2 flex items-center justify-center">
+        <div className={`col-start-2 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
           <CenterArea 
             diceResults={diceResults} 
           />

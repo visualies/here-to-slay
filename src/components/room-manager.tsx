@@ -17,6 +17,44 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Start background music when component mounts
+  useEffect(() => {
+    const audio = new Audio('/soundtrack.mp3');
+    audio.loop = true;
+    audio.volume = 0.3; // Set to 30% volume
+    
+    // Store reference to prevent garbage collection
+    window.gameAudio = audio;
+    
+    // Try to play audio, but handle if autoplay is blocked
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        console.log('Audio started successfully');
+      }).catch((error) => {
+        // Autoplay was blocked, audio will need user interaction to start
+        console.log('Autoplay blocked - audio will start on first user interaction', error);
+        
+        // Add click listener to start audio on first user interaction
+        const startAudio = () => {
+          audio.play().then(() => {
+            console.log('Audio started after user interaction');
+            document.removeEventListener('click', startAudio);
+          }).catch(console.error);
+        };
+        document.addEventListener('click', startAudio);
+      });
+    }
+
+    return () => {
+      if (window.gameAudio) {
+        window.gameAudio.pause();
+        window.gameAudio.currentTime = 0;
+        window.gameAudio = null;
+      }
+    };
+  }, []);
+
   // Generate random player name and color on component mount
   useEffect(() => {
     const adjectives = ['Swift', 'Brave', 'Clever', 'Bold', 'Lucky', 'Mighty', 'Quick', 'Sharp'];
@@ -95,8 +133,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
   if (mode === 'menu') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen relative flex items-center justify-center p-4">
+        {/* Background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/flute.png')"
+          }}
+        />
+        {/* Dark overlay for better readability */}
+        <div className="absolute inset-0 bg-black/40" />
+        <Card className="w-full max-w-md mr-92 bg-white/95 backdrop-blur-sm relative z-10">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl mb-2">🎲 Here to Slay</CardTitle>
             <CardDescription>Multiplayer Dice Rolling</CardDescription>
@@ -123,7 +170,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               <Button
                 onClick={handleQuickPlay}
                 disabled={loading}
-                className="w-full bg-green-500 hover:bg-green-600"
+                className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold"
                 size="lg"
               >
                 {loading ? 'Creating...' : '🚀 Create & Join Room'}
@@ -133,7 +180,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onClick={() => setMode('join')}
                 disabled={loading}
                 variant="outline"
-                className="w-full"
+                className="w-full border-amber-600 text-amber-700 hover:bg-amber-50"
                 size="lg"
               >
                 🚪 Join Existing Room
@@ -154,8 +201,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
   if (mode === 'join') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm">
+      <div className="min-h-screen relative flex items-center justify-center p-4">
+        {/* Background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/flute.png')"
+          }}
+        />
+        {/* Dark overlay for better readability */}
+        <div className="absolute inset-0 bg-black/40" />
+        <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm relative z-10">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">🚪 Join Room</CardTitle>
             <CardDescription>Enter the room code</CardDescription>
@@ -195,14 +251,14 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onClick={() => setMode('menu')}
                 disabled={loading}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 border-amber-600 text-amber-700 hover:bg-amber-50"
               >
                 Back
               </Button>
               <Button
                 onClick={() => handleJoinExistingRoom()}
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
               >
                 {loading ? 'Joining...' : 'Join'}
               </Button>
