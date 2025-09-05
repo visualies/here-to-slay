@@ -1,5 +1,5 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+import Database from 'better-sqlite3';
+import path from 'path';
 
 class RoomDatabase {
   constructor() {
@@ -170,8 +170,6 @@ class RoomDatabase {
 
   // Clean up inactive players and empty rooms
   cleanup() {
-    const now = Date.now();
-    const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
 
     // Mark players as inactive if not seen for 5 minutes
     const cleanupPlayers = this.db.prepare(`
@@ -251,4 +249,4 @@ class RoomDatabase {
   }
 }
 
-module.exports = RoomDatabase;
+export default RoomDatabase;

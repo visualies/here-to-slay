@@ -6,7 +6,7 @@ import { ServerDiceStates } from "../lib/server-dice";
 interface DebugPanelProps {
   roomId: string;
   serverDiceStates: ServerDiceStates;
-  clientDiceStates: { [diceId: string]: any };
+  clientDiceStates: { [diceId: string]: { position?: number[] } | null };
   isConnected: boolean;
   lastUpdate: number;
 }
@@ -103,7 +103,7 @@ export function DebugPanel({
             {Object.keys(serverDiceStates).map((diceId) => {
               const serverState = serverDiceStates[diceId];
               const clientState = clientDiceStates[diceId];
-              const isInSync = serverState && clientState && 
+              const isInSync = serverState && clientState && clientState.position &&
                 Math.abs(serverState.position[0] - clientState.position[0]) < 0.01 &&
                 Math.abs(serverState.position[1] - clientState.position[1]) < 0.01 &&
                 Math.abs(serverState.position[2] - clientState.position[2]) < 0.01;

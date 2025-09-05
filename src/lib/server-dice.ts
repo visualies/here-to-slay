@@ -98,7 +98,7 @@ export class ServerDiceManager {
   }
 
   // Legacy method for compatibility - no longer needed but kept for existing code
-  setupWebSocket(_ws: WebSocket) {
+  setupWebSocket() {
     // This method is now a no-op since we connect to dedicated dice server
   }
 

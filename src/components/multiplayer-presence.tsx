@@ -18,7 +18,7 @@ export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
     if (!multiplayerGame) return;
 
     // Subscribe to connection status
-    multiplayerGame.provider.on('status', (event: any) => {
+    multiplayerGame.provider.on('status', (event: { status: string }) => {
       setIsConnected(event.status === 'connected');
     });
 

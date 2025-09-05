@@ -5,7 +5,7 @@ import { useFrame, useThree, useLoader, ThreeEvent } from "@react-three/fiber";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
-import { ServerDiceManager, ServerDiceState, createCoordinateTransformer } from "../lib/server-dice";
+import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
 
 interface ServerDiceProps {
   diceId: string;
@@ -308,9 +308,9 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
 }
 
 // Hook to manage server dice states
-export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: any) => void) {
+export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: ServerDiceStates) => void) {
   const [diceManager, setDiceManager] = useState<ServerDiceManager | null>(null);
-  const [diceStates, setDiceStates] = useState<any>({});
+  const [diceStates, setDiceStates] = useState<ServerDiceStates>({});
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(0);
 
@@ -342,7 +342,7 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: an
           setDiceManager(manager);
           
           // Set up state update handler that updates both local state and calls callback
-          manager['onStatesUpdate'] = (states: any) => {
+          manager['onStatesUpdate'] = (states: ServerDiceStates) => {
             setDiceStates(states);
             setLastUpdate(Date.now());
             onStatesUpdate?.(states);

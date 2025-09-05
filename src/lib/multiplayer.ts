@@ -2,7 +2,7 @@
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import { ServerDiceManager, ServerDiceStates } from './server-dice';
+import { ServerDiceManager } from './server-dice';
 
 // Game state types
 
@@ -100,8 +100,6 @@ export class MultiplayerGame {
     
     // Test server connectivity first
     fetch('http://localhost:1234/api/test')
-      .then(response => {
-      })
       .catch(error => {
         console.error(`[DEBUG] MultiplayerGame - Server test failed:`, error);
       });
@@ -125,11 +123,12 @@ export class MultiplayerGame {
     });
     
     // Also listen for connection errors
-    this.provider.on('connection-error', (event: any) => {
+    this.provider.on('connection-error', (event: Event) => {
       console.error(`[DEBUG] MultiplayerGame - WebSocket connection error:`, event);
     });
     
-    this.provider.on('connection-close', (event: any) => {
+    this.provider.on('connection-close', (event: CloseEvent | null) => {
+      console.log(`[DEBUG] MultiplayerGame - WebSocket connection closed:`, event);
     });
     
     // Set up dice manager immediately (it will connect to dedicated server)
@@ -147,7 +146,7 @@ export class MultiplayerGame {
     
     
     // Create a dice manager that connects to dedicated dice server
-    this.serverDiceManager = new ServerDiceManager(this.roomId, (states: ServerDiceStates) => {
+    this.serverDiceManager = new ServerDiceManager(this.roomId, () => {
       // Dice states are handled directly by the ServerDiceManager
     });
     
