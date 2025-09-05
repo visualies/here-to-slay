@@ -24,7 +24,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     audio.volume = 0.3; // Set to 30% volume
     
     // Store reference to prevent garbage collection
-    window.gameAudio = audio;
+    (window as any).gameAudio = audio;
     
     // Try to play audio, but handle if autoplay is blocked
     const playPromise = audio.play();
@@ -47,10 +47,10 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     }
 
     return () => {
-      if (window.gameAudio) {
-        window.gameAudio.pause();
-        window.gameAudio.currentTime = 0;
-        window.gameAudio = null;
+      if ((window as any).gameAudio) {
+        (window as any).gameAudio.pause();
+        (window as any).gameAudio.currentTime = 0;
+        (window as any).gameAudio = null;
       }
     };
   }, []);
