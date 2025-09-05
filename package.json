@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "concurrently \"tsx server.ts\" \"tsx dice-server.ts\" \"next dev\"",
     "dev:client-only": "next dev",
+    "prebuild": "npm ci",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
