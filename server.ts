@@ -24,7 +24,7 @@ setInterval(() => {
 }, 5 * 60 * 1000)
 
 const server = http.createServer((request, response) => {
-  const parsedUrl = url.parse(request.url, true)
+  const parsedUrl = url.parse(request.url || '', true)
   const pathname = parsedUrl.pathname
   
   // Enable CORS for all origins and methods
@@ -54,7 +54,7 @@ const server = http.createServer((request, response) => {
       } catch (error) {
         console.error('Error creating room:', error)
         response.writeHead(500, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: error.message }))
+        response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
       }
     })
     request.on('error', (error) => {
@@ -76,7 +76,7 @@ const server = http.createServer((request, response) => {
         response.end(JSON.stringify(result))
       } catch (error) {
         response.writeHead(400, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: error.message }))
+        response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
       }
     })
     return
@@ -101,7 +101,7 @@ const server = http.createServer((request, response) => {
       response.end(JSON.stringify(roomInfo))
     } catch (error) {
       response.writeHead(500, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: error.message }))
+      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
     }
     return
   }
@@ -113,7 +113,7 @@ const server = http.createServer((request, response) => {
       response.end(JSON.stringify(rooms))
     } catch (error) {
       response.writeHead(500, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: error.message }))
+      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
     }
     return
   }
@@ -139,7 +139,7 @@ const roomConnections = new Map()
 // Simple WebSocket message relay for Yjs sync
 const docs = new Map()
 
-function getYDoc(roomId) {
+function getYDoc(roomId: string) {
   if (!docs.has(roomId)) {
     docs.set(roomId, new Y.Doc())
   }
@@ -149,7 +149,7 @@ function getYDoc(roomId) {
 
 wss.on('connection', (ws, req) => {
   try {
-    const urlObj = new URL(req.url, `http://${req.headers.host}`)
+    const urlObj = new URL(req.url || '', `http://${req.headers.host}`)
     const roomId = urlObj.searchParams.get('room') || 'default'
     
     console.log(`[DEBUG] GameServer - WebSocket connection for room ${roomId}`)
@@ -167,11 +167,11 @@ wss.on('connection', (ws, req) => {
     const ydoc = getYDoc(roomId)
     
     // Handle WebSocket messages (Yjs sync only)
-    const messageHandler = (message) => {
+    const messageHandler = (message: any) => {
       try {
         // Relay all messages to other connections (Yjs handles its own protocol)
         if (roomConnections.has(roomId)) {
-          roomConnections.get(roomId).forEach(client => {
+          roomConnections.get(roomId)?.forEach((client: any) => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(message)
             }

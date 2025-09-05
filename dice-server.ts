@@ -7,21 +7,38 @@
 
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
-import CANNON from 'cannon'
+import * as CANNON from 'cannon-es'
 
 const host: string = process.env.HOST || 'localhost'
 const port: number = parseInt(process.env.DICE_PORT || '1235', 10)
 
 // Server-side dice physics system
 class DicePhysicsWorld {
-  constructor(roomId) {
+  public roomId: string
+  public world: CANNON.World
+  public groundBody: CANNON.Body
+  public dice: Map<string, any>
+  public diceResults: Map<string, number>
+  public isStable: Map<string, boolean>
+  public lastStableCheck: Map<string, number>
+  public lastPhysicsStep: number
+  public lastBroadcastedStates: Record<string, any>
+  public onStatesUpdate?: (states: any) => void
+
+  constructor(roomId: string) {
     this.roomId = roomId
     this.world = new CANNON.World()
+    this.dice = new Map()
+    this.diceResults = new Map()
+    this.isStable = new Map()
+    this.lastStableCheck = new Map()
+    this.lastPhysicsStep = Date.now()
+    this.lastBroadcastedStates = {}
     this.world.gravity.set(0, -19.64, 0)
     
     // Use better broadphase and solver for more accurate collision detection
     this.world.broadphase = new CANNON.SAPBroadphase(this.world)
-    this.world.solver.iterations = 20 // More solver iterations for better accuracy
+    ;(this.world.solver as any).iterations = 20 // More solver iterations for better accuracy
     this.world.defaultContactMaterial.friction = 0.4
     this.world.defaultContactMaterial.restitution = 0.3
     
@@ -31,7 +48,7 @@ class DicePhysicsWorld {
     this.groundBody.addShape(groundShape)
     this.groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2)
     this.groundBody.position.set(0, -0.1, 0)
-    this.world.add(this.groundBody)
+    this.world.addBody(this.groundBody)
     
     // 10x10 Playing field boundaries (center origin: -5 to +5)
     const FIELD_SIZE = 5 // Half-size (center to edge)
@@ -42,29 +59,27 @@ class DicePhysicsWorld {
     const leftWall = new CANNON.Body({ mass: 0 })
     leftWall.addShape(new CANNON.Box(new CANNON.Vec3(WALL_THICKNESS, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)))
     leftWall.position.set(-FIELD_SIZE - WALL_THICKNESS, WALL_HEIGHT, 0)
-    this.world.add(leftWall)
+    this.world.addBody(leftWall)
     
     // Right wall (X = +5)  
     const rightWall = new CANNON.Body({ mass: 0 })
     rightWall.addShape(new CANNON.Box(new CANNON.Vec3(WALL_THICKNESS, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)))
     rightWall.position.set(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, 0)
-    this.world.add(rightWall)
+    this.world.addBody(rightWall)
     
     // Front wall (Z = -5)
     const frontWall = new CANNON.Body({ mass: 0 })
     frontWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)))
     frontWall.position.set(0, WALL_HEIGHT, -FIELD_SIZE - WALL_THICKNESS)
-    this.world.add(frontWall)
+    this.world.addBody(frontWall)
     
     // Back wall (Z = +5)
     const backWall = new CANNON.Body({ mass: 0 })
     backWall.addShape(new CANNON.Box(new CANNON.Vec3(FIELD_SIZE + WALL_THICKNESS, WALL_HEIGHT, WALL_THICKNESS)))
     backWall.position.set(0, WALL_HEIGHT, FIELD_SIZE + WALL_THICKNESS)
-    this.world.add(backWall)
+    this.world.addBody(backWall)
     
-    // Dice storage
-    this.dice = new Map() // diceId -> { body, lastUpdate, result }
-    this.lastPhysicsStep = Date.now()
+    // Dice storage is already initialized in constructor
     
     // Start physics loop
     this.startPhysicsLoop()
@@ -75,18 +90,18 @@ class DicePhysicsWorld {
     console.log(`[DEBUG] DicePhysicsWorld - Room ${roomId} initialized with 2 dice`)
   }
   
-  addDice(diceId, position = [0, 2, 0]) {
+  addDice(diceId: string, position: [number, number, number] = [0, 2, 0]) {
     const shape = new CANNON.Box(new CANNON.Vec3(0.15, 0.15, 0.15))
     const body = new CANNON.Body({ mass: 1 })
     body.addShape(shape)
     body.position.set(position[0], position[1], position[2])
-    body.material = new CANNON.Material({ friction: 0.3, restitution: 0.7 })
+    
+    // Use default material properties
     
     // Enable continuous collision detection for fast-moving dice
-    body.ccdSpeedThreshold = 1  // Enable CCD when velocity > 1 unit/s
-    body.ccdIterations = 10     // Number of CCD iterations
+    ;(body as any).ccdSpeedThreshold = 1  // Enable CCD when velocity > 1 unit/s
     
-    this.world.add(body)
+    this.world.addBody(body)
     this.dice.set(diceId, {
       body: body,
       lastUpdate: Date.now(),
@@ -95,7 +110,7 @@ class DicePhysicsWorld {
     })
   }
   
-  moveDice(diceId, position, isKinematic = true) {
+  moveDice(diceId: string, position: [number, number, number], isKinematic = true) {
     const dice = this.dice.get(diceId)
     if (!dice) return
     
@@ -111,7 +126,7 @@ class DicePhysicsWorld {
     dice.lastUpdate = Date.now()
   }
   
-  throwDice(diceId, velocity, angularVelocity) {
+  throwDice(diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) {
     const dice = this.dice.get(diceId)
     if (!dice) return
     
@@ -175,7 +190,7 @@ class DicePhysicsWorld {
     step()
   }
   
-  calculateDiceResult(body) {
+  calculateDiceResult(body: CANNON.Body) {
     const upVector = new CANNON.Vec3(0, 1, 0)
     
     // Face normals in local space
@@ -206,7 +221,7 @@ class DicePhysicsWorld {
   }
   
   getDiceStates() {
-    const states = {}
+    const states: Record<string, any> = {}
     this.dice.forEach((dice, diceId) => {
       states[diceId] = {
         position: [dice.body.position.x, dice.body.position.y, dice.body.position.z],
@@ -221,19 +236,19 @@ class DicePhysicsWorld {
   
   cleanup() {
     this.dice.forEach((dice, diceId) => {
-      this.world.remove(dice.body)
+      this.world.removeBody(dice.body)
     })
     this.dice.clear()
   }
 }
 
 // Track physics worlds and connections by room
-const physicsWorlds = new Map()
-const roomConnections = new Map()
+const physicsWorlds = new Map<string, DicePhysicsWorld>()
+const roomConnections = new Map<string, Set<WebSocket>>()
 
 // Create HTTP server for REST API
-const server = http.createServer((request, response) => {
-  const parsedUrl = new URL(request.url, `http://${request.headers.host}`)
+const server = http.createServer((request: http.IncomingMessage, response: http.ServerResponse) => {
+  const parsedUrl = new URL(request.url || '', `http://${request.headers.host}`)
   const pathname = parsedUrl.pathname
   
   // Enable CORS
@@ -277,6 +292,12 @@ const server = http.createServer((request, response) => {
         }
         const world = physicsWorlds.get(roomId)
         
+        if (!world) {
+          response.writeHead(500, { 'Content-Type': 'application/json' })
+          response.end(JSON.stringify({ error: 'Failed to create physics world' }))
+          return
+        }
+        
         switch (action) {
           case 'move':
             world.moveDice(data.diceId, data.position, data.isKinematic !== false)
@@ -304,7 +325,7 @@ const server = http.createServer((request, response) => {
       } catch (error) {
         console.error('Error handling dice API:', error)
         response.writeHead(500, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: error.message }))
+        response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
       }
     })
     return
@@ -318,9 +339,9 @@ const server = http.createServer((request, response) => {
 // WebSocket server for real-time dice state updates
 const wss = new WebSocketServer({ server })
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws: WebSocket, req: http.IncomingMessage) => {
   try {
-    const urlObj = new URL(req.url, `http://${req.headers.host}`)
+    const urlObj = new URL(req.url || '', `http://${req.headers.host}`)
     const roomId = urlObj.searchParams.get('room') || 'default'
     
     console.log(`[DEBUG] DiceServer - WebSocket connection for room ${roomId}`)
@@ -329,7 +350,7 @@ wss.on('connection', (ws, req) => {
     if (!roomConnections.has(roomId)) {
       roomConnections.set(roomId, new Set())
     }
-    roomConnections.get(roomId).add(ws)
+    roomConnections.get(roomId)?.add(ws)
     
     // Create physics world for room if needed
     if (!physicsWorlds.has(roomId)) {
@@ -338,22 +359,24 @@ wss.on('connection', (ws, req) => {
     
     // Send current dice states immediately
     const world = physicsWorlds.get(roomId)
-    const states = world.getDiceStates()
-    if (Object.keys(states).length > 0) {
-      ws.send(JSON.stringify({
-        type: 'dice-states',
-        data: states
-      }))
+    if (world) {
+      const states = world.getDiceStates()
+      if (Object.keys(states).length > 0) {
+        ws.send(JSON.stringify({
+          type: 'dice-states',
+          data: states
+        }))
+      }
     }
     
     ws.on('close', () => {
       if (roomConnections.has(roomId)) {
-        roomConnections.get(roomId).delete(ws)
-        if (roomConnections.get(roomId).size === 0) {
+        roomConnections.get(roomId)?.delete(ws)
+        if (roomConnections.get(roomId)?.size === 0) {
           roomConnections.delete(roomId)
           // Clean up physics world if no connections
           if (physicsWorlds.has(roomId)) {
-            physicsWorlds.get(roomId).cleanup()
+            physicsWorlds.get(roomId)?.cleanup()
             physicsWorlds.delete(roomId)
             console.log(`[DEBUG] DiceServer - Cleaned up physics world for room ${roomId}`)
           }
@@ -372,7 +395,7 @@ wss.on('connection', (ws, req) => {
 })
 
 // Broadcast dice states to all clients in room
-function broadcastDiceStates(roomId) {
+function broadcastDiceStates(roomId: string) {
   const world = physicsWorlds.get(roomId)
   if (!world || !roomConnections.has(roomId)) {
     return
