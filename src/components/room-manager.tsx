@@ -17,7 +17,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Start background music when component mounts
+  // Start background music and ensure video loops properly
   useEffect(() => {
     const audio = new Audio('/soundtrack.mp3');
     audio.loop = true;
@@ -46,12 +46,18 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       });
     }
 
+
+
+
+
     return () => {
+      // Cleanup audio
       if ((window as any).gameAudio) {
         (window as any).gameAudio.pause();
         (window as any).gameAudio.currentTime = 0;
         (window as any).gameAudio = null;
       }
+      
     };
   }, []);
 
@@ -134,16 +140,20 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   if (mode === 'menu') {
     return (
       <div className="min-h-screen relative flex items-center justify-center p-4">
-        {/* Background image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('/flute.png')"
-          }}
-        />
+        {/* Background video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          volume={0}
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
+        </video>
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/40" />
-        <Card className="w-full max-w-md mr-92 bg-white/95 backdrop-blur-sm relative z-10">
+        <Card className="w-full max-w-md ml-18 bg-white/95 backdrop-blur-sm relative z-10">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl mb-2">🎲 Here to Slay</CardTitle>
             <CardDescription>Multiplayer Dice Rolling</CardDescription>
@@ -202,13 +212,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   if (mode === 'join') {
     return (
       <div className="min-h-screen relative flex items-center justify-center p-4">
-        {/* Background image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: "url('/flute.png')"
-          }}
-        />
+        {/* Background video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          volume={0}
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
+        </video>
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/40" />
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm relative z-10">
