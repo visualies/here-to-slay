@@ -16,7 +16,7 @@ interface ServerDiceProps {
   showDebug?: boolean;
 }
 
-// 3D Dice Model Component (reused from realistic-dice)
+// 3D Dice Model Component
 function DiceModel() {
   const materials = useLoader(MTLLoader, '/dice.mtl');
   const obj = useLoader(OBJLoader, '/cube.obj', (loader) => {

@@ -2,15 +2,15 @@
 
 /**
  * Dedicated dice physics server
- * Run with: node dice-server.js
+ * Run with: tsx dice-server.ts
  */
 
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import CANNON from 'cannon'
 
-const host = process.env.HOST || 'localhost'
-const port = process.env.DICE_PORT || 1235
+const host: string = process.env.HOST || 'localhost'
+const port: number = parseInt(process.env.DICE_PORT || '1235', 10)
 
 // Server-side dice physics system
 class DicePhysicsWorld {

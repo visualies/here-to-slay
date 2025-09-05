@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"node server.js\" \"node dice-server.js\" \"next dev\"",
+    "dev": "concurrently \"tsx server.ts\" \"tsx dice-server.ts\" \"next dev\"",
     "dev:client-only": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "server": "node server.js",
-    "dice-server": "node dice-server.js"
+    "server": "tsx server.ts",
+    "dice-server": "tsx dice-server.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
@@ -44,6 +44,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.2",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   }
 }

@@ -2,18 +2,18 @@
 
 /**
  * Room-based WebSocket server for Yjs multiplayer synchronization
- * Run with: node server.js
+ * Run with: tsx server.ts
  */
 
-const WebSocket = require('ws')
-const http = require('http')
-const url = require('url')
-const Y = require('yjs')
-const { WebsocketProvider } = require('y-websocket')
-const RoomDatabase = require('./src/lib/database.js')
+import WebSocket, { WebSocketServer } from 'ws'
+import http from 'http'
+import url from 'url'
+import * as Y from 'yjs'
+import { WebsocketProvider } from 'y-websocket'
+import RoomDatabase from './src/lib/database.js'
 
-const host = process.env.HOST || 'localhost'
-const port = process.env.PORT || 1234
+const host: string = process.env.HOST || 'localhost'
+const port: number = parseInt(process.env.PORT || '1234', 10)
 
 // Initialize database
 const db = new RoomDatabase()
@@ -131,7 +131,7 @@ const server = http.createServer((request, response) => {
   response.end('Here-to-Slay Room-based WebSocket Server\n\nAPI Endpoints:\n- POST /api/create-room\n- POST /api/join-room\n- GET /api/room-info?id=ROOMID\n- GET /api/active-rooms\n')
 })
 
-const wss = new WebSocket.Server({ server })
+const wss = new WebSocketServer({ server })
 
 // Track connections by room
 const roomConnections = new Map()

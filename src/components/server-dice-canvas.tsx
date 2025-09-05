@@ -6,7 +6,7 @@ import { ServerDice, useServerDiceStates } from "./server-dice";
 import { DebugPanel } from "./debug-panel";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
 
-// Ground plane with visible grid (reused from integrated-dice-canvas)
+// Ground plane with visible grid
 function GridGround() {
   const { viewport } = useThree();
   
