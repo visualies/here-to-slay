@@ -6,6 +6,7 @@ import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
 import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
+import { playDiceSound } from "../lib/dice-sounds";
 
 interface ServerDiceProps {
   diceId: string;
@@ -115,10 +116,15 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         lastServerState.current = { ...serverState };
       }
 
-      // Update result
+      // Update result and play sound
       if (serverState.result !== lastResult) {
         setLastResult(serverState.result);
         onResult(serverState.result);
+        
+        // Play dice sound when result changes
+        playDiceSound().catch(error => {
+          console.warn('Failed to play dice sound:', error);
+        });
       }
     }
   });
