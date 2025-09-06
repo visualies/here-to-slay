@@ -17,22 +17,22 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
   const positionStyles = {
     top: {
       container: 'flex-row justify-center items-start',
-      cardSpacing: '-ml-2',
+      cardSpacing: '-ml-12',
       rotation: ''
     },
     right: {
       container: 'flex-col justify-center items-end',
-      cardSpacing: '-mt-2',
+      cardSpacing: '-mt-12',
       rotation: 'rotate-90'
     },
     bottom: {
       container: 'flex-row justify-center items-end',
-      cardSpacing: '-ml-2',
+      cardSpacing: 'ml-2',
       rotation: ''
     },
     left: {
       container: 'flex-col justify-center items-start',
-      cardSpacing: '-mt-2',
+      cardSpacing: '-mt-12',
       rotation: '-rotate-90'
     }
   };
@@ -46,9 +46,9 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation} hover:scale-110 transition-transform cursor-pointer hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
           >
-            <Card card={card} size="medium" />
+            <Card card={card} size="xl" />
           </div>
         ))
       ) : (
@@ -72,7 +72,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
                     effect: []
                   }} 
                   isBack={true} 
-                  size="small" 
+                  size="large" 
                 />
               </div>
             ))}

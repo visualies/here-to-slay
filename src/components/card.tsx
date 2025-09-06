@@ -5,21 +5,22 @@ import { Card as GameCard } from "../game/types";
 interface CardProps {
   card: GameCard;
   isBack?: boolean;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'large' | 'xl';
   className?: string;
 }
 
 export function Card({ card, isBack = false, size = 'medium', className = '' }: CardProps) {
   const sizeClasses = {
-    small: 'w-12 h-16',
-    medium: 'w-16 h-24',
-    large: 'w-24 h-36'
+    small: 'w-12',
+    medium: 'w-16',
+    large: 'w-24',
+    xl: 'w-40'
   };
 
   if (isBack) {
     return (
       <div 
-        className={`${sizeClasses[size]} bg-cover bg-center rounded-lg border-2 border-gray-300 shadow-md ${className}`}
+        className={`${sizeClasses[size]} aspect-[744/1039] bg-cover bg-center rounded-lg border-2 border-gray-300 shadow-md ${className}`}
         style={{ backgroundImage: 'url(/heroBack.png)' }}
       >
       </div>
@@ -27,7 +28,7 @@ export function Card({ card, isBack = false, size = 'medium', className = '' }: 
   }
 
   return (
-    <div className={`${sizeClasses[size]} bg-white rounded-lg border-2 border-gray-300 shadow-md p-1 flex flex-col ${className}`}>
+    <div className={`${sizeClasses[size]} aspect-[744/1039] bg-white rounded-lg border-2 border-gray-300 shadow-md p-1 flex flex-col ${className}`}>
       <div className="flex-1 flex flex-col justify-between">
         <div className="text-xs font-bold text-center truncate px-1">
           {card.name}

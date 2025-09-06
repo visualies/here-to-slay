@@ -65,7 +65,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
   return (
     <div className="w-full h-screen bg-white relative overflow-hidden">
       {/* Top player hand cards */}
-      <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-30">
+      <div className="absolute top-[-4.25rem] left-1/2 transform -translate-x-1/2 z-30">
         {getPlayerByPosition('top') && (
           <HandCards 
             cards={getPlayerByPosition('top')!.hand} 
@@ -76,7 +76,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       </div>
 
       {/* Right player hand cards */}
-      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 z-30">
+      <div className="absolute right-[-4.25rem] top-1/2 transform -translate-y-1/2 z-30">
         {getPlayerByPosition('right') && (
           <HandCards 
             cards={getPlayerByPosition('right')!.hand} 
@@ -87,7 +87,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       </div>
 
       {/* Bottom player hand cards (current player) */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-30">
+      <div className="absolute bottom-[-7rem] left-1/2 transform -translate-x-1/2 z-30">
         {currentPlayer && (
           <HandCards 
             cards={currentPlayer.hand} 
@@ -98,7 +98,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       </div>
 
       {/* Left player hand cards */}
-      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 z-30">
+      <div className="absolute left-[-4.25rem] top-1/2 transform -translate-y-1/2 z-30">
         {getPlayerByPosition('left') && (
           <HandCards 
             cards={getPlayerByPosition('left')!.hand} 
@@ -118,7 +118,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[200px_1fr_200px] grid-cols-[200px_1fr_200px]">
+      <div className="relative h-full grid grid-rows-[280px_1fr_280px] grid-cols-[280px_1fr_280px]">
         {/* Top player area */}
         <div className="col-start-2 row-start-1 flex items-end justify-center">
           <PlayerArea position="top" />
