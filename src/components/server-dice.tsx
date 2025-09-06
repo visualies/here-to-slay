@@ -15,7 +15,23 @@ interface ServerDiceProps {
   serverDiceManager: ServerDiceManager;
   serverState: ServerDiceState | null;
   allDiceStates: ServerDiceStates; // Add access to all dice states
+  dragState?: { // Shared drag state across all dice
+    isDragging: boolean;
+    leadDiceId: string | null;
+    leadPosition: THREE.Vector3 | null;
+    groupPositions: Record<string, THREE.Vector3> | null;
+  };
+  dragStateRef?: React.MutableRefObject<{
+    isDragging: boolean;
+    leadDiceId: string | null;
+    leadPosition: THREE.Vector3 | null;
+    groupPositions: Record<string, THREE.Vector3> | null;
+  }>;
+  onDragUpdate?: (leadDiceId: string, leadPosition: THREE.Vector3) => void;
+  onDragEnd?: () => void;
   showDebug?: boolean;
+  groupRef?: React.RefObject<THREE.Group>;
+  allGroupRefs?: Record<string, React.RefObject<THREE.Group>>;
 }
 
 // 3D Dice Model Component
@@ -61,7 +77,7 @@ function DiceModel() {
 }
 
 // Client-side dice grouping logic
-function calculateAllDicePositions(
+export function calculateAllDicePositions(
   leadDiceId: string,
   leadTargetPosition: THREE.Vector3,
   allDiceStates: ServerDiceStates,
@@ -81,22 +97,8 @@ function calculateAllDicePositions(
   // Always set lead dice position
   result[leadDiceId] = leadPosition;
   
-  // Check if we need magnetism for any dice
+  // Always use synchronized movement during dragging - no magnetism switching
   let needsMagnetism = false;
-  Object.keys(allDiceStates).forEach(diceId => {
-    if (diceId === leadDiceId) return;
-    
-    const diceState = allDiceStates[diceId];
-    if (!diceState) return;
-    
-    const deltaX = leadPosition[0] - diceState.position[0];
-    const deltaZ = leadPosition[2] - diceState.position[2];
-    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
-    
-    if (distance > MAGNETISM_THRESHOLD) {
-      needsMagnetism = true;
-    }
-  });
   
   // Calculate positions for other dice
   Object.keys(allDiceStates).forEach(diceId => {
@@ -124,28 +126,25 @@ function calculateAllDicePositions(
         currentPos[2] + moveZ
       ];
     } else {
-      // Synchronized movement: maintain relative position
-      const leadDiceState = allDiceStates[leadDiceId];
-      if (leadDiceState) {
-        const offsetX = leadPosition[0] - leadDiceState.position[0];
-        const offsetY = leadPosition[1] - leadDiceState.position[1];
-        const offsetZ = leadPosition[2] - leadDiceState.position[2];
-        
-        result[diceId] = [
-          currentPos[0] + offsetX,
-          currentPos[1] + offsetY,
-          currentPos[2] + offsetZ
-        ];
-      }
+      // Synchronized movement: maintain a fixed relative offset from the lead dice
+      // Calculate the original relative offset between dice (when they're within sync threshold)
+      const relativeOffsetX = currentPos[0] - allDiceStates[leadDiceId].position[0];
+      const relativeOffsetZ = currentPos[2] - allDiceStates[leadDiceId].position[2];
+      
+      result[diceId] = [
+        leadPosition[0] + relativeOffsetX,
+        Math.max(leadPosition[1], 1.5), // Ensure dice stays elevated (minimum Y = 1.5)
+        leadPosition[2] + relativeOffsetZ
+      ];
     }
   });
   
   return result;
 }
 
-export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, allDiceStates, showDebug = false }: ServerDiceProps) {
+export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = externalGroupRef || useRef<THREE.Group>(null);
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false); // Immediate reference for useFrame
   const [dragOffset, setDragOffset] = useState<THREE.Vector3>(new THREE.Vector3());
@@ -168,7 +167,18 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   const lastServerState = useRef<ServerDiceState | null>(null);
   
   useFrame(() => {
-    if (serverState && groupRef.current && !isDragging) {
+    // Use ref for immediate access to drag state
+    const currentDragState = dragStateRef?.current || dragState;
+    
+    // COMPLETELY disable server state updates for follower dice when ANY dice is being dragged
+    // Check both local isDragging and shared drag state
+    const anyDragActive = isDragging || currentDragState?.isDragging;
+    if (anyDragActive) {
+      return; // Skip all server state updates during any drag activity
+    }
+    
+    // Handle server state updates ONLY when no drag is active anywhere
+    if (serverState && groupRef.current && !isDragging && !currentDragState?.isDragging) {
       // Only update if state has actually changed to avoid unnecessary re-renders
       if (!lastServerState.current || 
           serverState.position[0] !== lastServerState.current.position[0] ||
@@ -291,25 +301,51 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
       isDraggingRef.current = false; // IMMEDIATELY stop useFrame from sending updates
       setIsDragging(false);
       
-      if (groupRef.current) {
+      // Notify parent that drag has ended
+      onDragEnd?.();
+      
+      if (groupRef.current && allGroupRefs) {
         const throwVelocity = calculateThrowVelocity();
         
-        // Add some random angular velocity for realistic tumbling
-        const angularVelocity: [number, number, number] = [
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 10
-        ];
+        // IMPORTANT: Update server with final positions before throwing
+        const transformer = createCoordinateTransformer(viewport.width, viewport.height);
+        const currentPosition = groupRef.current.position;
+        const allPositions = calculateAllDicePositions(diceId, currentPosition, allDiceStates, transformer);
         
+        // Async function to handle the sequence properly
+        const handleThrow = async () => {
+          try {
+            // Send final positions to server and wait for confirmation
+            await serverDiceManager.moveMultipleDice(allPositions, false); // false = don't trigger physics yet
+            
+            // Add some random angular velocity for realistic tumbling
+            const angularVelocity: [number, number, number] = [
+              (Math.random() - 0.5) * 10,
+              (Math.random() - 0.5) * 10,
+              (Math.random() - 0.5) * 10
+            ];
+            
+            // Now throw dice - server has the correct positions
+            serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
+          } catch (error) {
+            console.error('Failed to update dice positions before throwing:', error);
+            // Fallback: throw anyway
+            const angularVelocity: [number, number, number] = [
+              (Math.random() - 0.5) * 10,
+              (Math.random() - 0.5) * 10,
+              (Math.random() - 0.5) * 10
+            ];
+            serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
+          }
+        };
         
-        // Use throwAllDice instead of throwDice for physics-based throwing of all dice
-        serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
+        handleThrow();
       }
       
       // Clear position history
       positionHistory.current = [];
     }
-  }, [isDragging, diceId, serverDiceManager, calculateThrowVelocity]);
+  }, [isDragging, diceId, serverDiceManager, calculateThrowVelocity, onDragEnd]);
 
   // Optimized drag handling with throttled server updates
   const lastServerUpdate = useRef<number>(0);
@@ -325,17 +361,31 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
       const intersectPoint = new THREE.Vector3();
       raycaster.ray.intersectPlane(plane, intersectPoint);
       
-      if (intersectPoint && groupRef.current) {
+      if (intersectPoint && groupRef.current && allGroupRefs) {
         const newPosition = intersectPoint.clone().add(dragOffset);
         newPosition.y = Math.max(newPosition.y, 1.5); // Keep elevated while dragging
         
-        // Update local position immediately for smooth dragging
-        groupRef.current.position.copy(newPosition);
+        // Calculate all dice positions
+        const transformer = createCoordinateTransformer(viewport.width, viewport.height);
+        const allPositions = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer);
+        
+        // Notify parent to update shared drag state so other dice know dragging is active
+        onDragUpdate?.(diceId, newPosition);
+        
+        // Update ALL dice positions directly in the same frame - NO CALLBACKS!
+        Object.entries(allPositions).forEach(([targetDiceId, serverPos]) => {
+          const targetGroupRef = allGroupRefs[targetDiceId];
+          if (targetGroupRef?.current) {
+            const clientPos = transformer.serverToClient(serverPos[0], serverPos[2]);
+            const newPos = [clientPos.x, serverPos[1], clientPos.z];
+            targetGroupRef.current.position.set(clientPos.x, serverPos[1], clientPos.z);
+          }
+        });
         
         // Track position for velocity calculation
         const currentTime = performance.now();
         positionHistory.current.push({
-          position: newPosition.clone(),
+          position: groupRef.current.position.clone(),
           time: currentTime
         });
         
@@ -345,16 +395,16 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         }
         
         // Update last position
-        lastPosition.current.copy(newPosition);
+        lastPosition.current.copy(groupRef.current.position);
         
-        // Throttle server updates for better performance
-        if (currentTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
-          // Calculate positions for all dice using client-side logic
+        // Send position updates to server during dragging so server stays in sync
+        // Server should receive updates but not send back conflicting states
+        const updateTime = performance.now();
+        if (updateTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
           const allPositions = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer);
-          
-          // Send all positions to server at once
-          serverDiceManager.moveMultipleDice(allPositions, true);
-          lastServerUpdate.current = currentTime;
+          // Tell server positions are kinematic (client-controlled) during drag
+          serverDiceManager.moveMultipleDice(allPositions, true); // true = kinematic/client-controlled
+          lastServerUpdate.current = updateTime;
         }
       }
     }

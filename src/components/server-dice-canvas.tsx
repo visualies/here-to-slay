@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { ServerDice, useServerDiceStates } from "./server-dice";
+import * as THREE from "three";
+import { ServerDice, useServerDiceStates, calculateAllDicePositions } from "./server-dice";
 import { DebugPanel } from "./debug-panel";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
 
@@ -96,6 +97,17 @@ function CameraController() {
   return null;
 }
 
+// Viewport tracker to update the ref with Three.js viewport dimensions
+function ViewportTracker({ viewportRef }: { viewportRef: React.MutableRefObject<{ width: number; height: number }> }) {
+  const { viewport } = useThree();
+  
+  useEffect(() => {
+    viewportRef.current = { width: viewport.width, height: viewport.height };
+  }, [viewport.width, viewport.height, viewportRef]);
+
+  return null;
+}
+
 
 // Camera perspective toggle
 const USE_ORTHOGRAPHIC_CAMERA = true;
@@ -110,11 +122,74 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
 }) {
   const [diceCount] = useState(2);
   const [diceResults, setDiceResults] = useState<number[]>(Array(2).fill(0));
+  
+  // Store viewport dimensions for coordinate transformation
+  const viewportRef = useRef({ width: 10, height: 10 }); // Default fallback
+  
+  // Store refs to all dice groups for immediate position updates
+  const diceGroupRefs = useRef<Record<string, React.RefObject<THREE.Group>>>({});
 
+  // Shared drag state for all dice - using ref for immediate updates
+  const dragStateRef = useRef<{
+    isDragging: boolean;
+    leadDiceId: string | null;
+    leadPosition: THREE.Vector3 | null;
+    groupPositions: Record<string, THREE.Vector3> | null;
+  }>({
+    isDragging: false,
+    leadDiceId: null,
+    leadPosition: null,
+    groupPositions: null
+  });
+  
+  // Also keep React state for re-renders
+  const [dragState, setDragState] = useState(dragStateRef.current);
+  
   // Use server dice manager
   const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(roomId, () => {
     // Received dice states
   });
+
+  // Handle drag updates from any dice
+  const handleDragUpdate = useCallback((leadDiceId: string, leadPosition: THREE.Vector3) => {
+    // Make sure we have dice states before calculating positions
+    if (!diceStates || Object.keys(diceStates).length === 0) {
+      return;
+    }
+    
+    // Positions are now handled directly in the lead dice useFrame - no central handling needed
+    // Just update drag state for other components that might need it
+    dragStateRef.current = {
+      isDragging: true,
+      leadDiceId,
+      leadPosition: leadPosition.clone(),
+      groupPositions: null // Not needed anymore
+    };
+    
+    setDragState(prev => ({
+      isDragging: true,
+      leadDiceId,
+      leadPosition: leadPosition.clone(),
+      groupPositions: null // Not needed anymore
+    }));
+  }, [diceStates]);
+  
+  // Handle drag end
+  const handleDragEnd = useCallback(() => {
+    dragStateRef.current = {
+      isDragging: false,
+      leadDiceId: null,
+      leadPosition: null,
+      groupPositions: null
+    };
+    
+    setDragState({
+      isDragging: false,
+      leadDiceId: null,
+      leadPosition: null,
+      groupPositions: null
+    });
+  }, []);
 
   const handleDiceResult = useCallback((value: number, index: number) => {
     setDiceResults(prev => {
@@ -171,6 +246,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
       }}
     >
       <CameraController />
+      <ViewportTracker viewportRef={viewportRef} />
       
       {/* Lighting */}
       <ambientLight intensity={0.8} />
@@ -195,6 +271,12 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
       {/* Server-controlled dice */}
       {Array.from({ length: diceCount }, (_, i) => {
         const diceId = `dice-${i}`;
+        
+        // Create and store the ref for this dice
+        if (!diceGroupRefs.current[diceId]) {
+          diceGroupRefs.current[diceId] = { current: null };
+        }
+        
         return (
           <ServerDice
             key={`server-dice-${i}`}
@@ -204,7 +286,13 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
             serverDiceManager={diceManager}
             serverState={diceStates[diceId] || null}
             allDiceStates={diceStates}
+            dragState={dragState}
+            dragStateRef={dragStateRef}
+            onDragUpdate={handleDragUpdate}
+            onDragEnd={handleDragEnd}
             showDebug={false}
+            groupRef={diceGroupRefs.current[diceId]}
+            allGroupRefs={diceGroupRefs.current}
           />
         );
       })}
