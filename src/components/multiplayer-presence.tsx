@@ -54,53 +54,30 @@ export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
   const currentPlayerId = multiplayerGame.getCurrentPlayerId();
 
   return (
-    <div className="fixed top-4 right-4 z-50">
+    <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
       {/* Connection Status */}
-      <div className="mb-2">
-        <Badge variant={isConnected ? 'default' : 'destructive'} className="flex items-center gap-2">
-          <div 
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-500' : 'bg-red-500'
-            }`}
-          />
-          {isConnected ? 'Connected' : 'Disconnected'}
-        </Badge>
-      </div>
+      <Badge variant={isConnected ? 'default' : 'destructive'} className="flex items-center gap-2">
+        <div
+          className={`w-2 h-2 rounded-full ${
+            isConnected ? 'bg-green-500' : 'bg-red-500'
+          }`}
+        />
+        {isConnected ? 'Connected' : 'Disconnected'}
+      </Badge>
 
-      {/* Players List */}
-      {players.length > 0 && (
-        <Card className="bg-white/90 backdrop-blur-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-gray-700">
-              Players ({players.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {players.map((player) => (
-                <div 
-                  key={player.id} 
-                  className="flex items-center gap-2 text-sm"
-                >
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: player.color }}
-                  />
-                  <span className={`truncate ${
-                    player.id === currentPlayerId ? 'font-semibold' : ''
-                  }`}>
-                    {player.name}
-                    {player.id === currentPlayerId && ' (You)'}
-                  </span>
-                  {!player.isActive && (
-                    <Badge variant="secondary" className="text-xs">Away</Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Player Avatars */}
+      <div className="flex -space-x-2">
+        {players.map((player) => (
+          <div
+            key={player.id}
+            className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold"
+            style={{ backgroundColor: player.color }}
+            title={player.name}
+          >
+            {player.name.charAt(0).toUpperCase()}
+          </div>
+        ))}
+      </div>
 
       {/* Other Players' Cursors */}
       {players
@@ -125,9 +102,9 @@ export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
                   strokeWidth="1"
                 />
               </svg>
-              
+
               {/* Player name label */}
-              <div 
+              <div
                 className="absolute top-5 left-2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap"
                 style={{ borderColor: player.color }}
               >

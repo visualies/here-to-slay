@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ServerDice, useServerDiceStates, calculateAllDicePositions } from "./server-dice";
-import { DebugPanel } from "./debug-panel";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
 
 // Ground plane with visible grid
@@ -224,14 +223,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
 
   return (
     <>
-      {/* Debug Panel */}
-      <DebugPanel
-        roomId={roomId}
-        serverDiceStates={diceStates}
-        clientDiceStates={diceStates} // For now, same as server states
-        isConnected={isConnected}
-        lastUpdate={lastUpdate}
-      />
+      
       
       {/* Canvas */}
     <Canvas
