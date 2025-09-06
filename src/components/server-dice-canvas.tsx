@@ -203,6 +203,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
             onResult={(value) => handleDiceResult(value, i)}
             serverDiceManager={diceManager}
             serverState={diceStates[diceId] || null}
+            allDiceStates={diceStates}
             showDebug={false}
           />
         );

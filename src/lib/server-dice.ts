@@ -181,6 +181,21 @@ export class ServerDiceManager {
     }
   }
 
+  // Move multiple dice with specific positions
+  async moveMultipleDice(dicePositions: Record<string, [number, number, number]>, isKinematic: boolean = true) {
+    if (!this.initialized) return;
+
+    try {
+      await fetch(`${this.diceApiUrl}/api/dice/move-multiple`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: this.roomId, dicePositions, isKinematic })
+      });
+    } catch (error) {
+      console.error('[ServerDiceManager] Failed to move multiple dice:', error);
+    }
+  }
+
 
   // Check if connected and ready
   isReady(): boolean {

@@ -166,79 +166,27 @@ class DicePhysicsWorld {
     })
   }
 
-  // Move all dice with magnetism behavior
+  // Move all dice maintaining their relative positions during dragging (legacy method)
   moveAllDice(leadDiceId: string, leadPosition: [number, number, number], isKinematic = true) {
     const leadDice = this.dice.get(leadDiceId)
     if (!leadDice) return
     
-    // Magnetism configuration
-    const MAGNETISM_THRESHOLD = 2.0  // Distance above which magnetism activates
-    const ATTRACTION_STRENGTH = 0.1  // How strongly dice are attracted (0-1)
+    // Simple implementation: calculate offset and apply to all dice
+    const currentLeadPos = leadDice.body.position
+    const offsetX = leadPosition[0] - currentLeadPos.x
+    const offsetY = leadPosition[1] - currentLeadPos.y
+    const offsetZ = leadPosition[2] - currentLeadPos.z
     
-    // Check if any dice are far from the lead dice (need magnetism)
-    let needsMagnetism = false
+    // Move all dice by the same offset
     this.dice.forEach((dice, diceId) => {
-      if (diceId === leadDiceId) return
-      
       const currentPos = dice.body.position
-      const leadPos = { x: leadPosition[0], y: leadPosition[1], z: leadPosition[2] }
-      
-      const deltaX = leadPos.x - currentPos.x
-      const deltaZ = leadPos.z - currentPos.z
-      const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ)
-      
-      if (distance > MAGNETISM_THRESHOLD) {
-        needsMagnetism = true
-      }
+      const newPosition: [number, number, number] = [
+        currentPos.x + offsetX,
+        currentPos.y + offsetY,
+        currentPos.z + offsetZ
+      ]
+      this.moveDice(diceId, newPosition, isKinematic)
     })
-    
-    if (needsMagnetism) {
-      // Magnetism mode: move lead dice first, then attract others
-      this.moveDice(leadDiceId, leadPosition, isKinematic)
-      
-      this.dice.forEach((dice, diceId) => {
-        if (diceId === leadDiceId) return
-        
-        const currentPos = dice.body.position
-        const leadPos = { x: leadPosition[0], y: leadPosition[1], z: leadPosition[2] }
-        
-        const deltaX = leadPos.x - currentPos.x
-        const deltaZ = leadPos.z - currentPos.z
-        const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ)
-        
-        if (distance > MAGNETISM_THRESHOLD) {
-          // Apply magnetism
-          const directionX = deltaX / distance
-          const directionZ = deltaZ / distance
-          
-          const moveX = directionX * distance * ATTRACTION_STRENGTH
-          const moveZ = directionZ * distance * ATTRACTION_STRENGTH
-          
-          const newPosition: [number, number, number] = [
-            currentPos.x + moveX,
-            leadPos.y,
-            currentPos.z + moveZ
-          ]
-          this.moveDice(diceId, newPosition, isKinematic)
-        }
-      })
-    } else {
-      // Synchronized mode: move all dice together by the same offset
-      const currentLeadPos = leadDice.body.position
-      const offsetX = leadPosition[0] - currentLeadPos.x
-      const offsetY = leadPosition[1] - currentLeadPos.y
-      const offsetZ = leadPosition[2] - currentLeadPos.z
-      
-      this.dice.forEach((dice, diceId) => {
-        const currentPos = dice.body.position
-        const newPosition: [number, number, number] = [
-          currentPos.x + offsetX,
-          currentPos.y + offsetY,
-          currentPos.z + offsetZ
-        ]
-        this.moveDice(diceId, newPosition, isKinematic)
-      })
-    }
   }
 
   
@@ -388,6 +336,15 @@ const server = http.createServer((request: http.IncomingMessage, response: http.
             
           case 'move-all':
             world.moveAllDice(data.leadDiceId, data.leadPosition, data.isKinematic !== false)
+            break
+            
+          case 'move-multiple':
+            // Move multiple dice with specific positions: { dicePositions: { diceId: [x,y,z], ... } }
+            if (data.dicePositions) {
+              Object.entries(data.dicePositions).forEach(([diceId, position]) => {
+                world.moveDice(diceId as string, position as [number, number, number], data.isKinematic !== false)
+              })
+            }
             break
             
           case 'throw':

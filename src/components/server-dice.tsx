@@ -14,6 +14,7 @@ interface ServerDiceProps {
   onResult: (value: number) => void;
   serverDiceManager: ServerDiceManager;
   serverState: ServerDiceState | null;
+  allDiceStates: ServerDiceStates; // Add access to all dice states
   showDebug?: boolean;
 }
 
@@ -59,7 +60,90 @@ function DiceModel() {
   return <primitive object={clonedObj} />;
 }
 
-export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, showDebug = false }: ServerDiceProps) {
+// Client-side dice grouping logic
+function calculateAllDicePositions(
+  leadDiceId: string,
+  leadTargetPosition: THREE.Vector3,
+  allDiceStates: ServerDiceStates,
+  transformer: ReturnType<typeof createCoordinateTransformer>
+): Record<string, [number, number, number]> {
+  const result: Record<string, [number, number, number]> = {};
+  
+  // Magnetism configuration
+  const MAGNETISM_THRESHOLD = 1.5;
+  const SYNC_THRESHOLD = 0.8;
+  const ATTRACTION_STRENGTH = 0.1;
+  
+  // Convert lead target position to server coordinates
+  const leadServerPos = transformer.clientToServer(leadTargetPosition.x, leadTargetPosition.z);
+  const leadPosition: [number, number, number] = [leadServerPos.x, leadTargetPosition.y, leadServerPos.z];
+  
+  // Always set lead dice position
+  result[leadDiceId] = leadPosition;
+  
+  // Check if we need magnetism for any dice
+  let needsMagnetism = false;
+  Object.keys(allDiceStates).forEach(diceId => {
+    if (diceId === leadDiceId) return;
+    
+    const diceState = allDiceStates[diceId];
+    if (!diceState) return;
+    
+    const deltaX = leadPosition[0] - diceState.position[0];
+    const deltaZ = leadPosition[2] - diceState.position[2];
+    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+    
+    if (distance > MAGNETISM_THRESHOLD) {
+      needsMagnetism = true;
+    }
+  });
+  
+  // Calculate positions for other dice
+  Object.keys(allDiceStates).forEach(diceId => {
+    if (diceId === leadDiceId) return;
+    
+    const diceState = allDiceStates[diceId];
+    if (!diceState) return;
+    
+    const currentPos = diceState.position;
+    const deltaX = leadPosition[0] - currentPos[0];
+    const deltaZ = leadPosition[2] - currentPos[2];
+    const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+    
+    if (needsMagnetism && distance > SYNC_THRESHOLD) {
+      // Apply magnetism
+      const directionX = deltaX / distance;
+      const directionZ = deltaZ / distance;
+      
+      const moveX = directionX * distance * ATTRACTION_STRENGTH;
+      const moveZ = directionZ * distance * ATTRACTION_STRENGTH;
+      
+      result[diceId] = [
+        currentPos[0] + moveX,
+        leadPosition[1], // Match lead dice Y position
+        currentPos[2] + moveZ
+      ];
+    } else {
+      // Synchronized movement: maintain relative position
+      const leadDiceState = allDiceStates[leadDiceId];
+      if (leadDiceState) {
+        const offsetX = leadPosition[0] - leadDiceState.position[0];
+        const offsetY = leadPosition[1] - leadDiceState.position[1];
+        const offsetZ = leadPosition[2] - leadDiceState.position[2];
+        
+        result[diceId] = [
+          currentPos[0] + offsetX,
+          currentPos[1] + offsetY,
+          currentPos[2] + offsetZ
+        ];
+      }
+    }
+  });
+  
+  return result;
+}
+
+export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, allDiceStates, showDebug = false }: ServerDiceProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = useRef<THREE.Group>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -265,11 +349,11 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         
         // Throttle server updates for better performance
         if (currentTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
-          // Transform client coordinates back to server coordinates before sending
-          const serverPos = transformer.clientToServer(newPosition.x, newPosition.z);
+          // Calculate positions for all dice using client-side logic
+          const allPositions = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer);
           
-          // Send transformed position to server - move all dice together
-          serverDiceManager.moveAllDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
+          // Send all positions to server at once
+          serverDiceManager.moveMultipleDice(allPositions, true);
           lastServerUpdate.current = currentTime;
         }
       }
