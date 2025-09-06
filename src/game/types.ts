@@ -1,7 +1,11 @@
 export interface Player {
-  // Placeholder for player properties
   id: string;
+  name: string;
+  color: string;
+  position: 'top' | 'right' | 'bottom' | 'left';
   hand: Card[];
+  deck: Card[];
+  isActive: boolean;
 }
 
 export interface Card {
@@ -48,4 +52,11 @@ export enum HeroClass {
   Berserker = 'Berserker',
   Necromancer = 'Necromancer',
   Sorcerer = 'Sorcerer',
+}
+
+export interface GameState {
+  players: Player[];
+  currentTurn: string;
+  supportStack: Card[];
+  phase: 'waiting' | 'playing' | 'ended';
 }

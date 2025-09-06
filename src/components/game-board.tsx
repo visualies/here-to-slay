@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { PlayerArea } from "./player-area";
-import { CenterArea } from "./center-area";
+import { GameArea } from "./game-area";
 import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
-import { disconnectMultiplayer } from "../lib/multiplayer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -26,7 +24,7 @@ export default function GameBoard() {
   }, []);
 
   const handleLeaveRoom = useCallback(() => {
-    disconnectMultiplayer();
+    // Room cleanup is handled automatically by the useRoom hook
     setCurrentRoomId(null);
   }, []);
 
@@ -56,44 +54,8 @@ export default function GameBoard() {
       {/* Multiplayer Presence */}
       <MultiplayerPresence roomId={currentRoomId} />
 
-      {/* Dotted background pattern */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(circle, #666 1px, transparent 1px)`,
-          backgroundSize: '20px 20px'
-        }}
-      />
-      
-      {/* Game board container */}
-      <div className={`relative h-full grid grid-rows-[200px_1fr_200px] grid-cols-[200px_1fr_200px] ${DEBUG_MODE ? '[&>div]:border-2 [&>div]:border-red-500' : ''}`}>
-        {/* Top player */}
-        <div className={`col-start-2 row-start-1 flex items-end justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
-          <PlayerArea position="top" />
-        </div>
-        
-        {/* Right player */}
-        <div className={`col-start-3 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
-          <PlayerArea position="right" />
-        </div>
-        
-        {/* Bottom player */}
-        <div className={`col-start-2 row-start-3 flex items-start justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
-          <PlayerArea position="bottom" />
-        </div>
-        
-        {/* Left player */}
-        <div className={`col-start-1 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
-          <PlayerArea position="left" />
-        </div>
-        
-        {/* Center area */}
-        <div className={`col-start-2 row-start-2 flex items-center justify-center ${DEBUG_MODE ? 'border-2 border-red-500' : ''}`}>
-          <CenterArea 
-            diceResults={diceResults} 
-          />
-        </div>
-      </div>
+      {/* Game Area with hands */}
+      <GameArea roomId={currentRoomId} diceResults={diceResults} />
       
       {/* Server-controlled dice canvas - covers the entire game board */}
       <ServerDiceCanvas 

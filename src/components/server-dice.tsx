@@ -490,15 +490,15 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: Se
 
 
     // Import the multiplayer game to get the integrated dice manager
-    import('../lib/multiplayer').then(({ getMultiplayerGame }) => {
-      const multiplayerGame = getMultiplayerGame(roomId);
+    import('../lib/multiplayer').then(({ getRoom }) => {
+      const room = getRoom(roomId);
       
       // Set up WebSocket connection callbacks
-      multiplayerGame.onWebSocketConnected = () => {
+      room.onWebSocketConnected = () => {
         setIsConnected(true);
       };
       
-      multiplayerGame.onWebSocketDisconnected = () => {
+      room.onWebSocketDisconnected = () => {
         setIsConnected(false);
       };
       
@@ -508,7 +508,7 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: Se
       // Wait for the server dice manager to be available
       const checkForManager = () => {
         attempts++;
-        const manager = multiplayerGame.getServerDiceManager();
+        const manager = room.getServerDiceManager();
         if (manager) {
           setDiceManager(manager);
           

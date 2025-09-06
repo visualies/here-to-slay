@@ -1,0 +1,90 @@
+"use client";
+
+import { Card as GameCard } from "../game/types";
+import { Card } from "./card";
+
+interface HandCardsProps {
+  cards: GameCard[];
+  isOwn?: boolean;
+  position: 'top' | 'right' | 'bottom' | 'left';
+  className?: string;
+}
+
+export function HandCards({ cards, isOwn = false, position, className = '' }: HandCardsProps) {
+  const cardCount = cards.length;
+
+  // Position-specific styles
+  const positionStyles = {
+    top: {
+      container: 'flex-row justify-center items-start',
+      cardSpacing: '-ml-2',
+      rotation: ''
+    },
+    right: {
+      container: 'flex-col justify-center items-end',
+      cardSpacing: '-mt-2',
+      rotation: 'rotate-90'
+    },
+    bottom: {
+      container: 'flex-row justify-center items-end',
+      cardSpacing: '-ml-2',
+      rotation: ''
+    },
+    left: {
+      container: 'flex-col justify-center items-start',
+      cardSpacing: '-mt-2',
+      rotation: '-rotate-90'
+    }
+  };
+
+  const styles = positionStyles[position];
+
+  return (
+    <div className={`flex ${styles.container} ${className}`}>
+      {isOwn ? (
+        // Show actual cards for the current player
+        cards.map((card, index) => (
+          <div
+            key={card.id}
+            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation} hover:scale-110 transition-transform cursor-pointer hover:z-10 relative`}
+          >
+            <Card card={card} size="medium" />
+          </div>
+        ))
+      ) : (
+        // Show card backs for other players with count
+        <div className="relative">
+          {/* Stack of card backs */}
+          <div className={`flex ${styles.container}`}>
+            {[...Array(Math.min(cardCount, 5))].map((_, index) => (
+              <div
+                key={index}
+                className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation}`}
+                style={{ zIndex: 5 - index }}
+              >
+                <Card 
+                  card={{
+                    id: 'back',
+                    name: 'Hidden',
+                    type: 'Hero' as any,
+                    description: '',
+                    requirement: '',
+                    effect: []
+                  }} 
+                  isBack={true} 
+                  size="small" 
+                />
+              </div>
+            ))}
+          </div>
+          {/* Card count badge */}
+          {cardCount > 0 && (
+            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white z-20">
+              {cardCount}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

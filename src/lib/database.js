@@ -17,7 +17,7 @@ class RoomDatabase {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
         player_count INTEGER DEFAULT 0,
-        max_players INTEGER DEFAULT 8
+        max_players INTEGER DEFAULT 6
       )
     `);
 
@@ -53,7 +53,7 @@ class RoomDatabase {
   }
 
   // Create a new room
-  createRoom(name = 'Here to Slay Game') {
+  createRoom(name = 'Here to Slay Game', maxPlayers = 4) {
     let roomId;
     let attempts = 0;
     const maxAttempts = 10;
@@ -69,11 +69,11 @@ class RoomDatabase {
     }
 
     const stmt = this.db.prepare(`
-      INSERT INTO rooms (id, name) VALUES (?, ?)
+      INSERT INTO rooms (id, name, max_players) VALUES (?, ?, ?)
     `);
 
     try {
-      stmt.run(roomId, name);
+      stmt.run(roomId, name, maxPlayers);
       console.log(`🏠 Created room: ${roomId} - "${name}"`);
       return { roomId, name };
     } catch (error) {

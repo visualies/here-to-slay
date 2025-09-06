@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getMultiplayerGame, PlayerPresence } from "../lib/multiplayer";
+import { useEffect } from "react";
+import { useRoom } from "../hooks/useRoom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -10,48 +10,22 @@ interface MultiplayerPresenceProps {
 }
 
 export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
-  const [players, setPlayers] = useState<PlayerPresence[]>([]);
-  const [multiplayerGame] = useState(() => roomId ? getMultiplayerGame(roomId) : null);
-  const [isConnected, setIsConnected] = useState(false);
+  if (!roomId) return null;
+  
+  const { connectedPlayers, isConnected, updateCursor } = useRoom(roomId);
 
   useEffect(() => {
-    if (!multiplayerGame) return;
-
-    // Subscribe to connection status
-    multiplayerGame.provider.on('status', (event: { status: string }) => {
-      setIsConnected(event.status === 'connected');
-    });
-
-    // Subscribe to player changes
-    const unsubscribe = multiplayerGame.onPlayersChange((updatedPlayers) => {
-      setPlayers(updatedPlayers);
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [multiplayerGame]);
-
-  useEffect(() => {
-    if (!multiplayerGame) return;
-
     // Update cursor position on mouse move
     const handleMouseMove = (event: MouseEvent) => {
       const rect = document.documentElement.getBoundingClientRect();
       const x = (event.clientX - rect.left) / rect.width;
       const y = (event.clientY - rect.top) / rect.height;
-      multiplayerGame.updateCursor(x, y);
+      updateCursor(x, y);
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [multiplayerGame]);
-
-  if (!multiplayerGame) {
-    return null;
-  }
-
-  const currentPlayerId = multiplayerGame.getCurrentPlayerId();
+  }, [updateCursor]);
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
@@ -67,7 +41,7 @@ export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
 
       {/* Player Avatars */}
       <div className="flex -space-x-2">
-        {players.map((player) => (
+        {connectedPlayers.map((player) => (
           <div
             key={player.id}
             className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold"
@@ -80,8 +54,8 @@ export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
       </div>
 
       {/* Other Players' Cursors */}
-      {players
-        .filter(player => player.id !== currentPlayerId && player.cursor && player.isActive)
+      {connectedPlayers
+        .filter(player => player.cursor && player.isActive)
         .map((player) => (
           <div
             key={`cursor-${player.id}`}

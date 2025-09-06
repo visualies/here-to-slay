@@ -3,6 +3,8 @@
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { ServerDiceManager } from './server-dice';
+import { Player, GameState } from '../game/types';
+import { createDeck, dealHand, createSupportStack } from '../game/deck';
 
 // Game state types
 
@@ -16,12 +18,6 @@ export interface PlayerPresence {
   joinTime: number;
 }
 
-export interface DicePosition {
-  x: number;
-  y: number;
-  z: number;
-  timestamp: number;
-}
 
 export interface Room {
   roomId: string;
@@ -72,12 +68,11 @@ export async function getRoomInfo(roomId: string): Promise<Room> {
   return await response.json();
 }
 
-export class MultiplayerGame {
+export class Room {
   public doc: Y.Doc;
   public provider: WebsocketProvider;
   public gameState: Y.Map<unknown>;
   public players: Y.Map<PlayerPresence>;
-  public dicePositions: Y.Map<DicePosition>;
   public awareness: import('y-websocket').WebsocketProvider['awareness'];
   private playerId: string;
   public roomId: string;
@@ -93,7 +88,6 @@ export class MultiplayerGame {
     // Initialize shared data structures
     this.gameState = this.doc.getMap('gameState');
     this.players = this.doc.getMap('players');
-    this.dicePositions = this.doc.getMap('dicePositions');
     
     // Connect to WebSocket provider with room parameter
     const wsUrl = `ws://localhost:1234?room=${roomId}`;
@@ -282,64 +276,135 @@ export class MultiplayerGame {
     return isCurrentHost;
   }
 
-  // Dice position syncing methods
-  updateDicePosition(diceId: string, position: DicePosition) {
-    // Only the host controls dice positions
-    const isHostPlayer = this.isHost();
-    // Updating dice position
-    if (isHostPlayer) {
-      this.dicePositions.set(diceId, position);
-      // Position updated
-    } else {
-      // Not host - position not updated
+  // Initialize game with current connected players (host only)
+  initializeGame(): void {
+    if (!this.isHost()) {
+      console.log('Only host can initialize game');
+      return;
     }
+
+    const connectedPlayers = this.getConnectedPlayers();
+    if (connectedPlayers.length < 1) {
+      console.log('Need at least 1 player to start game');
+      return;
+    }
+
+    // Create and shuffle deck
+    const deck = createDeck();
+    let remainingDeck = [...deck];
+
+    // Assign positions to players (bottom for host, then right, top, left)
+    const positions = ['bottom', 'right', 'top', 'left'] as const;
+    
+    // Sort players by join time to ensure consistent positioning
+    const sortedPlayers = connectedPlayers.sort((a, b) => a.joinTime - b.joinTime);
+
+    sortedPlayers.forEach((player, index) => {
+      const { hand, remainingDeck: newDeck } = dealHand(remainingDeck, 5);
+      remainingDeck = newDeck;
+      
+      const { hand: playerDeck, remainingDeck: finalDeck } = dealHand(remainingDeck, 10);
+      remainingDeck = finalDeck;
+
+      const gamePlayer: Player = {
+        id: player.id,
+        name: player.name,
+        color: player.color,
+        position: positions[index % 4] || 'bottom',
+        hand,
+        deck: playerDeck,
+        isActive: true
+      };
+
+      // Store each player in the Yjs gameState map
+      this.gameState.set(player.id, gamePlayer);
+    });
+
+    // Set game metadata
+    this.gameState.set('currentTurn', sortedPlayers[0].id);
+    this.gameState.set('supportStack', createSupportStack());
+    this.gameState.set('phase', 'playing');
+    
+    console.log('Game initialized with', sortedPlayers.length, 'players');
   }
 
-  getDicePosition(diceId: string): DicePosition | undefined {
-    return this.dicePositions.get(diceId);
+  // Get current game players from Yjs state
+  getGamePlayers(): Player[] {
+    const players: Player[] = [];
+    this.gameState.forEach((value, key) => {
+      // Skip metadata keys
+      if (key !== 'currentTurn' && key !== 'supportStack' && key !== 'phase' && typeof value === 'object' && value !== null) {
+        players.push(value as Player);
+      }
+    });
+    return players;
   }
 
-  // Subscribe to dice position changes
-  onDicePositionChange(callback: (positions: Map<string, DicePosition>) => void) {
+  // Get game metadata
+  getGamePhase(): string {
+    return this.gameState.get('phase') as string || 'waiting';
+  }
+
+  getCurrentTurn(): string {
+    return this.gameState.get('currentTurn') as string || '';
+  }
+
+  getSupportStack(): any[] {
+    return this.gameState.get('supportStack') as any[] || [];
+  }
+
+  // Get current player's data
+  getCurrentPlayer(): Player | null {
+    return this.gameState.get(this.playerId) as Player || null;
+  }
+
+  // Get other players (excluding current player)
+  getOtherPlayers(): Player[] {
+    const allPlayers = this.getGamePlayers();
+    return allPlayers.filter(p => p.id !== this.playerId);
+  }
+
+  // Subscribe to game state changes
+  onGameStateChange(callback: (players: Player[], phase: string, currentTurn: string) => void) {
     const observer = () => {
-      const positions = new Map<string, DicePosition>();
-      this.dicePositions.forEach((position, diceId) => {
-        positions.set(diceId, position);
-      });
-      callback(positions);
+      const players = this.getGamePlayers();
+      const phase = this.getGamePhase();
+      const currentTurn = this.getCurrentTurn();
+      callback(players, phase, currentTurn);
     };
 
-    this.dicePositions.observe(observer);
+    this.gameState.observe(observer);
     
     // Return cleanup function
     return () => {
-      this.dicePositions.unobserve(observer);
+      this.gameState.unobserve(observer);
     };
   }
+
 }
 
-// Global multiplayer instance management
-let multiplayerGame: MultiplayerGame | null = null;
+// Global room instance management
+let currentRoom: Room | null = null;
 let currentRoomId: string | null = null;
 
-export function getMultiplayerGame(roomId: string): MultiplayerGame {
+export function getRoom(roomId: string): Room {
   // If we have a different room, disconnect and create new instance
-  if (multiplayerGame && currentRoomId !== roomId) {
-    multiplayerGame.disconnect();
-    multiplayerGame = null;
+  if (currentRoom && currentRoomId !== roomId) {
+    currentRoom.disconnect();
+    currentRoom = null;
   }
   
-  if (!multiplayerGame) {
-    multiplayerGame = new MultiplayerGame(roomId);
+  if (!currentRoom) {
+    currentRoom = new Room(roomId);
     currentRoomId = roomId;
   }
-  return multiplayerGame;
+  return currentRoom;
 }
 
-export function disconnectMultiplayer() {
-  if (multiplayerGame) {
-    multiplayerGame.disconnect();
-    multiplayerGame = null;
+export function disconnectRoom() {
+  if (currentRoom) {
+    currentRoom.disconnect();
+    currentRoom = null;
     currentRoomId = null;
   }
 }
