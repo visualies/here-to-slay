@@ -146,7 +146,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           muted
           loop
           playsInline
-          volume={0}
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
@@ -218,7 +217,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           muted
           loop
           playsInline
-          volume={0}
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
