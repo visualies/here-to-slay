@@ -48,10 +48,13 @@ const RoomContext = createContext<RoomData | null>(null);
 
 interface RoomProviderProps {
   roomId: string;
+  playerId: string;
+  playerName: string;
+  playerColor: string;
   children: ReactNode;
 }
 
-export function RoomProvider({ roomId, children }: RoomProviderProps) {
+export function RoomProvider({ roomId, playerId, playerName, playerColor, children }: RoomProviderProps) {
   // Yjs setup
   const docRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
@@ -68,10 +71,8 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   const [connectedPlayers, setConnectedPlayers] = useState<PlayerPresence[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Generate player ID once
-  if (!playerIdRef.current) {
-    playerIdRef.current = Math.random().toString(36).substr(2, 9);
-  }
+  // Use provided player ID
+  playerIdRef.current = playerId;
 
   // Initialize Yjs when roomId changes
   useEffect(() => {
@@ -98,14 +99,12 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     gameStateRef.current = gameState;
     playersRef.current = playersMap;
     
-    // Set up player presence
-    const playerColors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff'];
-    const playerColor = playerColors[Math.floor(Math.random() * playerColors.length)];
+    // Set up player presence with provided data
     const joinTime = Date.now();
     
     awareness.setLocalStateField('user', {
       id: playerIdRef.current,
-      name: `Player ${playerIdRef.current.slice(0, 4)}`,
+      name: playerName,
       color: playerColor,
       isActive: true,
       lastSeen: joinTime
@@ -113,7 +112,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     
     playersMap.set(playerIdRef.current, {
       id: playerIdRef.current,
-      name: `Player ${playerIdRef.current.slice(0, 4)}`,
+      name: playerName,
       color: playerColor,
       isActive: true,
       lastSeen: joinTime,
@@ -147,7 +146,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
         serverDiceManagerRef.current.disconnect();
       }
     };
-  }, [roomId]);
+  }, [roomId, playerId, playerName, playerColor]);
   
   // Subscribe to game state changes
   useEffect(() => {

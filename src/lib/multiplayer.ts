@@ -101,8 +101,7 @@ export class Room {
     this.provider = new WebsocketProvider(wsUrl, roomId, this.doc);
     this.awareness = this.provider.awareness;
     
-    // Set up player presence
-    this.setupPlayerPresence();
+    // Player presence will be set up when explicitly joining with player data
     
     // Handle connection events
     this.provider.on('status', (event: { status: string }) => {
@@ -151,6 +150,50 @@ export class Room {
   }
   
   
+  public joinWithPlayerData(playerId: string, playerName: string, playerColor: string) {
+    // Update the player ID to match the one from room manager
+    this.playerId = playerId;
+    
+    const joinTime = Date.now();
+    
+    // Set local user info
+    this.awareness.setLocalStateField('user', {
+      id: this.playerId,
+      name: playerName,
+      color: playerColor,
+      isActive: true,
+      lastSeen: joinTime
+    });
+    
+    // Update player presence in shared map with consistent timestamp
+    this.players.set(this.playerId, {
+      id: this.playerId,
+      name: playerName,
+      color: playerColor,
+      isActive: true,
+      lastSeen: joinTime,
+      joinTime: joinTime
+    });
+    
+    // Clean up on disconnect
+    window.addEventListener('beforeunload', () => {
+      this.disconnect();
+    });
+    
+    // Heartbeat to maintain presence
+    setInterval(() => {
+      const currentPlayer = this.players.get(this.playerId);
+      if (currentPlayer) {
+        this.players.set(this.playerId, {
+          ...currentPlayer,
+          lastSeen: Date.now(),
+          // Keep original joinTime unchanged
+          joinTime: currentPlayer.joinTime
+        });
+      }
+    }, 5000);
+  }
+
   private setupPlayerPresence() {
     const playerColors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44', '#ff44ff', '#44ffff'];
     const playerColor = playerColors[Math.floor(Math.random() * playerColors.length)];

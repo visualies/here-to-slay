@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useGameState, useGameActions, usePlayerPresence } from "../hooks/useGameState";
+import { useGameState, useGameActions, usePlayerPresence } from "../hooks/use-game-state";
 import { HandCards } from "./hand-cards";
 import { PlayerArea } from "./player-area";
 import { CenterArea } from "./center-area";

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface RoomManagerProps {
-  onRoomJoined: (roomId: string) => void;
+  onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
 }
 
 export function RoomManager({ onRoomJoined }: RoomManagerProps) {
@@ -119,7 +119,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       await joinRoom(targetRoomId, playerId, playerName.trim(), playerColor);
       
       // If successful, connect to the multiplayer game
-      onRoomJoined(targetRoomId);
+      onRoomJoined(targetRoomId, playerId, playerName.trim(), playerColor);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');

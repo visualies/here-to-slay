@@ -5,7 +5,7 @@ import { GameArea } from "./game-area";
 import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
-import { RoomProvider } from "../contexts/RoomContext";
+import { RoomProvider } from "../contexts/room-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -15,28 +15,36 @@ export default function GameBoard() {
   
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [playerData, setPlayerData] = useState<{id: string, name: string, color: string} | null>(null);
 
   const handleDiceResults = useCallback((results: number[]) => {
     setDiceResults(results);
   }, []);
 
-  const handleRoomJoined = useCallback((roomId: string) => {
+  const handleRoomJoined = useCallback((roomId: string, playerId: string, playerName: string, playerColor: string) => {
     setCurrentRoomId(roomId);
+    setPlayerData({ id: playerId, name: playerName, color: playerColor });
   }, []);
 
   const handleLeaveRoom = useCallback(() => {
     // Room cleanup is handled automatically by the useRoom hook
     setCurrentRoomId(null);
+    setPlayerData(null);
   }, []);
 
   // Show room manager if not in a room
-  if (!currentRoomId) {
+  if (!currentRoomId || !playerData) {
     return <RoomManager onRoomJoined={handleRoomJoined} />;
   }
 
 
   return (
-    <RoomProvider roomId={currentRoomId}>
+    <RoomProvider 
+      roomId={currentRoomId} 
+      playerId={playerData.id}
+      playerName={playerData.name}
+      playerColor={playerData.color}
+    >
       <div className="w-full h-screen bg-white relative">
         {/* Room Info and Leave Button */}
         <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
