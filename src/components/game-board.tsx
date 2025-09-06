@@ -6,6 +6,7 @@ import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
 import { RoomProvider } from "../contexts/room-context";
+import { DiceProvider } from "../contexts/dice-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,34 +46,36 @@ export default function GameBoard() {
       playerName={playerData.name}
       playerColor={playerData.color}
     >
-      <div className="w-full h-screen bg-white relative">
-        {/* Room Info and Leave Button */}
-        <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
-          <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm">
-            Room: <span className="font-mono font-bold text-purple-600">{currentRoomId}</span>
-          </Badge>
-          <Button
-            onClick={handleLeaveRoom}
-            variant="destructive"
-            size="sm"
-            className="backdrop-blur-sm"
-          >
-            🚪 Leave Room
-          </Button>
+      <DiceProvider>
+        <div className="w-full h-screen bg-white relative">
+          {/* Room Info and Leave Button */}
+          <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
+            <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm">
+              Room: <span className="font-mono font-bold text-purple-600">{currentRoomId}</span>
+            </Badge>
+            <Button
+              onClick={handleLeaveRoom}
+              variant="destructive"
+              size="sm"
+              className="backdrop-blur-sm"
+            >
+              🚪 Leave Room
+            </Button>
+          </div>
+
+          {/* Multiplayer Presence */}
+          <MultiplayerPresence />
+
+          {/* Game Area with hands */}
+          <GameArea diceResults={diceResults} />
+          
+          {/* Server-controlled dice canvas - covers the entire game board */}
+          <ServerDiceCanvas 
+            onDiceResults={handleDiceResults}
+            roomId={currentRoomId}
+          />
         </div>
-
-        {/* Multiplayer Presence */}
-        <MultiplayerPresence />
-
-        {/* Game Area with hands */}
-        <GameArea diceResults={diceResults} />
-        
-        {/* Server-controlled dice canvas - covers the entire game board */}
-        <ServerDiceCanvas 
-          onDiceResults={handleDiceResults}
-          roomId={currentRoomId}
-        />
-      </div>
+      </DiceProvider>
     </RoomProvider>
   );
 }

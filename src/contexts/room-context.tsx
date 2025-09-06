@@ -35,6 +35,7 @@ export interface RoomData {
   
   // Actions
   initializeGame: () => void;
+  addPlayerToGame: (playerId: string) => void;
   updateCursor: (x: number, y: number) => void;
   
   // Connection state
@@ -165,8 +166,8 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
           newCurrentTurn = value as string;
         } else if (key === 'supportStack') {
           newSupportStack = value as any[];
-        } else if (typeof value === 'object' && value !== null) {
-          // This is a player
+        } else if (typeof value === 'object' && value !== null && 'hand' in value && 'position' in value) {
+          // This is a player - check for required Player fields
           newPlayers.push(value as Player);
         }
       });
@@ -284,6 +285,55 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     console.log('initializeGame: Game initialized successfully');
   }, [isHost, connectedPlayers]);
+
+  const addPlayerToGame = useCallback((playerId: string) => {
+    if (!isHost || !gameStateRef.current) {
+      console.log('addPlayerToGame: Not host or no gameState');
+      return;
+    }
+
+    // Check if player is already in the game
+    if (gameStateRef.current.has(playerId)) {
+      console.log('addPlayerToGame: Player already exists in game');
+      return;
+    }
+
+    // Find the player in connectedPlayers
+    const playerPresence = connectedPlayers.find(p => p.id === playerId);
+    if (!playerPresence) {
+      console.log('addPlayerToGame: Player not found in connected players');
+      return;
+    }
+
+    // Create and shuffle a new deck for the new player
+    const deck = createDeck();
+    const { hand } = dealHand(deck, 5);
+    const { hand: playerDeck } = dealHand(deck.slice(5), 10);
+
+    // Assign available position
+    const occupiedPositions = new Set();
+    gameStateRef.current.forEach((value, key) => {
+      if (typeof value === 'object' && value !== null && 'position' in value) {
+        occupiedPositions.add((value as Player).position);
+      }
+    });
+
+    const availablePositions = ['right', 'top', 'left'].filter(pos => !occupiedPositions.has(pos));
+    const assignedPosition = availablePositions[0] || 'right'; // Fallback to right if all taken
+
+    const gamePlayer: Player = {
+      id: playerPresence.id,
+      name: playerPresence.name,
+      color: playerPresence.color,
+      position: assignedPosition as 'top' | 'right' | 'bottom' | 'left',
+      hand,
+      deck: playerDeck,
+      isActive: true
+    };
+
+    console.log('addPlayerToGame: Adding player to existing game', gamePlayer.name, gamePlayer.position);
+    gameStateRef.current.set(playerId, gamePlayer);
+  }, [isHost, connectedPlayers]);
   
   const updateCursor = useCallback((x: number, y: number) => {
     if (providerRef.current?.awareness) {
@@ -309,6 +359,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     // Actions
     initializeGame,
+    addPlayerToGame,
     updateCursor,
     
     // Connection state
