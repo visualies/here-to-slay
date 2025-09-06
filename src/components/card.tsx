@@ -5,22 +5,30 @@ import { Card as GameCard } from "../game/types";
 interface CardProps {
   card: GameCard;
   isBack?: boolean;
-  size?: 'small' | 'medium' | 'large' | 'xl';
+  size?: 'small' | 'medium' | 'large' | 'xl' | 'fill';
   className?: string;
 }
 
 export function Card({ card, isBack = false, size = 'medium', className = '' }: CardProps) {
   const sizeClasses = {
     small: 'w-12',
-    medium: 'w-16',
+    medium: 'w-16', 
     large: 'w-24',
-    xl: 'w-40'
+    xl: 'w-40',
+    fill: 'w-full h-full'
   };
+
+  // Always use aspect ratio for non-fill sizes, matching support deck style
+  const baseClasses = size === 'fill' 
+    ? 'w-full h-full' 
+    : `${sizeClasses[size]} aspect-[744/1039]`;
+
+  const cardClasses = `${baseClasses} bg-white rounded-lg border-2 border-gray-300 shadow-md overflow-hidden ${className}`;
 
   if (isBack) {
     return (
       <div 
-        className={`${sizeClasses[size]} aspect-[744/1039] bg-cover bg-center rounded-lg border-2 border-gray-300 shadow-md ${className}`}
+        className={`${baseClasses} bg-cover bg-center rounded-lg border-2 border-gray-300 shadow-md overflow-hidden ${className}`}
         style={{ backgroundImage: 'url(/heroBack.png)' }}
       >
       </div>
@@ -28,9 +36,9 @@ export function Card({ card, isBack = false, size = 'medium', className = '' }: 
   }
 
   return (
-    <div className={`${sizeClasses[size]} aspect-[744/1039] bg-white rounded-lg border-2 border-gray-300 shadow-md p-1 flex flex-col ${className}`}>
-      <div className="flex-1 flex flex-col justify-between">
-        <div className="text-xs font-bold text-center truncate px-1">
+    <div className={`${cardClasses} flex flex-col`}>
+      <div className="flex-1 flex flex-col justify-between p-1">
+        <div className="text-xs font-bold text-center truncate">
           {card.name}
         </div>
         <div className="text-center">
@@ -48,7 +56,7 @@ export function Card({ card, isBack = false, size = 'medium', className = '' }: 
             </div>
           )}
         </div>
-        <div className="text-xs text-center text-gray-700 px-1">
+        <div className="text-xs text-center text-gray-700">
           {card.requirement && (
             <div className="font-semibold">{card.requirement}</div>
           )}

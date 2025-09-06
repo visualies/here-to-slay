@@ -1,8 +1,11 @@
+import { useGameActions } from "../hooks/use-game-state";
+
 interface CenterAreaProps {
   diceResults?: number[];
 }
 
 export function CenterArea({ diceResults = [] }: CenterAreaProps) {
+  const { drawCard } = useGameActions();
   const validResults = diceResults.filter(r => r > 0);
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
@@ -24,9 +27,10 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
-          <div 
-            className="w-20 aspect-[744/1039] bg-cover bg-center rounded overflow-hidden flex items-center justify-center border-2 border-gray-300"
+          <div
+            className="w-20 aspect-[744/1039] bg-cover bg-center rounded overflow-hidden flex items-center justify-center border-2 border-gray-300 cursor-pointer"
             style={{ backgroundImage: 'url(/heroBack.png)' }}
+            onClick={() => drawCard()}
           >
           </div>
         </div>

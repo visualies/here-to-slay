@@ -4,7 +4,7 @@ import { createContext, useContext, ReactNode, useState, useEffect, useCallback,
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { ServerDiceManager } from '../lib/server-dice';
-import { Player } from '../game/types';
+import { Player, Card, CardType } from '../game/types';
 import { createDeck, dealHand, createSupportStack } from '../game/deck';
 
 export interface PlayerPresence {
@@ -17,12 +17,18 @@ export interface PlayerPresence {
   joinTime: number;
 }
 
+export interface GameActions {
+  playCard: (cardId: string) => void;
+  drawCard: () => void;
+  advanceTurn: () => void;
+}
+
 export interface RoomData {
   // Game state
   players: Player[];
   gamePhase: string;
   currentTurn: string;
-  supportStack: any[];
+  supportStack: Card[];
   
   // Player info
   currentPlayer: Player | null;
@@ -37,6 +43,7 @@ export interface RoomData {
   initializeGame: () => void;
   addPlayerToGame: (playerId: string) => void;
   updateCursor: (x: number, y: number) => void;
+  gameActions: GameActions;
   
   // Connection state
   isConnected: boolean;
@@ -68,7 +75,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const [players, setPlayers] = useState<Player[]>([]);
   const [gamePhase, setGamePhase] = useState<string>('waiting');
   const [currentTurn, setCurrentTurn] = useState<string>('');
-  const [supportStack, setSupportStack] = useState<any[]>([]);
+  const [supportStack, setSupportStack] = useState<Card[]>([]);
   const [connectedPlayers, setConnectedPlayers] = useState<PlayerPresence[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   
@@ -157,7 +164,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       const newPlayers: Player[] = [];
       let newPhase = 'waiting';
       let newCurrentTurn = '';
-      let newSupportStack: any[] = [];
+      let newSupportStack: Card[] = [];
       
       gameStateRef.current?.forEach((value, key) => {
         if (key === 'phase') {
@@ -165,7 +172,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
         } else if (key === 'currentTurn') {
           newCurrentTurn = value as string;
         } else if (key === 'supportStack') {
-          newSupportStack = value as any[];
+          newSupportStack = value as Card[];
         } else if (typeof value === 'object' && value !== null && 'hand' in value && 'position' in value) {
           // This is a player - check for required Player fields
           newPlayers.push(value as Player);
@@ -251,6 +258,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     // Create and shuffle deck
     const deck = createDeck();
+    console.log('Created deck with', deck.length, 'cards');
     let remainingDeck = [...deck];
     
     // Assign positions
@@ -260,9 +268,11 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     sortedPlayers.forEach((player, index) => {
       const { hand, remainingDeck: newDeck } = dealHand(remainingDeck, 5);
       remainingDeck = newDeck;
+      console.log('Dealt hand to', player.name, ':', hand.length, 'cards');
       
       const { hand: playerDeck, remainingDeck: finalDeck } = dealHand(remainingDeck, 10);
       remainingDeck = finalDeck;
+      console.log('Dealt deck to', player.name, ':', playerDeck.length, 'cards');
       
       const gamePlayer: Player = {
         id: player.id,
@@ -271,6 +281,8 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
         position: positions[index % 4] || 'bottom',
         hand,
         deck: playerDeck,
+        party: { leader: null, heroes: [null, null, null, null, null, null] },
+        actionPoints: 0,
         isActive: true
       };
       
@@ -279,7 +291,12 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     });
     
     // Set game metadata
-    gameStateRef.current.set('currentTurn', sortedPlayers[0].id);
+    const firstPlayerId = sortedPlayers[0].id;
+    const firstPlayer = gameStateRef.current?.get(firstPlayerId) as Player;
+    if (firstPlayer) {
+        gameStateRef.current?.set(firstPlayerId, { ...firstPlayer, actionPoints: 3 });
+    }
+    gameStateRef.current.set('currentTurn', firstPlayerId);
     gameStateRef.current.set('supportStack', createSupportStack());
     gameStateRef.current.set('phase', 'playing');
     
@@ -292,25 +309,21 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       return;
     }
 
-    // Check if player is already in the game
     if (gameStateRef.current.has(playerId)) {
       console.log('addPlayerToGame: Player already exists in game');
       return;
     }
 
-    // Find the player in connectedPlayers
     const playerPresence = connectedPlayers.find(p => p.id === playerId);
     if (!playerPresence) {
       console.log('addPlayerToGame: Player not found in connected players');
       return;
     }
 
-    // Create and shuffle a new deck for the new player
     const deck = createDeck();
     const { hand } = dealHand(deck, 5);
     const { hand: playerDeck } = dealHand(deck.slice(5), 10);
 
-    // Assign available position
     const occupiedPositions = new Set();
     gameStateRef.current.forEach((value, key) => {
       if (typeof value === 'object' && value !== null && 'position' in value) {
@@ -319,7 +332,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     });
 
     const availablePositions = ['right', 'top', 'left'].filter(pos => !occupiedPositions.has(pos));
-    const assignedPosition = availablePositions[0] || 'right'; // Fallback to right if all taken
+    const assignedPosition = availablePositions[0] || 'right';
 
     const gamePlayer: Player = {
       id: playerPresence.id,
@@ -328,6 +341,8 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       position: assignedPosition as 'top' | 'right' | 'bottom' | 'left',
       hand,
       deck: playerDeck,
+      party: { leader: null, heroes: [null, null, null, null, null, null] },
+      actionPoints: 0,
       isActive: true
     };
 
@@ -340,6 +355,98 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       providerRef.current.awareness.setLocalStateField('cursor', { x, y });
     }
   }, []);
+
+  const advanceTurn = useCallback(() => {
+    console.log('advanceTurn called - isHost:', isHost, 'hasGameState:', !!gameStateRef.current);
+    if (!isHost || !gameStateRef.current) return;
+    
+    const currentPlayerIndex = players.findIndex(p => p.id === currentTurn);
+    const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    const nextPlayer = players[nextPlayerIndex];
+    
+    console.log('Turn advance:', {
+      currentPlayerIndex,
+      nextPlayerIndex,
+      currentPlayerId: currentTurn,
+      nextPlayerId: nextPlayer?.id,
+      totalPlayers: players.length
+    });
+    
+    const currentPlayerFromState = players[currentPlayerIndex];
+    if (currentPlayerFromState) {
+        gameStateRef.current?.set(currentPlayerFromState.id, { ...currentPlayerFromState, actionPoints: 0 });
+    }
+
+    if (nextPlayer) {
+        gameStateRef.current?.set(nextPlayer.id, { ...nextPlayer, actionPoints: 3 });
+        gameStateRef.current?.set('currentTurn', nextPlayer.id);
+        console.log('Turn advanced to:', nextPlayer.name);
+    }
+  }, [isHost, players, currentTurn]);
+
+  const playCard = useCallback((cardId: string) => {
+      if (!currentPlayer || currentPlayer.actionPoints <= 0) return;
+
+      const cardIndex = currentPlayer.hand.findIndex(c => c.id === cardId);
+      if (cardIndex === -1) return;
+
+      const card = currentPlayer.hand[cardIndex];
+      if (card.type !== CardType.Hero) return;
+
+      const partySlotIndex = currentPlayer.party.heroes.findIndex(h => h === null);
+      if (partySlotIndex === -1) return;
+
+      const newHand = [...currentPlayer.hand];
+      newHand.splice(cardIndex, 1);
+
+      const newPartyHeroes = [...currentPlayer.party.heroes];
+      newPartyHeroes[partySlotIndex] = card;
+
+      const updatedPlayer: Player = {
+          ...currentPlayer,
+          hand: newHand,
+          party: { ...currentPlayer.party, heroes: newPartyHeroes },
+          actionPoints: currentPlayer.actionPoints - 1,
+      };
+
+      gameStateRef.current?.set(currentPlayer.id, updatedPlayer);
+
+      console.log('Card played - remaining action points:', updatedPlayer.actionPoints);
+      if (updatedPlayer.actionPoints === 0) {
+          console.log('No action points left, advancing turn...');
+          advanceTurn();
+      }
+  }, [currentPlayer, advanceTurn]);
+
+  const drawCard = useCallback(() => {
+      if (!currentPlayer || currentPlayer.actionPoints <= 0 || !gameStateRef.current) return;
+      
+      const currentSupportStack = gameStateRef.current.get('supportStack') as Card[];
+      if (currentSupportStack.length === 0) return;
+
+      const newSupportStack = [...currentSupportStack];
+      const drawnCard = newSupportStack.pop();
+      if (!drawnCard) return;
+
+      const updatedPlayer: Player = {
+          ...currentPlayer,
+          hand: [...currentPlayer.hand, drawnCard],
+          actionPoints: currentPlayer.actionPoints - 1,
+      };
+
+      gameStateRef.current.set('supportStack', newSupportStack);
+      gameStateRef.current.set(currentPlayer.id, updatedPlayer);
+
+      if (updatedPlayer.actionPoints === 0) {
+          advanceTurn();
+      }
+  }, [currentPlayer, advanceTurn]);
+
+  const gameActions: GameActions = {
+      playCard,
+      drawCard,
+      advanceTurn,
+  };
 
   const roomData: RoomData = {
     // Game state
@@ -361,6 +468,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     initializeGame,
     addPlayerToGame,
     updateCursor,
+    gameActions,
     
     // Connection state
     isConnected,

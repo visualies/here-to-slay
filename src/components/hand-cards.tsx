@@ -2,6 +2,7 @@
 
 import { Card as GameCard } from "../game/types";
 import { Card } from "./card";
+import { useGameActions } from "../hooks/use-game-state";
 
 interface HandCardsProps {
   cards: GameCard[];
@@ -11,7 +12,10 @@ interface HandCardsProps {
 }
 
 export function HandCards({ cards, isOwn = false, position, className = '' }: HandCardsProps) {
+  const { playCard } = useGameActions();
   const cardCount = cards.length;
+  
+  console.log(`HandCards - Position: ${position}, IsOwn: ${isOwn}, Cards: ${cardCount}`, cards);
 
   // Position-specific styles
   const positionStyles = {
@@ -47,6 +51,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
           <div
             key={card.id}
             className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
+            onClick={() => playCard(card.id)}
           >
             <Card card={card} size="xl" />
           </div>

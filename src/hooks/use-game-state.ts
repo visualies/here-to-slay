@@ -18,12 +18,13 @@ export function useGameState() {
 
 // Hook for game actions
 export function useGameActions() {
-  const { initializeGame, addPlayerToGame, isHost } = useRoom();
+  const { initializeGame, addPlayerToGame, isHost, gameActions } = useRoom();
   
   return {
     initializeGame,
     addPlayerToGame,
-    isHost
+    isHost,
+    ...gameActions
   };
 }
 
