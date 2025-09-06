@@ -1,18 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRoom } from "../hooks/useRoom";
+import { usePlayerPresence } from "../hooks/useGameState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-interface MultiplayerPresenceProps {
-  roomId?: string;
-}
+interface MultiplayerPresenceProps {}
 
-export function MultiplayerPresence({ roomId }: MultiplayerPresenceProps) {
-  if (!roomId) return null;
-  
-  const { connectedPlayers, isConnected, updateCursor } = useRoom(roomId);
+export function MultiplayerPresence({}: MultiplayerPresenceProps) {
+  const { connectedPlayers, isConnected, updateCursor } = usePlayerPresence();
 
   useEffect(() => {
     // Update cursor position on mouse move

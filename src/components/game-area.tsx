@@ -1,27 +1,19 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRoom } from "../hooks/useRoom";
+import { useGameState, useGameActions, usePlayerPresence } from "../hooks/useGameState";
 import { HandCards } from "./hand-cards";
 import { PlayerArea } from "./player-area";
 import { CenterArea } from "./center-area";
 
 interface GameAreaProps {
-  roomId: string;
   diceResults: number[];
 }
 
-export function GameArea({ roomId, diceResults }: GameAreaProps) {
-  const {
-    players,
-    gamePhase,
-    currentTurn,
-    currentPlayer,
-    otherPlayers,
-    isHost,
-    connectedPlayersCount,
-    initializeGame
-  } = useRoom(roomId);
+export function GameArea({ diceResults }: GameAreaProps) {
+  const { players, gamePhase, currentTurn, currentPlayer, otherPlayers } = useGameState();
+  const { initializeGame, isHost } = useGameActions();
+  const { connectedPlayersCount } = usePlayerPresence();
 
   // Auto-initialize game when players join
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { ServerDiceManager } from '../lib/server-dice';
@@ -17,7 +17,7 @@ export interface PlayerPresence {
   joinTime: number;
 }
 
-export interface UseRoomReturn {
+export interface RoomData {
   // Game state
   players: Player[];
   gamePhase: string;
@@ -44,7 +44,14 @@ export interface UseRoomReturn {
   serverDiceManager: ServerDiceManager | null;
 }
 
-export function useRoom(roomId: string): UseRoomReturn {
+const RoomContext = createContext<RoomData | null>(null);
+
+interface RoomProviderProps {
+  roomId: string;
+  children: ReactNode;
+}
+
+export function RoomProvider({ roomId, children }: RoomProviderProps) {
   // Yjs setup
   const docRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
@@ -230,9 +237,17 @@ export function useRoom(roomId: string): UseRoomReturn {
   
   // Actions
   const initializeGame = useCallback(() => {
-    if (!isHost || !gameStateRef.current) return;
+    if (!isHost || !gameStateRef.current) {
+      console.log('initializeGame: Not host or no gameState', { isHost, hasGameState: !!gameStateRef.current });
+      return;
+    }
     
-    if (connectedPlayers.length < 1) return;
+    if (connectedPlayers.length < 1) {
+      console.log('initializeGame: Not enough players', { connectedPlayers: connectedPlayers.length });
+      return;
+    }
+    
+    console.log('initializeGame: Starting game with', connectedPlayers.length, 'players');
     
     // Create and shuffle deck
     const deck = createDeck();
@@ -259,6 +274,7 @@ export function useRoom(roomId: string): UseRoomReturn {
         isActive: true
       };
       
+      console.log('initializeGame: Adding player to game', gamePlayer.name, gamePlayer.position);
       gameStateRef.current?.set(player.id, gamePlayer);
     });
     
@@ -266,6 +282,8 @@ export function useRoom(roomId: string): UseRoomReturn {
     gameStateRef.current.set('currentTurn', sortedPlayers[0].id);
     gameStateRef.current.set('supportStack', createSupportStack());
     gameStateRef.current.set('phase', 'playing');
+    
+    console.log('initializeGame: Game initialized successfully');
   }, [isHost, connectedPlayers]);
   
   const updateCursor = useCallback((x: number, y: number) => {
@@ -273,8 +291,8 @@ export function useRoom(roomId: string): UseRoomReturn {
       providerRef.current.awareness.setLocalStateField('cursor', { x, y });
     }
   }, []);
-  
-  return {
+
+  const roomData: RoomData = {
     // Game state
     players,
     gamePhase,
@@ -300,4 +318,18 @@ export function useRoom(roomId: string): UseRoomReturn {
     // Server dice manager
     serverDiceManager: serverDiceManagerRef.current
   };
+  
+  return (
+    <RoomContext.Provider value={roomData}>
+      {children}
+    </RoomContext.Provider>
+  );
+}
+
+export function useRoom(): RoomData {
+  const context = useContext(RoomContext);
+  if (!context) {
+    throw new Error('useRoom must be used within a RoomProvider');
+  }
+  return context;
 }
