@@ -147,6 +147,41 @@ export class ServerDiceManager {
     }
   }
 
+  // Throw all dice with the same velocity and angular velocity
+  async throwAllDice(velocity: [number, number, number], angularVelocity: [number, number, number]) {
+    if (!this.initialized) {
+      console.warn('[ServerDiceManager] Not initialized, cannot throw dice');
+      return;
+    }
+
+    try {
+      await fetch(`${this.diceApiUrl}/api/dice/throw-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: this.roomId, velocity, angularVelocity })
+      });
+      
+    } catch (error) {
+      console.error('[ServerDiceManager] Failed to throw all dice:', error);
+    }
+  }
+
+  // Move all dice to maintain relative positions during dragging
+  async moveAllDice(leadDiceId: string, leadPosition: [number, number, number], isKinematic: boolean = true) {
+    if (!this.initialized) return;
+
+    try {
+      await fetch(`${this.diceApiUrl}/api/dice/move-all`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ roomId: this.roomId, leadDiceId, leadPosition, isKinematic })
+      });
+    } catch (error) {
+      console.error('[ServerDiceManager] Failed to move all dice:', error);
+    }
+  }
+
+
   // Check if connected and ready
   isReady(): boolean {
     return this.initialized;

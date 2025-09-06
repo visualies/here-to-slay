@@ -158,6 +158,37 @@ class DicePhysicsWorld {
     dice.lastUpdate = Date.now()
     dice.isStable = false
   }
+
+  // Throw all dice with the same velocity and angular velocity
+  throwAllDice(velocity: [number, number, number], angularVelocity: [number, number, number]) {
+    this.dice.forEach((dice, diceId) => {
+      this.throwDice(diceId, velocity, angularVelocity)
+    })
+  }
+
+  // Move all dice maintaining their relative positions during dragging
+  moveAllDice(leadDiceId: string, leadPosition: [number, number, number], isKinematic = true) {
+    const leadDice = this.dice.get(leadDiceId)
+    if (!leadDice) return
+    
+    // Get the current position of the lead dice to calculate offset
+    const currentLeadPos = leadDice.body.position
+    const offsetX = leadPosition[0] - currentLeadPos.x
+    const offsetY = leadPosition[1] - currentLeadPos.y
+    const offsetZ = leadPosition[2] - currentLeadPos.z
+    
+    // Move all dice by the same offset
+    this.dice.forEach((dice, diceId) => {
+      const currentPos = dice.body.position
+      const newPosition: [number, number, number] = [
+        currentPos.x + offsetX,
+        currentPos.y + offsetY,
+        currentPos.z + offsetZ
+      ]
+      this.moveDice(diceId, newPosition, isKinematic)
+    })
+  }
+
   
   startPhysicsLoop() {
     const step = () => {
@@ -303,8 +334,16 @@ const server = http.createServer((request: http.IncomingMessage, response: http.
             world.moveDice(data.diceId, data.position, data.isKinematic !== false)
             break
             
+          case 'move-all':
+            world.moveAllDice(data.leadDiceId, data.leadPosition, data.isKinematic !== false)
+            break
+            
           case 'throw':
             world.throwDice(data.diceId, data.velocity, data.angularVelocity)
+            break
+            
+          case 'throw-all':
+            world.throwAllDice(data.velocity, data.angularVelocity)
             break
             
           case 'state':

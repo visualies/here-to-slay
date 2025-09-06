@@ -218,8 +218,8 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         ];
         
         
-        // Use throwDice instead of moveDice for physics-based throwing
-        serverDiceManager.throwDice(diceId, throwVelocity, angularVelocity);
+        // Use throwAllDice instead of throwDice for physics-based throwing of all dice
+        serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
       }
       
       // Clear position history
@@ -268,8 +268,8 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
           // Transform client coordinates back to server coordinates before sending
           const serverPos = transformer.clientToServer(newPosition.x, newPosition.z);
           
-          // Send transformed position to server
-          serverDiceManager.moveDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
+          // Send transformed position to server - move all dice together
+          serverDiceManager.moveAllDice(diceId, [serverPos.x, newPosition.y, serverPos.z], true);
           lastServerUpdate.current = currentTime;
         }
       }
