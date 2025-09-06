@@ -147,7 +147,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
   const [dragState, setDragState] = useState(dragStateRef.current);
   
   // Use server dice manager
-  const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(roomId, () => {
+  const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(() => {
     // Received dice states
   });
 

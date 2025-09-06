@@ -7,6 +7,7 @@ import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
 import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
 import { playDiceSound } from "../lib/dice-sounds";
+import { useRoom } from "../contexts/room-context";
 
 interface ServerDiceProps {
   diceId: string;
@@ -479,61 +480,27 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
 }
 
 // Hook to manage server dice states
-export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: ServerDiceStates) => void) {
-  const [diceManager, setDiceManager] = useState<ServerDiceManager | null>(null);
+export function useServerDiceStates(onStatesUpdate?: (states: ServerDiceStates) => void) {
+  const { serverDiceManager, isConnected } = useRoom();
   const [diceStates, setDiceStates] = useState<ServerDiceStates>({});
-  const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(0);
 
   useEffect(() => {
-    if (!roomId) return;
-
-
-    // Import the multiplayer game to get the integrated dice manager
-    import('../lib/multiplayer').then(({ getRoom }) => {
-      const room = getRoom(roomId);
-      
-      // Set up WebSocket connection callbacks
-      room.onWebSocketConnected = () => {
-        setIsConnected(true);
-      };
-      
-      room.onWebSocketDisconnected = () => {
-        setIsConnected(false);
-      };
-      
-      let attempts = 0;
-      const maxAttempts = 50; // 5 seconds max wait time
-      
-      // Wait for the server dice manager to be available
-      const checkForManager = () => {
-        attempts++;
-        const manager = room.getServerDiceManager();
-        if (manager) {
-          setDiceManager(manager);
-          
-          // Set up state update handler that updates both local state and calls callback
-          manager['onStatesUpdate'] = (states: ServerDiceStates) => {
-            setDiceStates(states);
-            setLastUpdate(Date.now());
-            onStatesUpdate?.(states);
-            // Don't call originalOnStatesUpdate to avoid duplicate processing
-          };
-        } else if (attempts < maxAttempts) {
-          // Check again in 100ms
-          setTimeout(checkForManager, 100);
-        } else {
-          console.error(`[DEBUG] useServerDiceStates - Failed to get dice manager after ${maxAttempts} attempts`);
-        }
-      };
-      
-      checkForManager();
-    });
-
-    return () => {
-      // Cleanup is handled by the multiplayer game
+    if (!serverDiceManager) return;
+    
+    // Set up state update handler that updates both local state and calls callback
+    serverDiceManager['onStatesUpdate'] = (states: ServerDiceStates) => {
+      setDiceStates(states);
+      setLastUpdate(Date.now());
+      onStatesUpdate?.(states);
     };
-  }, [roomId, onStatesUpdate]);
+    
+    return () => {
+      if (serverDiceManager) {
+        serverDiceManager['onStatesUpdate'] = () => {};
+      }
+    };
+  }, [serverDiceManager, onStatesUpdate]);
 
   // Update server dice states for individual dice components
   const updateDiceState = useCallback((diceId: string, setState: (state: ServerDiceState | null) => void) => {
@@ -541,5 +508,5 @@ export function useServerDiceStates(roomId: string, onStatesUpdate?: (states: Se
     setState(state);
   }, [diceStates]);
 
-  return { diceManager, diceStates, updateDiceState, isConnected, lastUpdate };
+  return { diceManager: serverDiceManager, diceStates, updateDiceState, isConnected, lastUpdate };
 }
