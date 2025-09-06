@@ -135,11 +135,13 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
     leadDiceId: string | null;
     leadPosition: THREE.Vector3 | null;
     groupPositions: Record<string, THREE.Vector3> | null;
+    magnetismDisabled: boolean; // Once dice reach sync threshold, disable magnetism for entire drag
   }>({
     isDragging: false,
     leadDiceId: null,
     leadPosition: null,
-    groupPositions: null
+    groupPositions: null,
+    magnetismDisabled: false
   });
   
   // Also keep React state for re-renders
@@ -163,32 +165,43 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
       isDragging: true,
       leadDiceId,
       leadPosition: leadPosition.clone(),
-      groupPositions: null // Not needed anymore
+      groupPositions: null, // Not needed anymore
+      magnetismDisabled: dragStateRef.current.magnetismDisabled // Preserve magnetism state during drag
     };
     
     setDragState(prev => ({
       isDragging: true,
       leadDiceId,
       leadPosition: leadPosition.clone(),
-      groupPositions: null // Not needed anymore
+      groupPositions: null, // Not needed anymore
+      magnetismDisabled: prev.magnetismDisabled // Preserve magnetism state during drag
     }));
   }, [diceStates]);
   
-  // Handle drag end
+  // Handle drag end - only reset magnetism after throw is complete
   const handleDragEnd = useCallback(() => {
+    // Reset drag state but preserve magnetism disabled until next session
     dragStateRef.current = {
+      ...dragStateRef.current,
       isDragging: false,
       leadDiceId: null,
       leadPosition: null,
       groupPositions: null
     };
     
-    setDragState({
+    setDragState(prev => ({
+      ...prev,
       isDragging: false,
       leadDiceId: null,
       leadPosition: null,
       groupPositions: null
-    });
+    }));
+    
+    // Reset magnetism after a delay to allow for throw completion
+    setTimeout(() => {
+      dragStateRef.current.magnetismDisabled = false;
+      setDragState(prev => ({ ...prev, magnetismDisabled: false }));
+    }, 1000);
   }, []);
 
   const handleDiceResult = useCallback((value: number, index: number) => {

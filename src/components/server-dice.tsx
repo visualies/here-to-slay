@@ -81,12 +81,12 @@ export function calculateAllDicePositions(
   leadDiceId: string,
   leadTargetPosition: THREE.Vector3,
   allDiceStates: ServerDiceStates,
-  transformer: ReturnType<typeof createCoordinateTransformer>
-): Record<string, [number, number, number]> {
+  transformer: ReturnType<typeof createCoordinateTransformer>,
+  magnetismDisabled: boolean = false
+): { positions: Record<string, [number, number, number]>, shouldDisableMagnetism: boolean } {
   const result: Record<string, [number, number, number]> = {};
   
   // Magnetism configuration
-  const MAGNETISM_THRESHOLD = 1.5;
   const SYNC_THRESHOLD = 0.8;
   const ATTRACTION_STRENGTH = 0.1;
   
@@ -97,10 +97,31 @@ export function calculateAllDicePositions(
   // Always set lead dice position
   result[leadDiceId] = leadPosition;
   
-  // Always use synchronized movement during dragging - no magnetism switching
-  let needsMagnetism = false;
+  // Simple logic: if magnetism is disabled, use synchronized movement for all dice
+  if (magnetismDisabled) {
+    Object.keys(allDiceStates).forEach(diceId => {
+      if (diceId === leadDiceId) return;
+      
+      const diceState = allDiceStates[diceId];
+      if (!diceState) return;
+      
+      // Synchronized movement: maintain relative offset from the lead dice
+      const relativeOffsetX = diceState.position[0] - allDiceStates[leadDiceId].position[0];
+      const relativeOffsetZ = diceState.position[2] - allDiceStates[leadDiceId].position[2];
+      
+      result[diceId] = [
+        leadPosition[0] + relativeOffsetX,
+        Math.max(leadPosition[1], 1.5),
+        leadPosition[2] + relativeOffsetZ
+      ];
+    });
+    
+    return { positions: result, shouldDisableMagnetism: true };
+  }
   
-  // Calculate positions for other dice
+  // Check if dice should be magnetically attracted or synchronized
+  let shouldDisableMagnetism = false;
+  
   Object.keys(allDiceStates).forEach(diceId => {
     if (diceId === leadDiceId) return;
     
@@ -112,8 +133,21 @@ export function calculateAllDicePositions(
     const deltaZ = leadPosition[2] - currentPos[2];
     const distance = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
     
-    if (needsMagnetism && distance > SYNC_THRESHOLD) {
-      // Apply magnetism
+    // If dice are close together, use synchronized movement and disable magnetism
+    if (distance <= SYNC_THRESHOLD) {
+      shouldDisableMagnetism = true;
+      
+      // Synchronized movement: maintain relative offset
+      const relativeOffsetX = currentPos[0] - allDiceStates[leadDiceId].position[0];
+      const relativeOffsetZ = currentPos[2] - allDiceStates[leadDiceId].position[2];
+      
+      result[diceId] = [
+        leadPosition[0] + relativeOffsetX,
+        Math.max(leadPosition[1], 1.5),
+        leadPosition[2] + relativeOffsetZ
+      ];
+    } else {
+      // Apply magnetism - attract dice toward lead dice
       const directionX = deltaX / distance;
       const directionZ = deltaZ / distance;
       
@@ -122,24 +156,13 @@ export function calculateAllDicePositions(
       
       result[diceId] = [
         currentPos[0] + moveX,
-        leadPosition[1], // Match lead dice Y position
+        leadPosition[1],
         currentPos[2] + moveZ
-      ];
-    } else {
-      // Synchronized movement: maintain a fixed relative offset from the lead dice
-      // Calculate the original relative offset between dice (when they're within sync threshold)
-      const relativeOffsetX = currentPos[0] - allDiceStates[leadDiceId].position[0];
-      const relativeOffsetZ = currentPos[2] - allDiceStates[leadDiceId].position[2];
-      
-      result[diceId] = [
-        leadPosition[0] + relativeOffsetX,
-        Math.max(leadPosition[1], 1.5), // Ensure dice stays elevated (minimum Y = 1.5)
-        leadPosition[2] + relativeOffsetZ
       ];
     }
   });
   
-  return result;
+  return { positions: result, shouldDisableMagnetism };
 }
 
 export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
@@ -227,7 +250,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   const handlePointerDown = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setIsDragging(true);
-    isDraggingRef.current = true; // Immediate update for useFrame
+    isDraggingRef.current = true;
     
     const intersection = event.intersections[0];
     if (intersection && meshRef.current) {
@@ -310,7 +333,9 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         // IMPORTANT: Update server with final positions before throwing
         const transformer = createCoordinateTransformer(viewport.width, viewport.height);
         const currentPosition = groupRef.current.position;
-        const allPositions = calculateAllDicePositions(diceId, currentPosition, allDiceStates, transformer);
+        const currentDragState = dragStateRef?.current || dragState;
+        const result = calculateAllDicePositions(diceId, currentPosition, allDiceStates, transformer, currentDragState?.magnetismDisabled);
+        const allPositions = result.positions;
         
         // Async function to handle the sequence properly
         const handleThrow = async () => {
@@ -365,9 +390,16 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         const newPosition = intersectPoint.clone().add(dragOffset);
         newPosition.y = Math.max(newPosition.y, 1.5); // Keep elevated while dragging
         
-        // Calculate all dice positions
+        // Calculate all dice positions with current magnetism state
         const transformer = createCoordinateTransformer(viewport.width, viewport.height);
-        const allPositions = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer);
+        const currentDragState = dragStateRef?.current || dragState;
+        const result = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer, currentDragState?.magnetismDisabled);
+        const { positions: allPositions, shouldDisableMagnetism } = result;
+        
+        // Update magnetism state if it should be disabled
+        if (shouldDisableMagnetism && dragStateRef?.current) {
+          dragStateRef.current.magnetismDisabled = true;
+        }
         
         // Notify parent to update shared drag state so other dice know dragging is active
         onDragUpdate?.(diceId, newPosition);
@@ -401,7 +433,6 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         // Server should receive updates but not send back conflicting states
         const updateTime = performance.now();
         if (updateTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
-          const allPositions = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer);
           // Tell server positions are kinematic (client-controlled) during drag
           serverDiceManager.moveMultipleDice(allPositions, true); // true = kinematic/client-controlled
           lastServerUpdate.current = updateTime;
