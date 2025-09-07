@@ -2,6 +2,7 @@
 
 import { CardSlot } from "./card-slot";
 import { Card } from "./card";
+import { ActionPointRing } from "./action-point-ring";
 import { useGameState } from "../hooks/use-game-state";
 
 interface PlayerAreaProps {
@@ -24,15 +25,24 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
   };
   
   const player = getPlayerForPosition(position);
-  const isMyTurn = player?.id === currentTurn;
 
   return (
     <div className="relative flex items-center gap-2 p-4">
-      <CardSlot label="Party Leader" className="flex-shrink-0" size="large">
-        {player?.party?.leader && (
-          <Card card={player.party.leader} size="fill" />
+      <div className="relative flex-shrink-0">
+        {player && (
+          <div className="absolute top-1/2 -translate-y-1/2 -left-10 z-10">
+            <ActionPointRing 
+              current={player.actionPoints} 
+              max={3} 
+            />
+          </div>
         )}
-      </CardSlot>
+        <CardSlot label="Party Leader" size="large">
+          {player?.party?.leader && (
+            <Card card={player.party.leader} size="fill" />
+          )}
+        </CardSlot>
+      </div>
       <div className="flex gap-1">
         {Array.from({ length: 6 }, (_, i) => (
           <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
@@ -42,11 +52,6 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           </CardSlot>
         ))}
       </div>
-      {player && isMyTurn && (
-        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full text-sm font-semibold shadow">
-          Action Points: {player.actionPoints}
-        </div>
-      )}
     </div>
   );
 }
