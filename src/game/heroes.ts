@@ -1,4 +1,5 @@
-import { Card, CardType, HeroClass } from './types';
+import type { Card } from '../types';
+import { CardType, HeroClass } from '../types';
 
 export const heroRegistry: Card[] = [
   {

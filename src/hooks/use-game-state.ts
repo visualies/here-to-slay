@@ -30,7 +30,11 @@ export function useGameActions() {
 
 // Hook for player presence
 export function usePlayerPresence() {
-  const { connectedPlayers, connectedPlayersCount, isConnected, updateCursor } = useRoom();
+  const { players, isConnected, updateCursor } = useRoom();
+  
+  // Filter active players (connected within last 30 seconds)
+  const connectedPlayers = players.filter(p => Date.now() - p.lastSeen < 30000);
+  const connectedPlayersCount = connectedPlayers.length;
   
   return {
     connectedPlayers,

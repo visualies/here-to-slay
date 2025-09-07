@@ -4,55 +4,10 @@ import { createContext, useContext, ReactNode, useState, useEffect, useCallback,
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { ServerDiceManager } from '../lib/server-dice';
-import { Player, Card, CardType } from '../game/types';
+import type { Player, Card, CardType, Room, GameActions } from '../types';
 import { createDeck, dealHand, createSupportStack } from '../game/deck';
 
-export interface PlayerPresence {
-  id: string;
-  name: string;
-  color: string;
-  cursor?: { x: number; y: number };
-  isActive: boolean;
-  lastSeen: number;
-  joinTime: number;
-}
-
-export interface GameActions {
-  playCard: (cardId: string) => void;
-  drawCard: () => void;
-  advanceTurn: () => void;
-}
-
-export interface RoomData {
-  // Game state
-  players: Player[];
-  gamePhase: string;
-  currentTurn: string;
-  supportStack: Card[];
-  
-  // Player info
-  currentPlayer: Player | null;
-  otherPlayers: Player[];
-  isHost: boolean;
-  
-  // Connected players (presence)
-  connectedPlayers: PlayerPresence[];
-  connectedPlayersCount: number;
-  
-  // Actions
-  initializeGame: () => void;
-  addPlayerToGame: (playerId: string) => void;
-  updateCursor: (x: number, y: number) => void;
-  gameActions: GameActions;
-  
-  // Connection state
-  isConnected: boolean;
-  
-  // Server dice manager
-  serverDiceManager: ServerDiceManager | null;
-}
-
-const RoomContext = createContext<RoomData | null>(null);
+const RoomContext = createContext<Room | null>(null);
 
 interface RoomProviderProps {
   roomId: string;
@@ -67,8 +22,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const docRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const gameStateRef = useRef<Y.Map<unknown> | null>(null);
-  const playersRef = useRef<Y.Map<PlayerPresence> | null>(null);
-  const playerIdRef = useRef<string>('');
+  const playersRef = useRef<Y.Map<Player> | null>(null);
   const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
   
   // React state
@@ -76,11 +30,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const [gamePhase, setGamePhase] = useState<string>('waiting');
   const [currentTurn, setCurrentTurn] = useState<string>('');
   const [supportStack, setSupportStack] = useState<Card[]>([]);
-  const [connectedPlayers, setConnectedPlayers] = useState<PlayerPresence[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  
-  // Use provided player ID
-  playerIdRef.current = playerId;
 
   // Initialize Yjs when roomId changes
   useEffect(() => {
@@ -95,7 +45,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     // Create new Yjs doc and provider
     const doc = new Y.Doc();
     const gameState = doc.getMap('gameState');
-    const playersMap = doc.getMap('players');
+    const playersMap = doc.getMap('players') as Y.Map<Player>;
     
     const wsUrl = `ws://localhost:1234?room=${roomId}`;
     const provider = new WebsocketProvider(wsUrl, roomId, doc);
@@ -111,21 +61,53 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const joinTime = Date.now();
     
     awareness.setLocalStateField('user', {
-      id: playerIdRef.current,
+      id: playerId,
       name: playerName,
       color: playerColor,
-      isActive: true,
       lastSeen: joinTime
     });
     
-    playersMap.set(playerIdRef.current, {
-      id: playerIdRef.current,
-      name: playerName,
-      color: playerColor,
-      isActive: true,
-      lastSeen: joinTime,
-      joinTime: joinTime
-    });
+    console.log('=== ADDING PLAYER TO ROOM ===');
+    console.log('Room ID:', roomId);
+    console.log('Player ID:', playerId);
+    console.log('Player Name:', playerName);
+    console.log('Current players in map before adding:', playersMap.size);
+    
+    // Check if player already exists in the room
+    const existingPlayer = playersMap.get(playerId);
+    
+    if (existingPlayer) {
+      console.log('Player already exists, updating info:', existingPlayer.name);
+      // Update existing player info
+      const updatedPlayer: Player = {
+        ...existingPlayer,
+        name: playerName, // Update name in case it changed
+        color: playerColor, // Update color in case it changed
+        lastSeen: joinTime
+      };
+      playersMap.set(playerId, updatedPlayer);
+    } else {
+      console.log('Creating new player');
+      // Create initial player object with default game state
+      const initialPlayer: Player = {
+        id: playerId,
+        name: playerName,
+        color: playerColor,
+        lastSeen: joinTime,
+        joinTime: joinTime,
+        position: 'bottom', // Will be updated when game starts
+        hand: [],
+        deck: [],
+        party: {
+          leader: null,
+          heroes: [null, null, null, null, null, null]
+        },
+        actionPoints: 0
+      };
+      playersMap.set(playerId, initialPlayer);
+    }
+    
+    console.log('Players in map after adding:', playersMap.size);
     
     // Connection status
     provider.on('status', (event: { status: string }) => {
@@ -138,88 +120,74 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     // Cleanup function
     return () => {
-      if (playersMap.has(playerIdRef.current)) {
-        const currentPlayer = playersMap.get(playerIdRef.current);
-        if (currentPlayer) {
-          playersMap.set(playerIdRef.current, {
-            ...currentPlayer,
-            isActive: false,
-            lastSeen: Date.now()
-          });
-        }
-      }
-      
+      // Just disconnect, Yjs will handle presence automatically
       provider.disconnect();
-      if (serverDiceManagerRef.current) {
-        serverDiceManagerRef.current.disconnect();
+      if (diceManager) {
+        diceManager.disconnect();
       }
     };
   }, [roomId, playerId, playerName, playerColor]);
   
-  // Subscribe to game state changes
+  // Subscribe to players and game state changes
   useEffect(() => {
-    if (!gameStateRef.current) return;
+    if (!playersRef.current || !gameStateRef.current) return;
     
-    const observer = () => {
+    const updateState = () => {
+      console.log('=== STATE UPDATE ===');
       const newPlayers: Player[] = [];
       let newPhase = 'waiting';
       let newCurrentTurn = '';
       let newSupportStack: Card[] = [];
       
+      // Get all players from players map
+      playersRef.current?.forEach((value, key) => {
+        if (typeof value === 'object' && value !== null && 'id' in value) {
+          console.log('Found player:', key, value);
+          newPlayers.push(value as Player);
+        }
+      });
+      
+      // Get game metadata from game state
       gameStateRef.current?.forEach((value, key) => {
+        console.log('Game state key:', key, 'value:', value);
         if (key === 'phase') {
           newPhase = value as string;
         } else if (key === 'currentTurn') {
           newCurrentTurn = value as string;
         } else if (key === 'supportStack') {
           newSupportStack = value as Card[];
-        } else if (typeof value === 'object' && value !== null && 'hand' in value && 'position' in value) {
-          // This is a player - check for required Player fields
-          newPlayers.push(value as Player);
         }
       });
       
+      console.log('State update result:', { newPlayers: newPlayers.length, newPhase, newCurrentTurn });
       setPlayers(newPlayers);
       setGamePhase(newPhase);
       setCurrentTurn(newCurrentTurn);
       setSupportStack(newSupportStack);
     };
     
-    gameStateRef.current.observe(observer);
+    // Observe both maps
+    playersRef.current.observe(updateState);
+    gameStateRef.current.observe(updateState);
     
     // Initial call
-    observer();
+    updateState();
     
     return () => {
-      gameStateRef.current?.unobserve(observer);
+      playersRef.current?.unobserve(updateState);
+      gameStateRef.current?.unobserve(updateState);
     };
   }, [roomId]);
   
-  // Subscribe to connected players changes
+  // Heartbeat for player presence
   useEffect(() => {
     if (!playersRef.current) return;
     
-    const observer = () => {
-      const activePlayers: PlayerPresence[] = [];
-      playersRef.current?.forEach((player) => {
-        if (Date.now() - player.lastSeen < 30000) {
-          activePlayers.push(player);
-        }
-      });
-      setConnectedPlayers(activePlayers);
-    };
-    
-    playersRef.current.observe(observer);
-    
-    // Initial call
-    observer();
-    
-    // Heartbeat
     const heartbeat = setInterval(() => {
-      if (playersRef.current?.has(playerIdRef.current)) {
-        const currentPlayer = playersRef.current.get(playerIdRef.current);
+      if (playersRef.current?.has(playerId)) {
+        const currentPlayer = playersRef.current.get(playerId);
         if (currentPlayer) {
-          playersRef.current.set(playerIdRef.current, {
+          playersRef.current.set(playerId, {
             ...currentPlayer,
             lastSeen: Date.now()
           });
@@ -228,33 +196,46 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     }, 5000);
     
     return () => {
-      playersRef.current?.unobserve(observer);
       clearInterval(heartbeat);
     };
-  }, [roomId]);
+  }, [playerId]);
   
   // Derived state
-  const currentPlayer = players.find(p => p.id === playerIdRef.current) || null;
-  const otherPlayers = players.filter(p => p.id !== playerIdRef.current);
-  const connectedPlayersCount = connectedPlayers.length;
+  const currentPlayer = players.find(p => p.id === playerId) || null;
+  const otherPlayers = players.filter(p => p.id !== playerId);
+  const connectedPlayersCount = players.filter(p => Date.now() - p.lastSeen < 30000).length;
   
   // Check if current player is host (first to join)
-  const isHost = connectedPlayers.length > 0 && 
-    connectedPlayers.sort((a, b) => a.joinTime - b.joinTime)[0]?.id === playerIdRef.current;
+  const isHost = players.length > 0 && 
+    players.sort((a, b) => a.joinTime - b.joinTime)[0]?.id === playerId;
   
   // Actions
   const initializeGame = useCallback(() => {
-    if (!isHost || !gameStateRef.current) {
-      console.log('initializeGame: Not host or no gameState', { isHost, hasGameState: !!gameStateRef.current });
+    if (!isHost || !gameStateRef.current || !playersRef.current) {
+      console.log('initializeGame: Not host or missing refs', { isHost, hasGameState: !!gameStateRef.current, hasPlayersMap: !!playersRef.current });
       return;
     }
     
-    if (connectedPlayers.length < 1) {
-      console.log('initializeGame: Not enough players', { connectedPlayers: connectedPlayers.length });
+    if (players.length < 1) {
+      console.log('initializeGame: Not enough players', { players: players.length });
       return;
     }
     
-    console.log('initializeGame: Starting game with', connectedPlayers.length, 'players');
+    // Only include recently active players (connected within last 30 seconds)
+    const activePlayers = players.filter(p => Date.now() - p.lastSeen < 30000);
+    
+    console.log('initializeGame: Starting game with', activePlayers.length, 'active players out of', players.length, 'total');
+    console.log('initializeGame: Active player list:', activePlayers.map(p => ({ 
+      id: p.id, 
+      name: p.name, 
+      joinTime: p.joinTime,
+      lastSeen: new Date(p.lastSeen).toLocaleTimeString()
+    })));
+    
+    if (activePlayers.length < 1) {
+      console.log('initializeGame: Not enough active players', { activePlayers: activePlayers.length });
+      return;
+    }
     
     // Create and shuffle deck
     const deck = createDeck();
@@ -263,7 +244,8 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     // Assign positions
     const positions = ['bottom', 'right', 'top', 'left'] as const;
-    const sortedPlayers = connectedPlayers.sort((a, b) => a.joinTime - b.joinTime);
+    const sortedPlayers = [...activePlayers].sort((a, b) => a.joinTime - b.joinTime);
+    console.log('initializeGame: Sorted active players:', sortedPlayers.map(p => ({ id: p.id, name: p.name, joinTime: p.joinTime })));
     
     sortedPlayers.forEach((player, index) => {
       const { hand, remainingDeck: newDeck } = dealHand(remainingDeck, 5);
@@ -275,48 +257,53 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       console.log('Dealt deck to', player.name, ':', playerDeck.length, 'cards');
       
       const gamePlayer: Player = {
-        id: player.id,
-        name: player.name,
-        color: player.color,
+        ...player,
         position: positions[index % 4] || 'bottom',
         hand,
         deck: playerDeck,
         party: { leader: null, heroes: [null, null, null, null, null, null] },
-        actionPoints: 0,
-        isActive: true
+        actionPoints: 0
       };
       
       console.log('initializeGame: Adding player to game', gamePlayer.name, gamePlayer.position);
-      gameStateRef.current?.set(player.id, gamePlayer);
+      console.log('initializeGame: Player cards - hand:', gamePlayer.hand.length, 'deck:', gamePlayer.deck.length);
+      playersRef.current.set(player.id, gamePlayer);
+      console.log('initializeGame: Player set in Yjs map for', player.id);
     });
     
     // Set game metadata
     const firstPlayerId = sortedPlayers[0].id;
-    const firstPlayer = gameStateRef.current?.get(firstPlayerId) as Player;
+    const firstPlayer = playersRef.current.get(firstPlayerId) as Player;
     if (firstPlayer) {
-        gameStateRef.current?.set(firstPlayerId, { ...firstPlayer, actionPoints: 3 });
+        playersRef.current.set(firstPlayerId, { ...firstPlayer, actionPoints: 3 });
     }
     gameStateRef.current.set('currentTurn', firstPlayerId);
     gameStateRef.current.set('supportStack', createSupportStack());
     gameStateRef.current.set('phase', 'playing');
     
+    console.log('initializeGame: Game metadata set:', {
+      currentTurn: firstPlayerId,
+      phase: 'playing',
+      supportStackLength: createSupportStack().length
+    });
     console.log('initializeGame: Game initialized successfully');
-  }, [isHost, connectedPlayers]);
+  }, [isHost, players]);
 
-  const addPlayerToGame = useCallback((playerId: string) => {
-    if (!isHost || !gameStateRef.current) {
-      console.log('addPlayerToGame: Not host or no gameState');
+  const addPlayerToGame = useCallback((playerIdToAdd: string) => {
+    if (!isHost || !playersRef.current) {
+      console.log('addPlayerToGame: Not host or no players map');
       return;
     }
 
-    if (gameStateRef.current.has(playerId)) {
-      console.log('addPlayerToGame: Player already exists in game');
+    const existingPlayer = playersRef.current.get(playerIdToAdd);
+    if (existingPlayer && existingPlayer.hand && existingPlayer.hand.length > 0) {
+      console.log('addPlayerToGame: Player already has game data');
       return;
     }
 
-    const playerPresence = connectedPlayers.find(p => p.id === playerId);
+    const playerPresence = players.find(p => p.id === playerIdToAdd);
     if (!playerPresence) {
-      console.log('addPlayerToGame: Player not found in connected players');
+      console.log('addPlayerToGame: Player not found in players');
       return;
     }
 
@@ -325,7 +312,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const { hand: playerDeck } = dealHand(deck.slice(5), 10);
 
     const occupiedPositions = new Set();
-    gameStateRef.current.forEach((value, key) => {
+    playersRef.current.forEach((value, key) => {
       if (typeof value === 'object' && value !== null && 'position' in value) {
         occupiedPositions.add((value as Player).position);
       }
@@ -335,20 +322,17 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const assignedPosition = availablePositions[0] || 'right';
 
     const gamePlayer: Player = {
-      id: playerPresence.id,
-      name: playerPresence.name,
-      color: playerPresence.color,
+      ...playerPresence,
       position: assignedPosition as 'top' | 'right' | 'bottom' | 'left',
       hand,
       deck: playerDeck,
       party: { leader: null, heroes: [null, null, null, null, null, null] },
-      actionPoints: 0,
-      isActive: true
+      actionPoints: 0
     };
 
     console.log('addPlayerToGame: Adding player to existing game', gamePlayer.name, gamePlayer.position);
-    gameStateRef.current.set(playerId, gamePlayer);
-  }, [isHost, connectedPlayers]);
+    playersRef.current.set(playerIdToAdd, gamePlayer);
+  }, [isHost, players]);
   
   const updateCursor = useCallback((x: number, y: number) => {
     if (providerRef.current?.awareness) {
@@ -357,14 +341,34 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   }, []);
 
   const advanceTurn = useCallback(() => {
-    console.log('advanceTurn called - isHost:', isHost, 'hasGameState:', !!gameStateRef.current);
-    if (!isHost || !gameStateRef.current) return;
+    console.log('=== ADVANCE TURN DEBUG ===');
+    console.log('isHost:', isHost);
+    console.log('hasGameState:', !!gameStateRef.current);
+    console.log('hasPlayersMap:', !!playersRef.current);
+    console.log('currentTurn:', currentTurn);
+    console.log('players:', players.map(p => ({ id: p.id, name: p.name, actionPoints: p.actionPoints })));
+    
+    if (!gameStateRef.current || !playersRef.current) {
+      console.log('advanceTurn: No gameState or playersMap, returning');
+      return;
+    }
     
     const currentPlayerIndex = players.findIndex(p => p.id === currentTurn);
+    console.log('currentPlayerIndex:', currentPlayerIndex);
+    
+    // Handle case where current player is not found
+    if (currentPlayerIndex === -1) {
+      console.warn('Current player not found in players array:', {
+        currentTurn,
+        playerIds: players.map(p => p.id)
+      });
+      return;
+    }
+    
     const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
     const nextPlayer = players[nextPlayerIndex];
     
-    console.log('Turn advance:', {
+    console.log('Turn advance calculation:', {
       currentPlayerIndex,
       nextPlayerIndex,
       currentPlayerId: currentTurn,
@@ -373,25 +377,32 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     });
     
     const currentPlayerFromState = players[currentPlayerIndex];
+    console.log('currentPlayerFromState:', currentPlayerFromState);
+    
     if (currentPlayerFromState) {
-        gameStateRef.current?.set(currentPlayerFromState.id, { ...currentPlayerFromState, actionPoints: 0 });
+        console.log('Setting current player action points to 0');
+        playersRef.current.set(currentPlayerFromState.id, { ...currentPlayerFromState, actionPoints: 0 });
     }
 
     if (nextPlayer) {
-        gameStateRef.current?.set(nextPlayer.id, { ...nextPlayer, actionPoints: 3 });
-        gameStateRef.current?.set('currentTurn', nextPlayer.id);
+        console.log('Setting next player action points to 3 and updating currentTurn');
+        playersRef.current.set(nextPlayer.id, { ...nextPlayer, actionPoints: 3 });
+        gameStateRef.current.set('currentTurn', nextPlayer.id);
         console.log('Turn advanced to:', nextPlayer.name);
+    } else {
+        console.error('No next player found!');
     }
+    console.log('=== END ADVANCE TURN DEBUG ===');
   }, [isHost, players, currentTurn]);
 
   const playCard = useCallback((cardId: string) => {
-      if (!currentPlayer || currentPlayer.actionPoints <= 0) return;
+      if (!currentPlayer || currentPlayer.actionPoints <= 0 || !playersRef.current) return;
 
       const cardIndex = currentPlayer.hand.findIndex(c => c.id === cardId);
       if (cardIndex === -1) return;
 
       const card = currentPlayer.hand[cardIndex];
-      if (card.type !== CardType.Hero) return;
+      if (card.type !== 'Hero') return;
 
       const partySlotIndex = currentPlayer.party.heroes.findIndex(h => h === null);
       if (partySlotIndex === -1) return;
@@ -409,7 +420,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
           actionPoints: currentPlayer.actionPoints - 1,
       };
 
-      gameStateRef.current?.set(currentPlayer.id, updatedPlayer);
+      playersRef.current.set(currentPlayer.id, updatedPlayer);
 
       console.log('Card played - remaining action points:', updatedPlayer.actionPoints);
       if (updatedPlayer.actionPoints === 0) {
@@ -419,7 +430,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   }, [currentPlayer, advanceTurn]);
 
   const drawCard = useCallback(() => {
-      if (!currentPlayer || currentPlayer.actionPoints <= 0 || !gameStateRef.current) return;
+      if (!currentPlayer || currentPlayer.actionPoints <= 0 || !gameStateRef.current || !playersRef.current) return;
       
       const currentSupportStack = gameStateRef.current.get('supportStack') as Card[];
       if (currentSupportStack.length === 0) return;
@@ -435,7 +446,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       };
 
       gameStateRef.current.set('supportStack', newSupportStack);
-      gameStateRef.current.set(currentPlayer.id, updatedPlayer);
+      playersRef.current.set(currentPlayer.id, updatedPlayer);
 
       if (updatedPlayer.actionPoints === 0) {
           advanceTurn();
@@ -448,7 +459,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       advanceTurn,
   };
 
-  const roomData: RoomData = {
+  const roomData: Room = {
     // Game state
     players,
     gamePhase,
@@ -459,10 +470,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     currentPlayer,
     otherPlayers,
     isHost,
-    
-    // Connected players
-    connectedPlayers,
-    connectedPlayersCount,
     
     // Actions
     initializeGame,
@@ -484,7 +491,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   );
 }
 
-export function useRoom(): RoomData {
+export function useRoom(): Room {
   const context = useContext(RoomContext);
   if (!context) {
     throw new Error('useRoom must be used within a RoomProvider');

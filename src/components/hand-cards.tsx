@@ -1,6 +1,6 @@
 "use client";
 
-import { Card as GameCard } from "../game/types";
+import type { Card as GameCard } from "../types";
 import { Card } from "./card";
 import { useGameActions } from "../hooks/use-game-state";
 
@@ -14,8 +14,6 @@ interface HandCardsProps {
 export function HandCards({ cards, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playCard } = useGameActions();
   const cardCount = cards.length;
-  
-  console.log(`HandCards - Position: ${position}, IsOwn: ${isOwn}, Cards: ${cardCount}`, cards);
 
   // Position-specific styles
   const positionStyles = {

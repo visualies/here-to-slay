@@ -1,6 +1,6 @@
 "use client";
 
-import { Card as GameCard } from "../game/types";
+import type { Card as GameCard } from "../types";
 
 interface CardProps {
   card: GameCard;
