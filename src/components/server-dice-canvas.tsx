@@ -3,9 +3,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { ServerDice, useServerDiceStates, calculateAllDicePositions } from "./server-dice";
+import { ServerDice, calculateAllDicePositions } from "./server-dice";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
-import { useDice } from "../contexts/dice-context";
+import { useDice } from "../hooks/use-dice";
 
 // Ground plane with visible grid
 function GridGround() {
@@ -123,15 +123,6 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
   const [diceCount] = useState(2);
   const [localDiceResults, setLocalDiceResults] = useState<number[]>(Array(2).fill(0));
   
-  // Use dice context
-  const { 
-    enabled: diceEnabled, 
-    results: hookDiceResults, 
-    stable: diceStable,
-    updateStates: updateDiceStates 
-  } = useDice();
-
-  
   // Store viewport dimensions for coordinate transformation
   const viewportRef = useRef({ width: 10, height: 10 }); // Default fallback
   
@@ -156,29 +147,35 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
   // Also keep React state for re-renders
   const [dragState, setDragState] = useState(dragStateRef.current);
   
-  // Use server dice manager
-  const { diceManager, diceStates, isConnected, lastUpdate } = useServerDiceStates(() => {
-    // Received dice states callback
-  });
+  // Use simplified dice hook
+  const { 
+    enabled: diceEnabled, 
+    results: hookDiceResults, 
+    stable: diceStable,
+    diceStates, 
+    isConnected, 
+    lastUpdate,
+    throwDice,
+    throwAllDice,
+    moveDice,
+    moveAllDice,
+    moveMultipleDice
+  } = useDice();
 
-  // Update dice states in the hook when received from server
+  // Update local dice results when server dice states change
   useEffect(() => {
     if (diceStates && Object.keys(diceStates).length > 0) {
-      const formattedStates: Record<string, { isStable: boolean; result: number; lastUpdate: number }> = {};
+      const results = Object.values(diceStates)
+        .filter(state => state.isStable)
+        .map(state => state.result)
+        .filter(result => result > 0);
       
-      Object.entries(diceStates).forEach(([diceId, state]) => {
-        if (state && typeof state === 'object' && 'isStable' in state && 'result' in state && 'lastUpdate' in state) {
-          formattedStates[diceId] = {
-            isStable: state.isStable as boolean,
-            result: state.result as number,
-            lastUpdate: state.lastUpdate as number
-          };
-        }
-      });
-      
-      updateDiceStates(formattedStates);
+      if (results.length > 0 && diceStable) {
+        setLocalDiceResults(results);
+        onDiceResults?.(results);
+      }
     }
-  }, [diceStates, lastUpdate, updateDiceStates]);
+  }, [diceStates, diceStable, onDiceResults]);
 
   // Handle drag updates from any dice
   const handleDragUpdate = useCallback((leadDiceId: string, leadPosition: THREE.Vector3) => {
@@ -247,8 +244,8 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
     }
   }, [hookDiceResults, onDiceResults]);
 
-  // Don't render until we have a dice manager
-  if (!diceManager) {
+  // Don't render until we have a dice connection
+  if (!isConnected) {
     return <div>Connecting to server...</div>;
   }
 
@@ -319,7 +316,10 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
             diceId={diceId}
             initialPosition={[i * 1.2 - (diceCount - 1) * 0.6, 2, 0]}
             onResult={(value) => handleDiceResult(value, i)}
-            serverDiceManager={diceManager}
+            throwDice={throwDice}
+            throwAllDice={throwAllDice}
+            moveDice={moveDice}
+            moveMultipleDice={moveMultipleDice}
             serverState={diceStates[diceId] || null}
             allDiceStates={diceStates}
             dragState={dragState}

@@ -7,13 +7,16 @@ import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
 import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
 import { playDiceSound } from "../lib/dice-sounds";
-import { useRoom } from "../contexts/room-context";
+import { useDice } from "../hooks/use-dice";
 
 interface ServerDiceProps {
   diceId: string;
   initialPosition: [number, number, number];
   onResult: (value: number) => void;
-  serverDiceManager: ServerDiceManager;
+  throwDice: (diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
+  throwAllDice: (velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
+  moveDice: (diceId: string, position: [number, number, number], isKinematic?: boolean) => Promise<void>;
+  moveMultipleDice: (dicePositions: Record<string, [number, number, number]>, isKinematic?: boolean) => Promise<void>;
   serverState: ServerDiceState | null;
   allDiceStates: ServerDiceStates; // Add access to all dice states
   dragState?: { // Shared drag state across all dice
@@ -166,7 +169,7 @@ export function calculateAllDicePositions(
   return { positions: result, shouldDisableMagnetism };
 }
 
-export function ServerDice({ diceId, initialPosition, onResult, serverDiceManager, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
+export function ServerDice({ diceId, initialPosition, onResult, throwDice, throwAllDice, moveDice, moveMultipleDice, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
   const meshRef = useRef<THREE.Mesh>(null);
   const groupRef = externalGroupRef || useRef<THREE.Group>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -342,7 +345,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         const handleThrow = async () => {
           try {
             // Send final positions to server and wait for confirmation
-            await serverDiceManager.moveMultipleDice(allPositions, false); // false = don't trigger physics yet
+            await moveMultipleDice(allPositions, false); // false = don't trigger physics yet
             
             // Add some random angular velocity for realistic tumbling
             const angularVelocity: [number, number, number] = [
@@ -352,7 +355,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
             ];
             
             // Now throw dice - server has the correct positions
-            serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
+            throwAllDice(throwVelocity, angularVelocity);
           } catch (error) {
             console.error('Failed to update dice positions before throwing:', error);
             // Fallback: throw anyway
@@ -361,7 +364,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
               (Math.random() - 0.5) * 10,
               (Math.random() - 0.5) * 10
             ];
-            serverDiceManager.throwAllDice(throwVelocity, angularVelocity);
+            throwAllDice(throwVelocity, angularVelocity);
           }
         };
         
@@ -371,7 +374,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
       // Clear position history
       positionHistory.current = [];
     }
-  }, [isDragging, diceId, serverDiceManager, calculateThrowVelocity, onDragEnd]);
+  }, [isDragging, diceId, throwAllDice, calculateThrowVelocity, onDragEnd]);
 
   // Optimized drag handling with throttled server updates
   const lastServerUpdate = useRef<number>(0);
@@ -435,7 +438,7 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
         const updateTime = performance.now();
         if (updateTime - lastServerUpdate.current >= SERVER_UPDATE_THROTTLE) {
           // Tell server positions are kinematic (client-controlled) during drag
-          serverDiceManager.moveMultipleDice(allPositions, true); // true = kinematic/client-controlled
+          moveMultipleDice(allPositions, true); // true = kinematic/client-controlled
           lastServerUpdate.current = updateTime;
         }
       }
@@ -479,34 +482,3 @@ export function ServerDice({ diceId, initialPosition, onResult, serverDiceManage
   );
 }
 
-// Hook to manage server dice states
-export function useServerDiceStates(onStatesUpdate?: (states: ServerDiceStates) => void) {
-  const { serverDiceManager, isConnected } = useRoom();
-  const [diceStates, setDiceStates] = useState<ServerDiceStates>({});
-  const [lastUpdate, setLastUpdate] = useState(0);
-
-  useEffect(() => {
-    if (!serverDiceManager) return;
-    
-    // Set up state update handler that updates both local state and calls callback
-    serverDiceManager['onStatesUpdate'] = (states: ServerDiceStates) => {
-      setDiceStates(states);
-      setLastUpdate(Date.now());
-      onStatesUpdate?.(states);
-    };
-    
-    return () => {
-      if (serverDiceManager) {
-        serverDiceManager['onStatesUpdate'] = () => {};
-      }
-    };
-  }, [serverDiceManager, onStatesUpdate]);
-
-  // Update server dice states for individual dice components
-  const updateDiceState = useCallback((diceId: string, setState: (state: ServerDiceState | null) => void) => {
-    const state = diceStates[diceId] || null;
-    setState(state);
-  }, [diceStates]);
-
-  return { diceManager: serverDiceManager, diceStates, updateDiceState, isConnected, lastUpdate };
-}

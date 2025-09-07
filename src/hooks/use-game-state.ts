@@ -44,11 +44,3 @@ export function usePlayerPresence() {
   };
 }
 
-// Hook for server dice manager (maintained for backward compatibility)
-export function useServerDice() {
-  const { serverDiceManager } = useRoom();
-  
-  return {
-    serverDiceManager
-  };
-}

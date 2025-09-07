@@ -20,7 +20,7 @@ export interface DiceData {
   updateStates: (states: Record<string, DiceState>) => void;
 }
 
-const DiceContext = createContext<DiceData | null>(null);
+export const DiceContext = createContext<DiceData | null>(null);
 
 interface DiceProviderProps {
   children: ReactNode;

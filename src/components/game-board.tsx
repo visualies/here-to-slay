@@ -47,8 +47,8 @@ export default function GameBoard() {
       playerName={playerData.name}
       playerColor={playerData.color}
     >
-      <GameActionsProvider>
-        <DiceProvider>
+      <DiceProvider>
+        <GameActionsProvider>
           <div className="w-full h-screen bg-white relative">
           {/* Room Info and Leave Button */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
@@ -77,8 +77,8 @@ export default function GameBoard() {
             roomId={currentRoomId}
           />
           </div>
-        </DiceProvider>
-      </GameActionsProvider>
+        </GameActionsProvider>
+      </DiceProvider>
     </RoomProvider>
   );
 }

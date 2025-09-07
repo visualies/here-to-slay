@@ -5,17 +5,29 @@ import { Card } from "./card";
 import { ActionPointRing } from "./action-point-ring";
 import { useGameState } from "../hooks/use-game-state";
 import { usePlayerPosition } from "../hooks/use-player-position";
+import { useGameActions } from "../hooks/use-game-actions";
 
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
 }
 
 function PlayerAreaContent({ position }: { position: PlayerAreaProps['position'] }) {
-  const { players, currentPlayer } = useGameState();
+  const { players, currentPlayer, currentTurn } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
+  const { useHeroAbility, canUseHeroAbility } = useGameActions();
   
   // Find the player that should be at this position
   const player = players.find(p => getPlayerPosition(p.id) === position) || null;
+
+  const handleHeroClick = async (heroId: string) => {
+    if (!canUseHeroAbility(heroId)) return;
+    
+    try {
+      await useHeroAbility(heroId);
+    } catch (error) {
+      console.error('Failed to use hero ability:', error);
+    }
+  };
 
   return (
     <div className="relative flex items-center gap-2 p-4">
@@ -30,7 +42,12 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         )}
         <CardSlot label="Party Leader" size="large">
           {player?.party?.leader && (
-            <Card card={player.party.leader} size="fill" />
+            <div 
+              className={`${canUseHeroAbility(player.party.leader.id) ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+              onClick={canUseHeroAbility(player.party.leader.id) ? () => handleHeroClick(player.party.leader.id) : undefined}
+            >
+              <Card card={player.party.leader} size="fill" />
+            </div>
           )}
         </CardSlot>
       </div>
@@ -38,7 +55,12 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         {Array.from({ length: 6 }, (_, i) => (
           <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
             {player?.party?.heroes[i] && (
-              <Card card={player.party.heroes[i]} size="fill" />
+              <div 
+                className={`${canUseHeroAbility(player.party.heroes[i].id) ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+                onClick={canUseHeroAbility(player.party.heroes[i].id) ? () => handleHeroClick(player.party.heroes[i].id) : undefined}
+              >
+                <Card card={player.party.heroes[i]} size="fill" />
+              </div>
             )}
           </CardSlot>
         ))}

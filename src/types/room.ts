@@ -1,6 +1,5 @@
 import type { Player } from './player';
 import type { Card } from './card';
-import type { ServerDiceManager } from '../lib/server-dice';
 
 export type GameActions = {
   playCard: (cardId: string) => void;
@@ -10,6 +9,9 @@ export type GameActions = {
 };
 
 export type Room = {
+  // Room info
+  roomId: string;
+  
   // Game state
   players: Player[];
   gamePhase: string;
@@ -29,7 +31,4 @@ export type Room = {
   
   // Connection state
   isConnected: boolean;
-  
-  // Server dice manager
-  serverDiceManager: ServerDiceManager | null;
 };

@@ -58,6 +58,7 @@ export class ServerDiceManager {
   private connectToDiceServer() {
     try {
       const wsUrl = `${this.diceServerUrl}?room=${this.roomId}`;
+      console.log(`[DEBUG] ServerDiceManager - Connecting to ${wsUrl}`);
       
       this.ws = new WebSocket(wsUrl);
       
@@ -66,10 +67,14 @@ export class ServerDiceManager {
           try {
             const message = JSON.parse(event.data);
             if (message.type === 'dice-states') {
-              this.onStatesUpdate(message.data);
+              try {
+                this.onStatesUpdate(message.data);
+              } catch (updateError) {
+                console.error(`[DEBUG] ServerDiceManager - Error in onStatesUpdate:`, updateError);
+              }
             }
-          } catch {
-            // Not valid JSON, ignore
+          } catch (parseError) {
+            console.error(`[DEBUG] ServerDiceManager - Error parsing message:`, parseError);
           }
         }
       };
@@ -77,12 +82,15 @@ export class ServerDiceManager {
       this.ws.addEventListener('message', this.messageHandler);
       
       this.ws.addEventListener('open', () => {
+        console.log(`[DEBUG] ServerDiceManager - Connected to dice server for room ${this.roomId}`);
       });
       
       this.ws.addEventListener('close', () => {
+        console.log(`[DEBUG] ServerDiceManager - Connection closed for room ${this.roomId}`);
         // Attempt to reconnect after 2 seconds
         setTimeout(() => {
           if (this.initialized) {
+            console.log(`[DEBUG] ServerDiceManager - Attempting to reconnect for room ${this.roomId}`);
             this.connectToDiceServer();
           }
         }, 2000);

@@ -1,7 +1,7 @@
 import { ServerDiceManager } from './server-dice';
 
-export function createDiceManager(roomId: string, onUpdate?: () => void): ServerDiceManager {
-  return new ServerDiceManager(roomId, onUpdate || (() => {}));
+export function createDiceManager(roomId: string): ServerDiceManager {
+  return new ServerDiceManager(roomId, () => {});
 }
 
 export function cleanupDiceManager(diceManager: ServerDiceManager | null): void {

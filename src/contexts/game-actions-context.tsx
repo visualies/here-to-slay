@@ -2,6 +2,7 @@
 
 import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useRoom } from './room-context';
+import { useDice } from '../hooks/use-dice';
 
 interface HeroUsageState {
   [heroId: string]: boolean; // true if hero ability was used this turn
@@ -29,9 +30,9 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   const { 
     gameActions, 
     currentPlayer, 
-    currentTurn, 
-    serverDiceManager 
+    currentTurn
   } = useRoom();
+  const { captureDiceResults } = useDice();
   
   // Track hero abilities used this turn
   const [heroUsageThisTurn, setHeroUsageThisTurn] = useState<HeroUsageState>({});
@@ -57,20 +58,34 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       throw new Error(`Cannot use hero ability for ${heroId}`);
     }
     
-    if (!serverDiceManager) {
-      throw new Error('Dice manager not available');
-    }
-    
     // Mark hero as used this turn
     setHeroUsageThisTurn(prev => ({ ...prev, [heroId]: true }));
     
     try {
-      // Roll dice for hero ability (2 dice as per game rules)
-      await serverDiceManager.throwAllDice([0, 5, 0], [2, 2, 2]);
+      // Wait for user to throw dice and capture results
+      console.log(`🎲 ${currentPlayer?.name}, throw the dice for ${heroId}!`);
+      const results = await captureDiceResults();
+      const sum = results.reduce((a, b) => a + b, 0);
       
-      // TODO: Parse hero effect requirements and process results
-      // This will be implemented in the next phase
-      console.log(`Hero ability activated for ${heroId}`);
+      // Get the hero to check requirements
+      const hero = currentPlayer?.party.leader?.id === heroId 
+        ? currentPlayer.party.leader
+        : currentPlayer?.party.heroes.find(h => h?.id === heroId);
+      
+      if (hero && hero.requirement) {
+        // Parse requirement (e.g., "Roll 11+" means sum >= 11)
+        const rollMatch = hero.requirement.match(/Roll (\d+)\+/);
+        if (rollMatch) {
+          const requiredRoll = parseInt(rollMatch[1]);
+          const success = sum >= requiredRoll;
+          
+          console.log(`Hero ${hero.name} ability: Rolled ${sum}, required ${requiredRoll}+, ${success ? 'SUCCESS' : 'FAILED'}`);
+        } else {
+          console.log(`Hero ${hero.name} ability activated with roll: ${sum}`);
+        }
+      } else {
+        console.log(`Hero ability activated for ${heroId} with roll: ${sum}`);
+      }
       
     } catch (error) {
       // Revert hero usage state on error
@@ -81,7 +96,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       });
       throw error;
     }
-  }, [canUseHeroAbility, serverDiceManager]);
+  }, [canUseHeroAbility, captureDiceResults, currentPlayer]);
   
   // Enhanced advanceTurn that resets hero usage
   const handleAdvanceTurn = useCallback(() => {

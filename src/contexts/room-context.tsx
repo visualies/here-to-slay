@@ -6,7 +6,6 @@ import { WebsocketProvider } from 'y-websocket';
 import type { Player, Card, Room, GameActions } from '../types';
 import { addPlayerToRoom, isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
-import { createDiceManager, cleanupDiceManager } from '../lib/dice';
 import { createYjsObserver } from '../lib/game-state';
 import { playCard, drawCard, advanceTurn, initializeGame, addPlayerToGame } from '../lib/game-actions';
 
@@ -26,7 +25,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const providerRef = useRef<WebsocketProvider | null>(null);
   const gameStateRef = useRef<Y.Map<unknown> | null>(null);
   const playersRef = useRef<Y.Map<Player> | null>(null);
-  const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
   
   // React state
   const [players, setPlayers] = useState<Player[]>([]);
@@ -40,9 +38,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     // Clean up previous connection
     if (providerRef.current) {
       providerRef.current.disconnect();
-    }
-    if (serverDiceManagerRef.current) {
-      cleanupDiceManager(serverDiceManagerRef.current);
     }
     
     // Create new Yjs doc and provider
@@ -78,14 +73,9 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       setIsConnected(event.status === 'connected');
     });
     
-    // Set up dice manager
-    const diceManager = createDiceManager(roomId, () => {});
-    serverDiceManagerRef.current = diceManager;
-    
     // Cleanup function
     return () => {
       provider.disconnect();
-      cleanupDiceManager(diceManager);
     };
   }, [roomId, playerId, playerName, playerColor]);
   
@@ -172,6 +162,9 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   };
 
   const roomData: Room = {
+    // Room info
+    roomId,
+    
     // Game state
     players,
     gamePhase,
@@ -190,10 +183,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     gameActions,
     
     // Connection state
-    isConnected,
-    
-    // Server dice manager
-    serverDiceManager: serverDiceManagerRef.current
+    isConnected
   };
   
   return (
