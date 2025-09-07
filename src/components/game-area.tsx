@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useGameState, useGameActions, usePlayerPresence } from "../hooks/use-game-state";
+import { usePlayerPosition } from "../hooks/use-player-position";
 import { useDice } from "../contexts/dice-context";
 import { HandCards } from "./hand-cards";
 import { PlayerArea } from "./player-area";
@@ -17,6 +18,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
   const { players, gamePhase, currentTurn, currentPlayer, otherPlayers } = useGameState();
   const { initializeGame, addPlayerToGame, isHost } = useGameActions();
   const { connectedPlayers, connectedPlayersCount } = usePlayerPresence();
+  const { getPlayerPosition } = usePlayerPosition();
   const { 
     enabled: diceEnabled, 
     results: hookDiceResults, 
@@ -54,20 +56,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
   // Always show the game board - no separate waiting room
 
-  // Position players around screen edges - consistent with player-area.tsx
+  // Position players around screen edges - using centralized positioning logic
   const getPlayerByPosition = (position: 'top' | 'right' | 'bottom' | 'left'): Player | null => {
-    // Current player is always at bottom
-    if (position === 'bottom') return currentPlayer;
-    
-    // Sort other players by ID for consistent positioning
-    const sortedOtherPlayers = [...otherPlayers].sort((a, b) => a.id.localeCompare(b.id));
-    
-    // For 2 players total (1 other player), position the other player at top
-    // For 3+ players, use the original positioning: right, top, left
-    const positions = players.length === 2 ? ['top', 'right', 'left'] : ['right', 'top', 'left'];
-    const positionIndex = positions.indexOf(position as any);
-    
-    return positionIndex !== -1 ? sortedOtherPlayers[positionIndex] || null : null;
+    return players.find(p => getPlayerPosition(p.id) === position) || null;
   };
 
   return (
@@ -101,9 +92,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
       {/* Bottom player hand cards (current player) */}
       <div className="absolute bottom-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
         <div>
-          {currentPlayer && (
+          {getPlayerByPosition('bottom') && (
             <HandCards 
-              cards={currentPlayer.hand} 
+              cards={getPlayerByPosition('bottom')!.hand} 
               isOwn={true} 
               position="bottom"
             />

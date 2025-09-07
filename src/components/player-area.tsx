@@ -4,27 +4,18 @@ import { CardSlot } from "./card-slot";
 import { Card } from "./card";
 import { ActionPointRing } from "./action-point-ring";
 import { useGameState } from "../hooks/use-game-state";
+import { usePlayerPosition } from "../hooks/use-player-position";
 
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
 }
 
 function PlayerAreaContent({ position }: { position: PlayerAreaProps['position'] }) {
-  const { players, currentPlayer, currentTurn, otherPlayers } = useGameState();
+  const { players, currentPlayer } = useGameState();
+  const { getPlayerPosition } = usePlayerPosition();
   
-  // Dynamically assign positions based on current player's perspective
-  const getPlayerForPosition = (pos: PlayerAreaProps['position']) => {
-    if (pos === 'bottom') return currentPlayer;
-    
-    // Sort other players by ID for consistent positioning
-    const sortedOtherPlayers = [...otherPlayers].sort((a, b) => a.id.localeCompare(b.id));
-    const positions = ['right', 'top', 'left'] as const;
-    const positionIndex = positions.indexOf(pos as any);
-    
-    return positionIndex !== -1 ? sortedOtherPlayers[positionIndex] || null : null;
-  };
-  
-  const player = getPlayerForPosition(position);
+  // Find the player that should be at this position
+  const player = players.find(p => getPlayerPosition(p.id) === position) || null;
 
   return (
     <div className="relative flex items-center gap-2 p-4">
