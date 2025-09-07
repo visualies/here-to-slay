@@ -55,7 +55,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
             className={`${index > 0 ? styles.cardSpacing : ''} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
             onClick={() => playCard(card.id)}
           >
-            <Card card={card} size="xl" />
+            <Card card={card} size="large" />
           </div>
         ))
       ) : (
