@@ -19,36 +19,40 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
   const positionStyles = {
     top: {
       container: 'flex-row justify-center items-start',
+      containerRotation: '',
       cardSpacing: '-ml-12',
-      rotation: ''
+      cardRotation: 'rotate-180'
     },
     right: {
-      container: 'flex-col justify-center items-end',
-      cardSpacing: '-mt-12',
-      rotation: 'rotate-90'
+      container: 'flex-row justify-center items-start',
+      containerRotation: 'rotate-90',
+      cardSpacing: '-ml-12',
+      cardRotation: 'rotate-180'
     },
     bottom: {
       container: 'flex-row justify-center items-end',
+      containerRotation: '',
       cardSpacing: 'ml-2',
-      rotation: ''
+      cardRotation: 'rotate-180'
     },
     left: {
-      container: 'flex-col justify-center items-start',
-      cardSpacing: '-mt-12',
-      rotation: '-rotate-90'
+      container: 'flex-row justify-center items-start',
+      containerRotation: '-rotate-90',
+      cardSpacing: '-ml-12',
+      cardRotation: 'rotate-180'
     }
   };
 
   const styles = positionStyles[position];
 
   return (
-    <div className={`flex ${styles.container} ${className}`}>
+    <div className={`flex ${styles.container} ${styles.containerRotation} ${className}`}>
       {isOwn ? (
         // Show actual cards for the current player
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.cardRotation} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
             onClick={() => playCard(card.id)}
           >
             <Card card={card} size="xl" />
@@ -59,11 +63,11 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
         <div className="relative">
           {/* Stack of card backs */}
           <div className={`flex ${styles.container}`}>
-            {[...Array(Math.min(cardCount, 5))].map((_, index) => (
+            {[...Array(cardCount)].map((_, index) => (
               <div
                 key={index}
-                className={`${index > 0 ? styles.cardSpacing : ''} ${styles.rotation}`}
-                style={{ zIndex: 5 - index }}
+                className={`${index > 0 ? styles.cardSpacing : ''} ${styles.cardRotation} hover:scale-102 hover:translate-y-1 transition-transform duration-200`}
+                style={{ zIndex: cardCount - index }}
               >
                 <Card 
                   card={{

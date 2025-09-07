@@ -73,47 +73,55 @@ export function GameArea({ diceResults }: GameAreaProps) {
   return (
     <div className="w-full h-screen bg-white relative overflow-hidden">
       {/* Top player hand cards */}
-      <div className="absolute top-[-4.25rem] left-1/2 transform -translate-x-1/2 z-30">
-        {getPlayerByPosition('top') && (
-          <HandCards 
-            cards={getPlayerByPosition('top')!.hand} 
-            isOwn={false} 
-            position="top"
-          />
-        )}
+      <div className="absolute top-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
+        <div>
+          {getPlayerByPosition('top') && (
+            <HandCards 
+              cards={getPlayerByPosition('top')!.hand} 
+              isOwn={false} 
+              position="top"
+            />
+          )}
+        </div>
       </div>
 
       {/* Right player hand cards */}
-      <div className="absolute right-[-4.25rem] top-1/2 transform -translate-y-1/2 z-30">
-        {getPlayerByPosition('right') && (
-          <HandCards 
-            cards={getPlayerByPosition('right')!.hand} 
-            isOwn={false} 
-            position="right"
-          />
-        )}
+      <div className="absolute right-0 top-1/2 w-0 h-0 flex items-center justify-center z-30">
+        <div>
+          {getPlayerByPosition('right') && (
+            <HandCards 
+              cards={getPlayerByPosition('right')!.hand} 
+              isOwn={false} 
+              position="right"
+            />
+          )}
+        </div>
       </div>
 
       {/* Bottom player hand cards (current player) */}
-      <div className="absolute bottom-[-7rem] left-1/2 transform -translate-x-1/2 z-30">
-        {currentPlayer && (
-          <HandCards 
-            cards={currentPlayer.hand} 
-            isOwn={true} 
-            position="bottom"
-          />
-        )}
+      <div className="absolute bottom-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
+        <div>
+          {currentPlayer && (
+            <HandCards 
+              cards={currentPlayer.hand} 
+              isOwn={true} 
+              position="bottom"
+            />
+          )}
+        </div>
       </div>
 
       {/* Left player hand cards */}
-      <div className="absolute left-[-4.25rem] top-1/2 transform -translate-y-1/2 z-30">
-        {getPlayerByPosition('left') && (
-          <HandCards 
-            cards={getPlayerByPosition('left')!.hand} 
-            isOwn={false} 
-            position="left"
-          />
-        )}
+      <div className="absolute left-0 top-1/2 w-0 h-0 flex items-center justify-center z-30">
+        <div>
+          {getPlayerByPosition('left') && (
+            <HandCards 
+              cards={getPlayerByPosition('left')!.hand} 
+              isOwn={false} 
+              position="left"
+            />
+          )}
+        </div>
       </div>
 
       {/* Dotted background pattern */}
