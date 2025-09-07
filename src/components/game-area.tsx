@@ -161,26 +161,6 @@ export function GameArea({ diceResults }: GameAreaProps) {
         </div>
       </div>
       
-      {/* Game info overlay */}
-      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 z-40">
-        <div className="text-sm">
-          <div>Phase: <span className="font-semibold">{gamePhase}</span></div>
-          <div>Turn: <span className="font-semibold">
-            {players.find(p => p.id === currentTurn)?.name || 'Unknown'}
-          </span></div>
-          <div>Players: <span className="font-semibold">{connectedPlayersCount}</span></div>
-          
-          {/* Dice Results Display */}
-          {hookDiceResults.length > 0 && (
-            <div className="mt-2 p-2 bg-green-100 rounded">
-              <div className="text-xs text-green-800 font-semibold">Last Roll:</div>
-              <div className="text-lg font-bold text-green-800">
-                {hookDiceResults.join(', ')}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Control Panel - shows different content based on game phase */}
       <div className="absolute bottom-4 right-4 z-40">
@@ -243,13 +223,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="bg-white/90 backdrop-blur-sm rounded-lg p-3">
-                <div className="text-sm text-gray-600">
-                  Waiting for {players.find(p => p.id === currentTurn)?.name || 'player'} to roll...
-                </div>
-              </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
