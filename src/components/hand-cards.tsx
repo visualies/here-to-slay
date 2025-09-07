@@ -33,7 +33,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
       container: 'flex-row justify-center items-end',
       containerRotation: '',
       cardSpacing: 'ml-2',
-      cardRotation: 'rotate-180'
+      cardRotation: ''
     },
     left: {
       container: 'flex-row justify-center items-start',
@@ -52,7 +52,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} ${styles.cardRotation} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
             onClick={() => playCard(card.id)}
           >
             <Card card={card} size="xl" />
@@ -66,30 +66,26 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
             {[...Array(cardCount)].map((_, index) => (
               <div
                 key={index}
-                className={`${index > 0 ? styles.cardSpacing : ''} ${styles.cardRotation} hover:scale-102 hover:translate-y-1 transition-transform duration-200`}
+                className={`${index > 0 ? styles.cardSpacing : ''} ${styles.cardRotation} hover:translate-y-1 transition-transform duration-200`}
                 style={{ zIndex: cardCount - index }}
               >
-                <Card 
-                  card={{
-                    id: 'back',
-                    name: 'Hidden',
-                    type: 'Hero' as any,
-                    description: '',
-                    requirement: '',
-                    effect: []
-                  }} 
-                  isBack={true} 
-                  size="large" 
-                />
+                <div className="hover:scale-102 transition-transform duration-200">
+                  <Card 
+                    card={{
+                      id: 'back',
+                      name: 'Hidden',
+                      type: 'Hero' as any,
+                      description: '',
+                      requirement: '',
+                      effect: []
+                    }} 
+                    isBack={true} 
+                    size="large" 
+                  />
+                </div>
               </div>
             ))}
           </div>
-          {/* Card count badge */}
-          {cardCount > 0 && (
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white z-20">
-              {cardCount}
-            </div>
-          )}
         </div>
       )}
     </div>
