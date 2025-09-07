@@ -53,13 +53,17 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
   // Always show the game board - no separate waiting room
 
-  // Position players around screen edges
+  // Position players around screen edges - consistent with player-area.tsx
   const getPlayerByPosition = (position: 'top' | 'right' | 'bottom' | 'left'): Player | null => {
     // Current player is always at bottom
     if (position === 'bottom') return currentPlayer;
     
-    // Find player at specific position
-    return otherPlayers.find(p => p.position === position) || null;
+    // Sort other players by ID for consistent positioning
+    const sortedOtherPlayers = [...otherPlayers].sort((a, b) => a.id.localeCompare(b.id));
+    const positions = ['right', 'top', 'left'] as const;
+    const positionIndex = positions.indexOf(position as any);
+    
+    return positionIndex !== -1 ? sortedOtherPlayers[positionIndex] || null : null;
   };
 
   return (

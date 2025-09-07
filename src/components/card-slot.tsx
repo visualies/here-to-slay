@@ -11,7 +11,7 @@ export function CardSlot({ className, children, label, size = "small" }: CardSlo
   return (
     <div className={cn("relative", className)}>
       {label && (
-        <div className="absolute -top-6 left-0 text-xs text-gray-600 font-medium">
+        <div className="absolute -top-6 left-0 text-xs text-gray-600 font-medium whitespace-nowrap">
           {label}
         </div>
       )}

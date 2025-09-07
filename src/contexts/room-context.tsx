@@ -95,7 +95,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
         color: playerColor,
         lastSeen: joinTime,
         joinTime: joinTime,
-        position: 'bottom', // Will be updated when game starts
+        // Position handled client-side
         hand: [],
         deck: [],
         party: {
@@ -242,8 +242,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     console.log('Created deck with', deck.length, 'cards');
     let remainingDeck = [...deck];
     
-    // Assign positions
-    const positions = ['bottom', 'right', 'top', 'left'] as const;
+    // Deal cards to players (no server-side position assignment needed)
     const sortedPlayers = [...activePlayers].sort((a, b) => a.joinTime - b.joinTime);
     console.log('initializeGame: Sorted active players:', sortedPlayers.map(p => ({ id: p.id, name: p.name, joinTime: p.joinTime })));
     
@@ -258,14 +257,14 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       
       const gamePlayer: Player = {
         ...player,
-        position: positions[index % 4] || 'bottom',
+        // Remove position assignment - client handles positioning
         hand,
         deck: playerDeck,
         party: { leader: null, heroes: [null, null, null, null, null, null] },
         actionPoints: 0
       };
       
-      console.log('initializeGame: Adding player to game', gamePlayer.name, gamePlayer.position);
+      console.log('initializeGame: Adding player to game', gamePlayer.name);
       console.log('initializeGame: Player cards - hand:', gamePlayer.hand.length, 'deck:', gamePlayer.deck.length);
       playersRef.current.set(player.id, gamePlayer);
       console.log('initializeGame: Player set in Yjs map for', player.id);
@@ -311,26 +310,16 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const { hand } = dealHand(deck, 5);
     const { hand: playerDeck } = dealHand(deck.slice(5), 10);
 
-    const occupiedPositions = new Set();
-    playersRef.current.forEach((value, key) => {
-      if (typeof value === 'object' && value !== null && 'position' in value) {
-        occupiedPositions.add((value as Player).position);
-      }
-    });
-
-    const availablePositions = ['right', 'top', 'left'].filter(pos => !occupiedPositions.has(pos));
-    const assignedPosition = availablePositions[0] || 'right';
-
     const gamePlayer: Player = {
       ...playerPresence,
-      position: assignedPosition as 'top' | 'right' | 'bottom' | 'left',
+      // Remove position assignment - client handles positioning  
       hand,
       deck: playerDeck,
       party: { leader: null, heroes: [null, null, null, null, null, null] },
       actionPoints: 0
     };
 
-    console.log('addPlayerToGame: Adding player to existing game', gamePlayer.name, gamePlayer.position);
+    console.log('addPlayerToGame: Adding player to existing game', gamePlayer.name);
     playersRef.current.set(playerIdToAdd, gamePlayer);
   }, [isHost, players]);
   

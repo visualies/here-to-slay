@@ -20,8 +20,7 @@ export type Player = {
   joinTime: number;
   cursor?: { x: number; y: number };
   
-  // Game state
-  position: 'top' | 'right' | 'bottom' | 'left';
+  // Game state (position handled client-side)
   hand: Card[];
   deck: Card[];
   party: {
