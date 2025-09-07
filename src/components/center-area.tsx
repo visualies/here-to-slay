@@ -55,7 +55,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       
       {/* Status Area - Dynamic content based on status */}
       {status === 'waiting-to-start' && (
-        <StatusArea header="Ready to start?">
+        <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
           <StartRound 
             onStartRound={initializeGame} 
             disabled={!isHost}
