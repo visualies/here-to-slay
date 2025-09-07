@@ -7,6 +7,7 @@ import { HandCards } from "./hand-cards";
 import { PlayerArea } from "./player-area";
 import { CenterArea } from "./center-area";
 import { Button } from "@/components/ui/button";
+import type { Player } from "../types";
 
 interface GameAreaProps {
   diceResults: number[];

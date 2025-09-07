@@ -1,13 +1,4 @@
-// Forward declaration to avoid circular import
-export type Card = {
-  id: string;
-  name: string;
-  type: string;
-  class?: string;
-  description: string;
-  requirement?: string;
-  effect: any[];
-};
+import type { Card } from './card';
 
 export type Player = {
   // Basic info

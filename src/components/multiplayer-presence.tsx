@@ -51,7 +51,7 @@ export function MultiplayerPresence({}: MultiplayerPresenceProps) {
 
       {/* Other Players' Cursors */}
       {connectedPlayers
-        .filter(player => player.cursor && player.isActive)
+        .filter(player => player.cursor && (Date.now() - player.lastSeen < 30000))
         .map((player) => (
           <div
             key={`cursor-${player.id}`}

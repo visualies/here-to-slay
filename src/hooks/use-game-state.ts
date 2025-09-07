@@ -1,6 +1,7 @@
 "use client";
 
 import { useRoom } from '../contexts/room-context';
+import { getConnectedPlayers } from '../lib/presence';
 
 // Hook for game state data
 export function useGameState() {
@@ -16,7 +17,7 @@ export function useGameState() {
   };
 }
 
-// Hook for game actions
+// Hook for game actions (maintained for backward compatibility)
 export function useGameActions() {
   const { initializeGame, addPlayerToGame, isHost, gameActions } = useRoom();
   
@@ -28,12 +29,11 @@ export function useGameActions() {
   };
 }
 
-// Hook for player presence
+// Hook for player presence (maintained for backward compatibility)
 export function usePlayerPresence() {
   const { players, isConnected, updateCursor } = useRoom();
   
-  // Filter active players (connected within last 30 seconds)
-  const connectedPlayers = players.filter(p => Date.now() - p.lastSeen < 30000);
+  const connectedPlayers = getConnectedPlayers(players);
   const connectedPlayersCount = connectedPlayers.length;
   
   return {
@@ -44,7 +44,7 @@ export function usePlayerPresence() {
   };
 }
 
-// Hook for server dice manager
+// Hook for server dice manager (maintained for backward compatibility)
 export function useServerDice() {
   const { serverDiceManager } = useRoom();
   
