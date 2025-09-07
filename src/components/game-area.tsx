@@ -61,7 +61,10 @@ export function GameArea({ diceResults }: GameAreaProps) {
     
     // Sort other players by ID for consistent positioning
     const sortedOtherPlayers = [...otherPlayers].sort((a, b) => a.id.localeCompare(b.id));
-    const positions = ['right', 'top', 'left'] as const;
+    
+    // For 2 players total (1 other player), position the other player at top
+    // For 3+ players, use the original positioning: right, top, left
+    const positions = players.length === 2 ? ['top', 'right', 'left'] : ['right', 'top', 'left'];
     const positionIndex = positions.indexOf(position as any);
     
     return positionIndex !== -1 ? sortedOtherPlayers[positionIndex] || null : null;
