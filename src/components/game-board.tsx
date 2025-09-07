@@ -6,6 +6,7 @@ import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
 import { RoomProvider } from "../contexts/room-context";
+import { GameActionsProvider } from "../contexts/game-actions-context";
 import { DiceProvider } from "../contexts/dice-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,8 +47,9 @@ export default function GameBoard() {
       playerName={playerData.name}
       playerColor={playerData.color}
     >
-      <DiceProvider>
-        <div className="w-full h-screen bg-white relative">
+      <GameActionsProvider>
+        <DiceProvider>
+          <div className="w-full h-screen bg-white relative">
           {/* Room Info and Leave Button */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
             <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm">
@@ -74,8 +76,9 @@ export default function GameBoard() {
             onDiceResults={handleDiceResults}
             roomId={currentRoomId}
           />
-        </div>
-      </DiceProvider>
+          </div>
+        </DiceProvider>
+      </GameActionsProvider>
     </RoomProvider>
   );
 }

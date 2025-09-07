@@ -6,6 +6,7 @@ export type GameActions = {
   playCard: (cardId: string) => void;
   drawCard: () => void;
   advanceTurn: () => void;
+  useHeroAbility?: (heroId: string) => Promise<void>;
 };
 
 export type Room = {
