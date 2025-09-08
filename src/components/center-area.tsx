@@ -44,7 +44,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const displayResults = diceEnabled ? diceHookResults : diceResults;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6">
+    <div className="flex flex-col items-center justify-center gap-6 relative">
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
@@ -83,12 +83,13 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
             <div className="text-xs text-gray-700">DISCARD</div>
           </div>
         </div>
-        
-        <div className="flex flex-col items-center gap-2 ml-12">
-          <div className="text-sm text-gray-600 font-medium">Cache</div>
-          <div className="w-32 h-40 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
-            <div className="text-xs text-gray-700">CACHE</div>
-          </div>
+      </div>
+      
+      {/* Cache positioned absolutely to escape layout constraints */}
+      <div className="absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10">
+        <div className="text-sm text-gray-600 font-medium">Cache</div>
+        <div className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-white shadow-sm">
+          <div className="text-xs text-gray-700">CACHE</div>
         </div>
       </div>
       
