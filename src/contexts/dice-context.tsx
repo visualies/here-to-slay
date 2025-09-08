@@ -8,8 +8,10 @@ interface DiceState {
   lastUpdate: number;
 }
 
+export type DiceCaptureStatus = 'waiting' | 'rolling' | 'stable' | 'complete';
+
 export interface DiceCaptureResponse {
-  rolling: boolean;
+  status: DiceCaptureStatus;
   error: string | null;
   data: number[] | null;
 }
@@ -20,6 +22,7 @@ export interface DiceData {
   results: number[];
   stable: boolean;
   isCapturing: boolean;
+  captureStatus: DiceCaptureStatus;
   
   // Simple actions
   enable: () => void;
@@ -40,6 +43,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [results, setResults] = useState<number[]>([]);
   const [diceStates, setDiceStates] = useState<Record<string, DiceState>>({});
   const [isCapturing, setIsCapturing] = useState(false);
+  const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
   
   // Check if all dice are stable (only when we have dice states and are enabled)
   const stable = enabled && Object.keys(diceStates).length > 0 && 
@@ -73,13 +77,14 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const captureDiceResult = useCallback((): Promise<DiceCaptureResponse> => {
     if (isCapturing) {
       return Promise.resolve({
-        rolling: false,
+        status: 'complete',
         error: 'Dice capture already in progress',
         data: null
       });
     }
 
     setIsCapturing(true);
+    setCaptureStatus('waiting');
     
     // Enable the 3D dice plane for user interaction
     setEnabled(true);
@@ -89,20 +94,23 @@ export function DiceProvider({ children }: DiceProviderProps) {
       const timeout = setTimeout(() => {
         setIsCapturing(false);
         setEnabled(false);
+        setCaptureStatus('complete');
         resolve({
-          rolling: false,
+          status: 'complete',
           error: 'Dice capture timeout - user did not throw dice',
           data: null
         });
       }, 30000);
 
       let stabilityTimer: NodeJS.Timeout | null = null;
+      let completeTimer: NodeJS.Timeout | null = null;
       let wasRolling = false;
 
       const checkDiceState = () => {
         // Check if dice started moving (not stable)
         if (!stable && !wasRolling) {
           wasRolling = true;
+          setCaptureStatus('rolling');
           console.log('Dice movement detected - user is throwing...');
         }
         
@@ -113,15 +121,21 @@ export function DiceProvider({ children }: DiceProviderProps) {
           
           stabilityTimer = setTimeout(() => {
             if (stable && results.length > 0) {
-              clearTimeout(timeout);
-              setIsCapturing(false);
-              setEnabled(false);
+              setCaptureStatus('stable');
               
-              resolve({
-                rolling: false,
-                error: null,
-                data: results
-              });
+              // Start 15 second complete timer
+              completeTimer = setTimeout(() => {
+                clearTimeout(timeout);
+                setIsCapturing(false);
+                setEnabled(false);
+                setCaptureStatus('complete');
+                
+                resolve({
+                  status: 'complete',
+                  error: null,
+                  data: results
+                });
+              }, 15000);
             } else {
               setTimeout(checkDiceState, 100);
             }
@@ -140,6 +154,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
     results,
     stable,
     isCapturing,
+    captureStatus,
     enable,
     disable,
     updateStates,

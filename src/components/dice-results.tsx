@@ -1,8 +1,11 @@
+import { DiceCaptureStatus } from '../contexts/dice-context';
+
 interface DiceResultsProps {
   diceResults: number[];
+  captureStatus?: DiceCaptureStatus;
 }
 
-export function DiceResults({ diceResults = [] }: DiceResultsProps) {
+export function DiceResults({ diceResults = [], captureStatus = 'complete' }: DiceResultsProps) {
   const validResults = diceResults.filter(r => r > 0);
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
@@ -18,6 +21,24 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
       default: return { bg: 'bg-gray-100', border: 'border-gray-400', text: 'text-gray-700' };
     }
   };
+
+  // Show question marks only when waiting
+  if (captureStatus === 'waiting') {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="text-lg font-bold text-gray-400">?</div>
+        </div>
+        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="text-lg font-bold text-gray-400">?</div>
+        </div>
+        <div className="text-gray-500 mx-1">=</div>
+        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="text-lg font-bold text-gray-400">?</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-3">

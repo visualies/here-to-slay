@@ -1,5 +1,6 @@
 import { useGameActions, useGameState } from "../hooks/use-game-state";
 import { useStatus } from "../hooks/use-status";
+import { useDice } from "../hooks/use-dice";
 import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";
 import { StartRound } from "./start-round";
@@ -13,10 +14,14 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
   const { currentTurn, currentPlayer, players } = useGameState();
   const status = useStatus();
+  const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
   
   // Get the current turn player's name
   const currentTurnPlayer = players.find(p => p.id === currentTurn);
   const currentTurnPlayerName = currentTurnPlayer?.name || 'Unknown';
+
+  // Determine which dice results to show
+  const displayResults = diceEnabled ? diceHookResults : diceResults;
 
   return (
     <div className="flex flex-col items-center justify-center gap-6">
@@ -81,15 +86,19 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       
       {status === 'dice-rolling' && (
         <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
-          <div className="w-12 h-12 bg-blue-100 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center">
-            <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
-          </div>
+          <DiceResults 
+            diceResults={displayResults} 
+            captureStatus={captureStatus}
+          />
         </StatusArea>
       )}
       
       {status === 'dice-capture' && (
         <StatusArea header="Dice Results">
-          <DiceResults diceResults={diceResults} />
+          <DiceResults 
+            diceResults={displayResults} 
+            captureStatus={captureStatus}
+          />
         </StatusArea>
       )}
       

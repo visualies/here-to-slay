@@ -102,6 +102,7 @@ export function useDice() {
     diceStates: serverDiceStates,
     isConnected: serverDiceManagerRef.current !== null,
     isCapturing: diceContext.isCapturing,
+    captureStatus: diceContext.captureStatus,
     lastUpdate,
     
     // State utilities
