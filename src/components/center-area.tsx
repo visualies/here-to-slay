@@ -7,6 +7,7 @@ import { StartRound } from "./start-round";
 import { Card } from "./card";
 import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface CenterAreaProps {
   diceResults?: number[];
@@ -14,9 +15,26 @@ interface CenterAreaProps {
 
 export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
-  const { currentTurn, currentPlayer, players } = useGameState();
+  const { currentTurn, currentPlayer, players, supportStack } = useGameState();
   const status = useStatus();
   const { enabled: diceEnabled, stable: diceStable, hasRolled, results: diceHookResults, isCapturing, captureStatus } = useDice();
+  
+  // Track visual deck count - maintains consistent visual appearance
+  const [visualDeckCount, setVisualDeckCount] = useState(5);
+  const [deckSeed, setDeckSeed] = useState(0);
+  
+  // Update visual deck count when cards are drawn, but add one back for visual continuity
+  useEffect(() => {
+    if (supportStack.length > 0) {
+      setVisualDeckCount(Math.max(5, supportStack.length));
+    }
+  }, [supportStack.length]);
+  
+  // Increment seed when a card is drawn to trigger re-render with new randomization
+  const handleDrawCard = () => {
+    setDeckSeed(prev => prev + 1);
+    drawCard();
+  };
   
   // Get the current turn player's name
   const currentTurnPlayer = players.find(p => p.id === currentTurn);
@@ -30,11 +48,11 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
-          <div onClick={() => drawCard()} className="cursor-pointer">
+          <div onClick={handleDrawCard} className="cursor-pointer">
             <Stack>
-              {Array.from({ length: 5 }, (_, i) => (
+              {Array.from({ length: visualDeckCount }, (_, i) => (
                 <Card 
-                  key={i}
+                  key={`support-${deckSeed}-${i}`}
                   card={{ name: `Support Deck`, type: 'Hero', class: '', requirement: '' }} 
                   isBack={true}
                   stackIndex={i}
