@@ -9,6 +9,7 @@ interface StatusBubbleProps {
   progress?: number; // 0 to 1
   showProgress?: boolean;
   variant?: 'default' | 'success' | 'error';
+  direction?: 'clockwise' | 'counterclockwise';
 }
 
 export function StatusBubble({ 
@@ -16,7 +17,8 @@ export function StatusBubble({
   className = "", 
   progress = 1,
   showProgress = false,
-  variant = 'default'
+  variant = 'default',
+  direction = 'clockwise'
 }: StatusBubbleProps) {
   const [showCelebration, setShowCelebration] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -80,19 +82,43 @@ export function StatusBubble({
         showCelebration ? 'scale-125' : 'scale-100'
       }`}
     >
-      {/* Background layer */}
+      {/* Background layer with variant colors */}
       <div className={`absolute inset-0 ${colors.bg} rounded-lg`} />
       
-      {/* Dashed border layer (below) */}
-      <div className={`absolute inset-0 border-2 border-dashed ${colors.dashedBorder} rounded-lg`} />
-      
-      {/* Solid border layer with circular reveal mask (above) */}
+      {/* Animated dashed border that appears/disappears based on direction */}
       <div 
-        className={`absolute inset-0 border-3 border-solid ${colors.solidBorder} rounded-lg`}
-        style={{
-          maskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${progress * 360}deg, transparent ${progress * 360}deg, transparent 360deg)`,
-          WebkitMaskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${progress * 360}deg, transparent ${progress * 360}deg, transparent 360deg)`
-        }}
+        className={`absolute inset-0 border-2 border-dashed ${colors.dashedBorder} rounded-lg`}
+        style={(() => {
+          if (!showProgress) {
+            // When not showing progress, show appropriate starting state
+            if (direction === 'clockwise') {
+              // Clockwise starts empty (no border visible)
+              return {
+                maskImage: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 360deg)`,
+                WebkitMaskImage: `conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 360deg)`
+              };
+            } else {
+              // Counterclockwise starts full (full border visible)
+              return {};
+            }
+          }
+          
+          // When showing progress, animate based on direction
+          const angle = progress * 360;
+          if (direction === 'counterclockwise') {
+            // Counterclockwise: start full, remove going backwards (timeout)
+            return {
+              maskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${360 - angle}deg, transparent ${360 - angle}deg, transparent 360deg)`,
+              WebkitMaskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${360 - angle}deg, transparent ${360 - angle}deg, transparent 360deg)`
+            };
+          } else {
+            // Clockwise: start empty, add going forwards (completion)
+            return {
+              maskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${angle}deg, transparent ${angle}deg, transparent 360deg)`,
+              WebkitMaskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${angle}deg, transparent ${angle}deg, transparent 360deg)`
+            };
+          }
+        })()}
       />
       
       {/* Content layer */}

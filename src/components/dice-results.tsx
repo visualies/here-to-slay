@@ -11,6 +11,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
   const { captureStatus, requiredAmount } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
   const [completionProgress, setCompletionProgress] = useState(0);
+  const [timeoutProgress, setTimeoutProgress] = useState(0);
   
   // Handle completion timer when status is 'complete'
   useEffect(() => {
@@ -31,6 +32,28 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
       return () => clearInterval(timer);
     } else {
       setCompletionProgress(0);
+    }
+  }, [captureStatus]);
+
+  // Handle timeout timer when status is 'waiting'
+  useEffect(() => {
+    if (captureStatus === 'waiting') {
+      setTimeoutProgress(0);
+      const startTime = Date.now();
+      
+      const timer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / 30000, 1); // 30 seconds timeout
+        setTimeoutProgress(progress);
+        
+        if (progress >= 1) {
+          clearInterval(timer);
+        }
+      }, 100); // Update every 100ms for timeout
+      
+      return () => clearInterval(timer);
+    } else {
+      setTimeoutProgress(0);
     }
   }, [captureStatus]);
   
@@ -67,9 +90,14 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
           <div className="text-lg font-bold text-gray-600">?</div>
         </div>
         <div className="text-gray-500 mx-1">=</div>
-        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+        <StatusBubble
+          progress={timeoutProgress}
+          showProgress={true}
+          variant="default"
+          direction="counterclockwise"
+        >
           <div className="text-lg font-bold text-gray-600">?</div>
-        </div>
+        </StatusBubble>
       </div>
     );
   }
@@ -97,6 +125,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
                 progress={completionProgress}
                 showProgress={captureStatus === 'complete'}
                 variant={meetsRequirement(total, requiredAmount) ? 'success' : 'default'}
+                direction="clockwise"
               >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
               </StatusBubble>
