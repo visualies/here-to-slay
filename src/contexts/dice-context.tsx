@@ -23,7 +23,7 @@ export interface DiceData {
   hasRolled: boolean;
   isCapturing: boolean;
   captureStatus: DiceCaptureStatus;
-  requiredAmount: number | null;
+  requiredAmount: number;
   
   enable: () => void;
   disable: () => void;
@@ -31,7 +31,21 @@ export interface DiceData {
   captureDiceResult: (requiredAmount?: number) => Promise<DiceCaptureResponse>;
 }
 
-export const DiceContext = createContext<DiceData | null>(null);
+const defaultDiceData: DiceData = {
+  enabled: false,
+  results: [],
+  stable: false,
+  hasRolled: false,
+  isCapturing: false,
+  captureStatus: 'complete',
+  requiredAmount: 0,
+  enable: () => {},
+  disable: () => {},
+  updateStates: () => {},
+  captureDiceResult: async () => ({ status: 'complete', error: 'Not initialized', data: null })
+};
+
+export const DiceContext = createContext<DiceData>(defaultDiceData);
 
 interface DiceProviderProps {
   children: ReactNode;
@@ -44,7 +58,8 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [hasRolled, setHasRolled] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
-  const [requiredAmount, setRequiredAmount] = useState<number | null>(null);
+  const [requiredAmount, setRequiredAmount] = useState<number>(0);
+  console.log(`DEBUG: DiceContext requiredAmount state:`, requiredAmount);
   const [stable, setStable] = useState(false);
   
   // Check if all dice are stable (immediate check)
@@ -128,14 +143,16 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setResults([]);
     setHasRolled(false);
     setStable(true); // Start as stable (waiting for user to throw)
-    setRequiredAmount(requiredAmount || null);
+    setRequiredAmount(requiredAmount || 0);
+    console.log(`DEBUG: captureDiceResult called with requiredAmount:`, requiredAmount);
+    console.log(`DEBUG: setRequiredAmount called with:`, requiredAmount || 0);
     
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         setIsCapturing(false);
         setEnabled(false);
         setCaptureStatus('complete');
-        setRequiredAmount(null);
+        setRequiredAmount(0); // Only reset on timeout/failure
         resolve({
           status: 'complete',
           error: 'Dice capture timeout - user did not throw dice',
@@ -153,7 +170,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
               setIsCapturing(false);
               setEnabled(false);
               setCaptureStatus('complete');
-              setRequiredAmount(null);
+              // Don't reset requiredAmount here - let it persist for the UI
               
               resolve({
                 status: 'complete',
@@ -196,8 +213,5 @@ export function DiceProvider({ children }: DiceProviderProps) {
 
 export function useDice(): DiceData {
   const context = useContext(DiceContext);
-  if (!context) {
-    throw new Error('useDice must be used within a DiceProvider');
-  }
   return context;
 }

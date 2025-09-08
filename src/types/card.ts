@@ -13,7 +13,7 @@ export type Card = {
   type: CardType;
   class?: HeroClass;
   description: string;
-  requirement?: string;
+  requirement?: number;
   effect: Action[];
 };
 

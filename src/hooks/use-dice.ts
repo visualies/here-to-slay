@@ -9,24 +9,29 @@ export function useDice() {
   const { roomId } = useRoom();
   const diceContext = useContext(DiceContext);
   
-  if (!diceContext) {
-    throw new Error('useDice must be used within a DiceProvider');
-  }
+  console.log(`DEBUG: useDice returning requiredAmount:`, diceContext.requiredAmount);
 
   const [serverDiceStates, setServerDiceStates] = useState<ServerDiceStates>({});
   const [lastUpdate, setLastUpdate] = useState(0);
   const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
+  const diceContextRef = useRef(diceContext);
+  
+  // Update the ref when diceContext changes
+  // This prevents the ServerDiceManager from being recreated every time diceContext changes
+  // by keeping a stable reference to the current diceContext in the callback
+  useEffect(() => {
+    diceContextRef.current = diceContext;
+  }, [diceContext]);
 
   // Create dice manager for this room
   useEffect(() => {
     if (roomId && !serverDiceManagerRef.current) {
       console.log(`[DEBUG] useDice - Creating ServerDiceManager for room ${roomId}`);
       serverDiceManagerRef.current = new ServerDiceManager(roomId, (states: ServerDiceStates) => {
-        console.log(`[DEBUG] useDice - Received dice states:`, states);
         try {
           setServerDiceStates(states);
           setLastUpdate(Date.now());
-          diceContext.updateStates(states);
+          diceContextRef.current.updateStates(states);
         } catch (error) {
           console.error(`[DEBUG] useDice - Error updating dice context:`, error);
         }
@@ -103,6 +108,7 @@ export function useDice() {
     isConnected: serverDiceManagerRef.current !== null,
     isCapturing: diceContext.isCapturing,
     captureStatus: diceContext.captureStatus,
+    requiredAmount: diceContext.requiredAmount,
     lastUpdate,
     
     // State utilities

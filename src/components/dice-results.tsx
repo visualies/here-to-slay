@@ -5,13 +5,20 @@ interface DiceResultsProps {
 }
 
 export function DiceResults({ diceResults = [] }: DiceResultsProps) {
-  const { captureStatus, requiredAmount } = useDice();
+  const diceContext = useDice();
+  const { captureStatus, requiredAmount } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
+  
+  // Debug log to see what requiredAmount we're getting
+  if (diceResults.length > 0) {
+    console.log(`DEBUG: DiceResults full context:`, diceContext);
+    console.log(`DEBUG: DiceResults received requiredAmount:`, requiredAmount, `captureStatus:`, captureStatus);
+  }
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
   // Check if dice result meets required amount
-  const meetsRequirement = (total: number, required: number | null): boolean => {
-    if (!required) return false;
+  const meetsRequirement = (total: number, required: number): boolean => {
+    if (required === 0) return false; // 0 means no requirement set
     return total >= required;
   };
 
@@ -20,8 +27,12 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
     return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
   };
 
-  // Result always uses same gray as Start Round button
-  const getResultColor = () => {
+  // Result color based on requirement
+  const getResultColor = (total: number) => {
+    const meetsReq = meetsRequirement(total, requiredAmount);
+    if (meetsReq) {
+      return { bg: 'bg-green-100', border: 'border-green-400', text: 'text-green-700' };
+    }
     return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
   };
 
@@ -42,6 +53,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
       </div>
     );
   }
+
 
   return (
     <div className="flex items-center gap-3">

@@ -8,7 +8,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Bard,
     description: 'Draw 2 cards.',
-    requirement: '6+',
+    requirement: 6,
     effect: [{
       action: 'DRAW',
       amount: 2,
@@ -20,7 +20,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Fighter,
     description: 'Destroy a Hero card.',
-    requirement: '8+',
+    requirement: 8,
     effect: [{
       action: 'DESTROY',
       amount: 1,
@@ -33,7 +33,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Thief,
     description: 'Steal a Hero card.',
-    requirement: '7+',
+    requirement: 7,
     effect: [{
       action: 'STEAL',
       amount: 1,
