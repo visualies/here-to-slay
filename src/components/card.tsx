@@ -5,14 +5,17 @@ import type { Card as GameCard } from "../types";
 interface CardProps {
   card: GameCard;
   isBack?: boolean;
-  size?: 'small' | 'medium' | 'large' | 'xl' | 'fill';
+  size?: 'small' | 'medium' | 'deck' | 'large' | 'xl' | 'fill';
   className?: string;
+  stackIndex?: number;
+  randomness?: number; // 0-5, where 0 = no randomness, 5 = full randomness
 }
 
-export function Card({ card, isBack = false, size = 'medium', className = '' }: CardProps) {
+export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0 }: CardProps) {
   const sizeClasses = {
     small: 'w-12',
     medium: 'w-16', 
+    deck: 'w-20',
     large: 'w-24',
     xl: 'w-40',
     fill: 'w-full h-full'
@@ -23,20 +26,63 @@ export function Card({ card, isBack = false, size = 'medium', className = '' }: 
     ? 'w-full h-full' 
     : `${sizeClasses[size]} aspect-[744/1039]`;
 
-  const cardClasses = `${baseClasses} bg-white rounded-lg border-2 border-gray-300 shadow-md overflow-hidden ${className}`;
+  // Generate slight random transformations based on card name and index for true randomness
+  const getRandomTransform = (seed: string, index?: number, level: number = 0) => {
+    if (level === 0) return '';
+    
+    let hash = 0;
+    const fullSeed = seed + (index !== undefined ? index.toString() : '');
+    for (let i = 0; i < fullSeed.length; i++) {
+      const char = fullSeed.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    // Add extra randomization with index if provided
+    if (index !== undefined) {
+      hash = hash ^ (index * 31);
+    }
+    
+    // Create multiple hash values for better distribution
+    const hash2 = ((hash * 1103515245) + 12345) & 0x7fffffff;
+    const hash3 = ((hash2 * 16807) + 0) & 0x7fffffff;
+    const hash4 = ((hash3 * 48271) + 0) & 0x7fffffff;
+    
+    // Scale rotation based on level (0-5) - much more subtle for low levels
+    const maxRotation = level === 1 ? 3 : level * 10; // Level 1 = 3 degrees, Level 5 = 50 degrees max
+    const rotation = (hash2 % (maxRotation * 2 + 1)) - maxRotation;
+    
+    // Position stays very slight
+    const maxTranslate = level === 1 ? 1 : Math.min(2, level); // Level 1 = 1px, max 2px
+    const translateX = (hash3 % (maxTranslate * 2 + 1)) - maxTranslate;
+    const translateY = (hash4 % (maxTranslate * 2 + 1)) - maxTranslate;
+    
+    return `rotate(${rotation}deg) translate(${translateX}px, ${translateY}px)`;
+  };
+
+  const transform = getRandomTransform(card.name, stackIndex, randomness);
+  const cardClasses = `${baseClasses} bg-white rounded overflow-hidden border ${className}`;
+  const borderStyle = { borderColor: '#79757350' };
 
   if (isBack) {
     return (
       <div 
-        className={`${baseClasses} bg-cover bg-center rounded-lg border-2 border-gray-300 shadow-md overflow-hidden ${className}`}
-        style={{ backgroundImage: 'url(/heroBack.png)' }}
+        className={`${baseClasses} bg-cover bg-center rounded overflow-hidden border ${className}`}
+        style={{ 
+          backgroundImage: 'url(/heroBack.png)',
+          transform: transform,
+          ...borderStyle
+        }}
       >
       </div>
     );
   }
 
   return (
-    <div className={`${cardClasses} flex flex-col`}>
+    <div 
+      className={`${cardClasses} flex flex-col`}
+      style={{ transform: transform, ...borderStyle }}
+    >
       <div className="flex-1 flex flex-col justify-between p-1">
         <div className="text-xs font-bold text-center truncate">
           {card.name}

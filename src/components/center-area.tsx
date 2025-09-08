@@ -4,6 +4,8 @@ import { useDice } from "../hooks/use-dice";
 import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";
 import { StartRound } from "./start-round";
+import { Card } from "./card";
+import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
 
 interface CenterAreaProps {
@@ -28,11 +30,18 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
-          <div
-            className="w-20 aspect-[744/1039] bg-cover bg-center rounded overflow-hidden flex items-center justify-center border-2 border-gray-300 cursor-pointer"
-            style={{ backgroundImage: 'url(/heroBack.png)' }}
-            onClick={() => drawCard()}
-          >
+          <div onClick={() => drawCard()} className="cursor-pointer">
+            <Stack>
+              {Array.from({ length: 5 }, (_, i) => (
+                <Card 
+                  key={i}
+                  card={{ name: `Support Deck`, type: 'Hero', class: '', requirement: '' }} 
+                  isBack={true}
+                  stackIndex={i}
+                  randomness={1}
+                />
+              ))}
+            </Stack>
           </div>
         </div>
         
