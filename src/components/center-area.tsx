@@ -14,7 +14,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
   const { currentTurn, currentPlayer, players } = useGameState();
   const status = useStatus();
-  const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
+  const { enabled: diceEnabled, stable: diceStable, hasRolled, results: diceHookResults, isCapturing, captureStatus } = useDice();
   
   // Get the current turn player's name
   const currentTurnPlayer = players.find(p => p.id === currentTurn);
@@ -85,7 +85,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-rolling' && (
-        <StatusArea header={`${currentTurnPlayerName} is rolling dice... (${captureStatus})`}>
+        <StatusArea header={`${currentTurnPlayerName} is rolling dice... | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
           <DiceResults 
             diceResults={displayResults} 
           />
@@ -93,7 +93,15 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-capture' && (
-        <StatusArea header={`Dice Results (${captureStatus})`}>
+        <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
+          <DiceResults 
+            diceResults={displayResults} 
+          />
+        </StatusArea>
+      )}
+      
+      {status === 'dice-results' && (
+        <StatusArea header={`Dice Results | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
           <DiceResults 
             diceResults={displayResults} 
           />

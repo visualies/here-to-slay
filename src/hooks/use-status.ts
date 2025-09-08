@@ -13,7 +13,7 @@ export type GameStatus =
 
 export function useStatus(): GameStatus {
   const { gamePhase, currentTurn, currentPlayer, players } = useGameState();
-  const { enabled: diceEnabled, stable: diceStable } = useDice();
+  const { enabled: diceEnabled, stable: diceStable, hasRolled } = useDice();
   
   // Get connected players count
   const connectedPlayersCount = getConnectedPlayersCount(players);
@@ -32,14 +32,22 @@ export function useStatus(): GameStatus {
   if (gamePhase === 'playing') {
     const isMyTurn = currentPlayer?.id === currentTurn;
     
-    // Someone is rolling dice (dice enabled but not stable)
-    if (diceEnabled && !diceStable) {
-      return 'dice-rolling';
-    }
-    
-    // Dice are enabled and stable - showing dice capture/results
-    if (diceEnabled && diceStable) {
-      return 'dice-capture';
+    // Dice are enabled - determine dice state
+    if (diceEnabled) {
+      // Rolling: dice are not stable
+      if (!diceStable) {
+        return 'dice-rolling';
+      }
+      
+      // Waiting: hasRolled is false and dice are stable (waiting for user to throw)
+      if (!hasRolled && diceStable) {
+        return 'dice-capture';
+      }
+      
+      // Stable: hasRolled is true and dice are stable (dice have been thrown and settled)
+      if (hasRolled && diceStable) {
+        return 'dice-results';
+      }
     }
     
     // It's my turn

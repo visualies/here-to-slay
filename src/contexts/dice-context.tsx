@@ -17,14 +17,13 @@ export interface DiceCaptureResponse {
 }
 
 export interface DiceData {
-  // Simple state only
   enabled: boolean;
   results: number[];
   stable: boolean;
+  hasRolled: boolean;
   isCapturing: boolean;
   captureStatus: DiceCaptureStatus;
   
-  // Simple actions
   enable: () => void;
   disable: () => void;
   updateStates: (states: Record<string, DiceState>) => void;
@@ -38,18 +37,38 @@ interface DiceProviderProps {
 }
 
 export function DiceProvider({ children }: DiceProviderProps) {
-  // Simple state management - no game logic
   const [enabled, setEnabled] = useState(false);
   const [results, setResults] = useState<number[]>([]);
   const [diceStates, setDiceStates] = useState<Record<string, DiceState>>({});
+  const [hasRolled, setHasRolled] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
   
-  // Check if all dice are stable (only when we have dice states and are enabled)
+  // Check if all dice are stable
   const stable = enabled && Object.keys(diceStates).length > 0 && 
     Object.values(diceStates).every(dice => dice.isStable);
 
-  // Update results when all dice become stable (only if enabled)
+  // Track when dice start rolling
+  useEffect(() => {
+    if (enabled && Object.keys(diceStates).length > 0 && !stable) {
+      setHasRolled(true);
+    }
+  }, [enabled, stable, diceStates]);
+
+  // Update captureStatus based on dice state
+  useEffect(() => {
+    if (isCapturing) {
+      if (enabled && !stable) {
+        setCaptureStatus('rolling');
+      } else if (enabled && stable && !hasRolled) {
+        setCaptureStatus('waiting');
+      } else if (enabled && stable && hasRolled) {
+        setCaptureStatus('stable');
+      }
+    }
+  }, [isCapturing, enabled, stable, hasRolled]);
+
+  // Update results when dice become stable
   useEffect(() => {
     if (enabled && stable && Object.keys(diceStates).length > 0) {
       const newResults = Object.values(diceStates)
@@ -62,7 +81,8 @@ export function DiceProvider({ children }: DiceProviderProps) {
   
   const enable = useCallback(() => {
     setEnabled(true);
-    setResults([]); // Clear previous results
+    setResults([]);
+    setHasRolled(false);
   }, []);
   
   const disable = useCallback(() => {
@@ -73,7 +93,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setDiceStates(states);
   }, []);
 
-  // Capture dice result method - ensures only one capture at a time
+  // Capture dice result - ensures only one capture at a time
   const captureDiceResult = useCallback((): Promise<DiceCaptureResponse> => {
     if (isCapturing) {
       return Promise.resolve({
@@ -83,12 +103,12 @@ export function DiceProvider({ children }: DiceProviderProps) {
       });
     }
 
+    // Initialize capture state
     setIsCapturing(true);
     setCaptureStatus('waiting');
-    
-    // Enable the 3D dice plane for user interaction
     setEnabled(true);
-    setResults([]); // Clear previous results
+    setResults([]);
+    setHasRolled(false);
     
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -102,57 +122,40 @@ export function DiceProvider({ children }: DiceProviderProps) {
         });
       }, 30000);
 
-      let stabilityTimer: NodeJS.Timeout | null = null;
-      let completeTimer: NodeJS.Timeout | null = null;
-      let wasRolling = false;
-
-      const checkDiceState = () => {
-        // Check if dice started moving (not stable)
-        if (!stable && !wasRolling) {
-          wasRolling = true;
-          setCaptureStatus('rolling');
-          console.log('Dice movement detected - user is throwing...');
-        }
-        
-        // Check for stability after dice were moving
-        if (wasRolling && stable && results.length > 0) {
-          // Start 500ms stability timer
-          if (stabilityTimer) clearTimeout(stabilityTimer);
-          
-          stabilityTimer = setTimeout(() => {
-            if (stable && results.length > 0) {
-              setCaptureStatus('stable');
+      // Wait for dice to be stable and hasRolled
+      const checkForCompletion = () => {
+        if (stable && hasRolled && results.length > 0) {
+          // 500ms stability delay before completing
+          setTimeout(() => {
+            if (stable && hasRolled && results.length > 0) {
+              clearTimeout(timeout);
+              setIsCapturing(false);
+              setEnabled(false);
+              setCaptureStatus('complete');
               
-              // Start 15 second complete timer
-              completeTimer = setTimeout(() => {
-                clearTimeout(timeout);
-                setIsCapturing(false);
-                setEnabled(false);
-                setCaptureStatus('complete');
-                
-                resolve({
-                  status: 'complete',
-                  error: null,
-                  data: results
-                });
-              }, 15000);
+              resolve({
+                status: 'complete',
+                error: null,
+                data: results
+              });
             } else {
-              setTimeout(checkDiceState, 100);
+              setTimeout(checkForCompletion, 100);
             }
           }, 500);
         } else {
-          setTimeout(checkDiceState, 100);
+          setTimeout(checkForCompletion, 100);
         }
       };
       
-      checkDiceState();
+      checkForCompletion();
     });
-  }, [isCapturing, stable, results]);
+  }, [isCapturing, stable, hasRolled, results]);
   
   const diceData: DiceData = {
     enabled,
     results,
     stable,
+    hasRolled,
     isCapturing,
     captureStatus,
     enable,
