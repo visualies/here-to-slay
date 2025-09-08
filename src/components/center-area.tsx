@@ -87,7 +87,13 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
         </StatusArea>
       )}
       
-      {(status === 'dice-results' || status === 'game-ended') && (
+      {status === 'dice-capture' && (
+        <StatusArea header="Dice Results">
+          <DiceResults diceResults={diceResults} />
+        </StatusArea>
+      )}
+      
+      {status === 'game-ended' && (
         <StatusArea header="Dice Results">
           <DiceResults diceResults={diceResults} />
         </StatusArea>

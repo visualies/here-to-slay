@@ -7,6 +7,7 @@ export type GameStatus =
   | 'waiting-for-turn'
   | 'your-turn'
   | 'dice-rolling'
+  | 'dice-capture'
   | 'dice-results'
   | 'game-ended';
 
@@ -34,6 +35,11 @@ export function useStatus(): GameStatus {
     // Someone is rolling dice (dice enabled but not stable)
     if (diceEnabled && !diceStable) {
       return 'dice-rolling';
+    }
+    
+    // Dice are enabled and stable - showing dice capture/results
+    if (diceEnabled && diceStable) {
+      return 'dice-capture';
     }
     
     // It's my turn
