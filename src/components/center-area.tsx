@@ -85,7 +85,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-rolling' && (
-        <StatusArea header={`${currentTurnPlayerName} is rolling dice... | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
+        <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
           <DiceResults 
             diceResults={displayResults} 
           />
@@ -93,7 +93,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-capture' && (
-        <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
+        <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice`}>
           <DiceResults 
             diceResults={displayResults} 
           />
@@ -101,7 +101,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-results' && (
-        <StatusArea header={`Dice Results | DEBUG: enabled=${diceEnabled}, stable=${diceStable}, hasRolled=${hasRolled}, captureStatus=${captureStatus}`}>
+        <StatusArea header={`Dice Results`}>
           <DiceResults 
             diceResults={displayResults} 
           />

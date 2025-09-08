@@ -1,4 +1,6 @@
 import { useDice } from '../hooks/use-dice';
+import { useState, useEffect } from 'react';
+import { StatusBubble } from './ui/status-bubble';
 
 interface DiceResultsProps {
   diceResults: number[];
@@ -8,12 +10,30 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
   const diceContext = useDice();
   const { captureStatus, requiredAmount } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
+  const [completionProgress, setCompletionProgress] = useState(0);
   
-  // Debug log to see what requiredAmount we're getting
-  if (diceResults.length > 0) {
-    console.log(`DEBUG: DiceResults full context:`, diceContext);
-    console.log(`DEBUG: DiceResults received requiredAmount:`, requiredAmount, `captureStatus:`, captureStatus);
-  }
+  // Handle completion timer when status is 'complete'
+  useEffect(() => {
+    if (captureStatus === 'complete') {
+      setCompletionProgress(0);
+      const startTime = Date.now();
+      
+      const timer = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / 4000, 1); // 4 seconds total
+        setCompletionProgress(progress);
+        
+        if (progress >= 1) {
+          clearInterval(timer);
+        }
+      }, 50); // 20fps for smoother animation
+      
+      return () => clearInterval(timer);
+    } else {
+      setCompletionProgress(0);
+    }
+  }, [captureStatus]);
+  
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
   // Check if dice result meets required amount
@@ -73,9 +93,13 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
           {validResults.length > 1 && (
             <>
               <div className="text-gray-500 mx-1">=</div>
-              <div className={`w-12 h-12 ${getResultColor(total).bg} border-2 border-dashed ${getResultColor(total).border} rounded-lg flex items-center justify-center`}>
+              <StatusBubble
+                progress={completionProgress}
+                showProgress={captureStatus === 'complete'}
+                className={`${getResultColor(total).bg}`}
+              >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
-              </div>
+              </StatusBubble>
             </>
           )}
         </>

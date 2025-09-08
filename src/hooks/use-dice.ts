@@ -9,7 +9,6 @@ export function useDice() {
   const { roomId } = useRoom();
   const diceContext = useContext(DiceContext);
   
-  console.log(`DEBUG: useDice returning requiredAmount:`, diceContext.requiredAmount);
 
   const [serverDiceStates, setServerDiceStates] = useState<ServerDiceStates>({});
   const [lastUpdate, setLastUpdate] = useState(0);
@@ -23,19 +22,22 @@ export function useDice() {
     diceContextRef.current = diceContext;
   }, [diceContext]);
 
+  // Stable callback for dice state updates
+  const onStatesUpdate = useCallback((states: ServerDiceStates) => {
+    try {
+      setServerDiceStates(states);
+      setLastUpdate(Date.now());
+      diceContextRef.current.updateStates(states);
+    } catch (error) {
+      console.error(`[DEBUG] useDice - Error updating dice context:`, error);
+    }
+  }, []);
+
   // Create dice manager for this room
   useEffect(() => {
     if (roomId && !serverDiceManagerRef.current) {
       console.log(`[DEBUG] useDice - Creating ServerDiceManager for room ${roomId}`);
-      serverDiceManagerRef.current = new ServerDiceManager(roomId, (states: ServerDiceStates) => {
-        try {
-          setServerDiceStates(states);
-          setLastUpdate(Date.now());
-          diceContextRef.current.updateStates(states);
-        } catch (error) {
-          console.error(`[DEBUG] useDice - Error updating dice context:`, error);
-        }
-      });
+      serverDiceManagerRef.current = new ServerDiceManager(roomId, onStatesUpdate);
     }
 
     return () => {
@@ -45,7 +47,7 @@ export function useDice() {
         serverDiceManagerRef.current = null;
       }
     };
-  }, [roomId]); // Remove diceContext from dependencies to prevent recreation
+  }, [roomId, onStatesUpdate]); // Remove diceContext from dependencies to prevent recreation
 
   // User-controlled dice capture workflow (legacy method)
   const captureDiceResults = useCallback(async (): Promise<number[]> => {

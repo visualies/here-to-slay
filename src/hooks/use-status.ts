@@ -13,7 +13,7 @@ export type GameStatus =
 
 export function useStatus(): GameStatus {
   const { gamePhase, currentTurn, currentPlayer, players } = useGameState();
-  const { enabled: diceEnabled, stable: diceStable, hasRolled } = useDice();
+  const { enabled: diceEnabled, stable: diceStable, hasRolled, captureStatus } = useDice();
   
   // Get connected players count
   const connectedPlayersCount = getConnectedPlayersCount(players);

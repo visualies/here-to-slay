@@ -10,6 +10,9 @@ interface DiceState {
 
 export type DiceCaptureStatus = 'waiting' | 'rolling' | 'stable' | 'complete';
 
+// Debug constant to disable timeout for testing
+const DISABLE_TIMEOUT = true;
+
 export interface DiceCaptureResponse {
   status: DiceCaptureStatus;
   error: string | null;
@@ -59,7 +62,6 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
   const [requiredAmount, setRequiredAmount] = useState<number>(0);
-  console.log(`DEBUG: DiceContext requiredAmount state:`, requiredAmount);
   const [stable, setStable] = useState(false);
   
   // Check if all dice are stable (immediate check)
@@ -144,8 +146,6 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setHasRolled(false);
     setStable(true); // Start as stable (waiting for user to throw)
     setRequiredAmount(requiredAmount || 0);
-    console.log(`DEBUG: captureDiceResult called with requiredAmount:`, requiredAmount);
-    console.log(`DEBUG: setRequiredAmount called with:`, requiredAmount || 0);
     
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
@@ -163,20 +163,24 @@ export function DiceProvider({ children }: DiceProviderProps) {
       // Wait for dice to be stable and hasRolled
       const checkForCompletion = () => {
         if (stable && hasRolled && results.length > 0) {
-          // 500ms stability delay before completing
+          // 500ms stability delay before starting the 4-second completion timer
           setTimeout(() => {
             if (stable && hasRolled && results.length > 0) {
-              clearTimeout(timeout);
-              setIsCapturing(false);
-              setEnabled(false);
+              // Start the 4-second completion timer
               setCaptureStatus('complete');
-              // Don't reset requiredAmount here - let it persist for the UI
               
-              resolve({
-                status: 'complete',
-                error: null,
-                data: results
-              });
+              setTimeout(() => {
+                clearTimeout(timeout);
+                setIsCapturing(false);
+                setEnabled(false);
+                // Don't reset requiredAmount here - let it persist for the UI
+                
+                resolve({
+                  status: 'complete',
+                  error: null,
+                  data: results
+                });
+              }, 4000); // 4-second completion timer
             } else {
               setTimeout(checkForCompletion, 100);
             }
