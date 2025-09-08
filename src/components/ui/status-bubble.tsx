@@ -53,30 +53,10 @@ export function StatusBubble({
       
       {/* Solid border layer with circular reveal mask (above) */}
       <div 
-        className={`absolute inset-0 border-2 border-solid ${colors.solidBorder} rounded-lg`}
+        className={`absolute inset-0 border-3 border-solid ${colors.solidBorder} rounded-lg`}
         style={{
-          clipPath: (() => {
-            const angle = progress * 360;
-            if (angle >= 360) return 'none';
-            if (angle <= 0) return 'polygon(50% 50%, 50% 50%, 50% 50%)';
-            
-            // Start from top (12 o'clock) and go clockwise
-            const points = ['50% 50%', '50% 0%'];
-            
-            // Add corner points as we sweep clockwise
-            if (angle > 45) points.push('100% 0%'); // top-right corner
-            if (angle > 135) points.push('100% 100%'); // bottom-right corner  
-            if (angle > 225) points.push('0% 100%'); // bottom-left corner
-            if (angle > 315) points.push('0% 0%'); // top-left corner
-            
-            // Add the current progress point
-            const radians = (angle - 90) * Math.PI / 180;
-            const x = 50 + 50 * Math.cos(radians);
-            const y = 50 + 50 * Math.sin(radians);
-            points.push(`${x}% ${y}%`);
-            
-            return `polygon(${points.join(', ')})`;
-          })()
+          maskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${progress * 360}deg, transparent ${progress * 360}deg, transparent 360deg)`,
+          WebkitMaskImage: `conic-gradient(from 0deg at 50% 50%, black 0deg, black ${progress * 360}deg, transparent ${progress * 360}deg, transparent 360deg)`
         }}
       />
       

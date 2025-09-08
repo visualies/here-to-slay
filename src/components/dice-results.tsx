@@ -20,7 +20,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
       
       const timer = setInterval(() => {
         const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / 4000, 1); // 4 seconds total
+        const progress = Math.min(elapsed / 7000, 1); // 7 seconds total
         setCompletionProgress(progress);
         
         if (progress >= 1) {
