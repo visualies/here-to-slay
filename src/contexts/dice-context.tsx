@@ -45,17 +45,33 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
   const [requiredAmount, setRequiredAmount] = useState<number | null>(null);
+  const [stable, setStable] = useState(false);
   
-  // Check if all dice are stable
-  const stable = enabled && Object.keys(diceStates).length > 0 && 
+  // Check if all dice are stable (immediate check)
+  const allDiceStable = enabled && Object.keys(diceStates).length > 0 && 
     Object.values(diceStates).every(dice => dice.isStable);
+
+  // Handle 500ms stability delay
+  useEffect(() => {
+    if (allDiceStable) {
+      // Start 500ms timer when dice become stable
+      const timer = setTimeout(() => {
+        setStable(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    } else {
+      // Reset stable state when dice are not stable
+      setStable(false);
+    }
+  }, [allDiceStable]);
 
   // Track when dice start rolling
   useEffect(() => {
-    if (enabled && Object.keys(diceStates).length > 0 && !stable) {
+    if (enabled && Object.keys(diceStates).length > 0 && !allDiceStable) {
       setHasRolled(true);
     }
-  }, [enabled, stable, diceStates]);
+  }, [enabled, allDiceStable, diceStates]);
 
   // Update captureStatus based on dice state
   useEffect(() => {
@@ -111,6 +127,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setEnabled(true);
     setResults([]);
     setHasRolled(false);
+    setStable(true); // Start as stable (waiting for user to throw)
     setRequiredAmount(requiredAmount || null);
     
     return new Promise((resolve) => {
