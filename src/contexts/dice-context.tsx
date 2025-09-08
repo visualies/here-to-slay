@@ -99,9 +99,18 @@ export function DiceProvider({ children }: DiceProviderProps) {
         setCaptureStatus('waiting');
       } else if (enabled && stable && hasRolled) {
         setCaptureStatus('stable');
+        
+        // Auto-transition to complete after stability delay
+        const timer = setTimeout(() => {
+          if (enabled && stable && hasRolled && results.length > 0) {
+            setCaptureStatus('complete');
+          }
+        }, 500);
+        
+        return () => clearTimeout(timer);
       }
     }
-  }, [isCapturing, enabled, stable, hasRolled]);
+  }, [isCapturing, enabled, stable, hasRolled, results.length]);
 
   // Update results in real-time (both while rolling and when stable)
   useEffect(() => {

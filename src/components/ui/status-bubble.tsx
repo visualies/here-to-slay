@@ -17,7 +17,6 @@ export function StatusBubble({
   showProgress = false,
   variant = 'default'
 }: StatusBubbleProps) {
-progress=0.5
 
   const getColors = () => {
     switch (variant) {
