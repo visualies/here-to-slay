@@ -16,13 +16,25 @@ export function createDeck(): Card[] {
   });
   
   // Add placeholder item/magic/monster cards to reach proper deck size
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 15; i++) {
     deck.push({
       id: `item-${i}`,
       name: `Item Card ${i + 1}`,
       type: CardType.Item,
       description: 'A mysterious item.',
       requirement: '4+',
+      effect: []
+    });
+  }
+  
+  // Add placeholder modifier cards
+  for (let i = 0; i < 5; i++) {
+    deck.push({
+      id: `modifier-${i}`,
+      name: `Modifier Card ${i + 1}`,
+      type: CardType.Modifier,
+      description: 'A card that modifies game rules or effects.',
+      requirement: '3+',
       effect: []
     });
   }

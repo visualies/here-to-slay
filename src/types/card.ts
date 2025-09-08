@@ -22,6 +22,7 @@ export enum CardType {
   Item = 'Item',
   Magic = 'Magic',
   Monster = 'Monster',
+  Modifier = 'Modifier',
 }
 
 export enum HeroClass {
