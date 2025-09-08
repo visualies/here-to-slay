@@ -1,6 +1,7 @@
 "use client";
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState, useRef } from 'react';
+import confetti from 'canvas-confetti';
 
 interface StatusBubbleProps {
   children: ReactNode;
@@ -17,6 +18,35 @@ export function StatusBubble({
   showProgress = false,
   variant = 'default'
 }: StatusBubbleProps) {
+  const [showCelebration, setShowCelebration] = useState(false);
+  const bubbleRef = useRef<HTMLDivElement>(null);
+
+  // Trigger celebration when progress completes
+  useEffect(() => {
+    if (progress >= 1 && showProgress && variant === 'success') {
+      setShowCelebration(true);
+      
+      // Trigger confetti from the bubble position
+      if (bubbleRef.current) {
+        const rect = bubbleRef.current.getBoundingClientRect();
+        const x = (rect.left + rect.width / 2) / window.innerWidth;
+        const y = (rect.top + rect.height / 2) / window.innerHeight;
+        
+        confetti({
+          particleCount: 25,
+          spread: 360,
+          origin: { x, y },
+          colors: ['#10b981', '#34d399', '#6ee7b7'], // Green colors
+          gravity: 1.0,
+          scalar: 0.6,
+          startVelocity: 30
+        });
+      }
+      
+      const timer = setTimeout(() => setShowCelebration(false), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, showProgress, variant]);
 
   const getColors = () => {
     switch (variant) {
@@ -44,7 +74,12 @@ export function StatusBubble({
   const colors = getColors();
 
   return (
-    <div className={`relative w-12 h-12 rounded-lg overflow-hidden ${className}`}>
+    <div 
+      ref={bubbleRef}
+      className={`relative w-12 h-12 rounded-lg overflow-hidden transition-transform duration-300 ease-out ${className} ${
+        showCelebration ? 'scale-125' : 'scale-100'
+      }`}
+    >
       {/* Background layer */}
       <div className={`absolute inset-0 ${colors.bg} rounded-lg`} />
       
