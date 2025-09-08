@@ -83,12 +83,22 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
   if (captureStatus === 'waiting') {
     return (
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+        <StatusBubble
+          progress={timeoutProgress}
+          showProgress={true}
+          variant="default"
+          direction="counterclockwise"
+        >
           <div className="text-lg font-bold text-gray-600">?</div>
-        </div>
-        <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+        </StatusBubble>
+        <StatusBubble
+          progress={timeoutProgress}
+          showProgress={true}
+          variant="default"
+          direction="counterclockwise"
+        >
           <div className="text-lg font-bold text-gray-600">?</div>
-        </div>
+        </StatusBubble>
         <div className="text-gray-500 mx-1">=</div>
         <StatusBubble
           progress={timeoutProgress}
@@ -125,7 +135,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
                 progress={completionProgress}
                 showProgress={captureStatus === 'complete'}
                 variant={meetsRequirement(total, requiredAmount) ? 'success' : 'default'}
-                direction={meetsRequirement(total, requiredAmount) ? 'clockwise' : 'counterclockwise'}
+                direction="clockwise"
               >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
               </StatusBubble>
