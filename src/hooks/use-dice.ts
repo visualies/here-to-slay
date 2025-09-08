@@ -13,7 +13,6 @@ export function useDice() {
     throw new Error('useDice must be used within a DiceProvider');
   }
 
-  const [isCapturing, setIsCapturing] = useState(false);
   const [serverDiceStates, setServerDiceStates] = useState<ServerDiceStates>({});
   const [lastUpdate, setLastUpdate] = useState(0);
   const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
@@ -43,58 +42,15 @@ export function useDice() {
     };
   }, [roomId]); // Remove diceContext from dependencies to prevent recreation
 
-  // User-controlled dice capture workflow
+  // User-controlled dice capture workflow (legacy method)
   const captureDiceResults = useCallback(async (): Promise<number[]> => {
-    if (!serverDiceManagerRef.current) {
-      throw new Error('Dice manager not available');
+    const response = await diceContext.captureDiceResult();
+    if (response.error) {
+      throw new Error(response.error);
     }
-
-    setIsCapturing(true);
-    
-    // Enable the 3D dice plane for user interaction
-    diceContext.enable();
-    
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        setIsCapturing(false);
-        diceContext.disable();
-        reject(new Error('Dice capture timeout - user did not throw dice'));
-      }, 30000);
-
-      let stabilityTimer: NodeJS.Timeout | null = null;
-      let wasRolling = false;
-
-      const checkDiceState = () => {
-        // Check if dice started moving (not stable)
-        if (!diceContext.stable && !wasRolling) {
-          wasRolling = true;
-          console.log('Dice movement detected - user is throwing...');
-        }
-        
-        // Check for stability after dice were moving
-        if (wasRolling && diceContext.stable && diceContext.results.length > 0) {
-          // Start 500ms stability timer
-          if (stabilityTimer) clearTimeout(stabilityTimer);
-          
-          stabilityTimer = setTimeout(() => {
-            if (diceContext.stable && diceContext.results.length > 0) {
-              clearTimeout(timeout);
-              setIsCapturing(false);
-              diceContext.disable();
-              
-              resolve(diceContext.results);
-            } else {
-              setTimeout(checkDiceState, 100);
-            }
-          }, 500);
-        } else {
-          setTimeout(checkDiceState, 100);
-        }
-      };
-      
-      checkDiceState();
-    });
+    return response.data || [];
   }, [diceContext]);
+
 
   // Utility for individual dice components to get their state
   const updateDiceState = useCallback((diceId: string, setState: (state: any) => void) => {
@@ -145,7 +101,7 @@ export function useDice() {
     results: diceContext.results,
     diceStates: serverDiceStates,
     isConnected: serverDiceManagerRef.current !== null,
-    isCapturing,
+    isCapturing: diceContext.isCapturing,
     lastUpdate,
     
     // State utilities
@@ -155,6 +111,7 @@ export function useDice() {
     enable: diceContext.enable,
     disable: diceContext.disable,
     captureDiceResults,
+    captureDiceResult: diceContext.captureDiceResult,
     
     // Dice physics actions
     throwDice,
