@@ -32,7 +32,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     currentPlayer, 
     currentTurn
   } = useRoom();
-  const { captureDiceResults } = useDice();
+  const { captureDiceResult } = useDice();
   
   // Track hero abilities used this turn
   const [heroUsageThisTurn, setHeroUsageThisTurn] = useState<HeroUsageState>({});
@@ -64,7 +64,17 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     try {
       // Wait for user to throw dice and capture results
       console.log(`🎲 ${currentPlayer?.name}, throw the dice for ${heroId}!`);
-      const results = await captureDiceResults();
+      const response = await captureDiceResult();
+      
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      if (!response.data || response.data.length === 0) {
+        throw new Error('No dice results captured');
+      }
+      
+      const results = response.data;
       const sum = results.reduce((a, b) => a + b, 0);
       
       // Get the hero to check requirements
@@ -96,7 +106,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       });
       throw error;
     }
-  }, [canUseHeroAbility, captureDiceResults, currentPlayer]);
+  }, [canUseHeroAbility, captureDiceResult, currentPlayer]);
   
   // Enhanced advanceTurn that resets hero usage
   const handleAdvanceTurn = useCallback(() => {
