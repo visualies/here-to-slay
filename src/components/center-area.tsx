@@ -85,19 +85,17 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       )}
       
       {status === 'dice-rolling' && (
-        <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
+        <StatusArea header={`${currentTurnPlayerName} is rolling dice... (${captureStatus})`}>
           <DiceResults 
             diceResults={displayResults} 
-            captureStatus={captureStatus}
           />
         </StatusArea>
       )}
       
       {status === 'dice-capture' && (
-        <StatusArea header="Dice Results">
+        <StatusArea header={`Dice Results (${captureStatus})`}>
           <DiceResults 
             diceResults={displayResults} 
-            captureStatus={captureStatus}
           />
         </StatusArea>
       )}

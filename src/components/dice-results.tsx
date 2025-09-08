@@ -1,11 +1,11 @@
-import { DiceCaptureStatus } from '../contexts/dice-context';
+import { useDice } from '../hooks/use-dice';
 
 interface DiceResultsProps {
   diceResults: number[];
-  captureStatus?: DiceCaptureStatus;
 }
 
-export function DiceResults({ diceResults = [], captureStatus = 'complete' }: DiceResultsProps) {
+export function DiceResults({ diceResults = [] }: DiceResultsProps) {
+  const { captureStatus } = useDice();
   const validResults = diceResults.filter(r => r > 0);
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
