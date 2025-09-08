@@ -125,7 +125,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
                 progress={completionProgress}
                 showProgress={captureStatus === 'complete'}
                 variant={meetsRequirement(total, requiredAmount) ? 'success' : 'default'}
-                direction="clockwise"
+                direction={meetsRequirement(total, requiredAmount) ? 'clockwise' : 'counterclockwise'}
               >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
               </StatusBubble>
