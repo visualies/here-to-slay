@@ -96,7 +96,7 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
               <StatusBubble
                 progress={completionProgress}
                 showProgress={captureStatus === 'complete'}
-                className={`${getResultColor(total).bg}`}
+                variant={meetsRequirement(total, requiredAmount) ? 'success' : 'default'}
               >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
               </StatusBubble>
