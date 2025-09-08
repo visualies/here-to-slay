@@ -64,7 +64,22 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     try {
       // Wait for user to throw dice and capture results
       console.log(`🎲 ${currentPlayer?.name}, throw the dice for ${heroId}!`);
-      const response = await captureDiceResult();
+      
+      // Get the hero to parse requirement and pass numeric value to dice context
+      const hero = currentPlayer?.party.leader?.id === heroId 
+        ? currentPlayer.party.leader
+        : currentPlayer?.party.heroes.find(h => h?.id === heroId);
+      
+      // Parse requirement to get numeric value (e.g., "6+", "8+", "Roll 11+")
+      let requiredAmount: number | undefined;
+      if (hero?.requirement) {
+        const rollMatch = hero.requirement.match(/(\d+)\+/);
+        if (rollMatch) {
+          requiredAmount = parseInt(rollMatch[1]);
+        }
+      }
+      
+      const response = await captureDiceResult(requiredAmount);
       
       if (response.error) {
         throw new Error(response.error);
@@ -77,11 +92,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       const results = response.data;
       const sum = results.reduce((a, b) => a + b, 0);
       
-      // Get the hero to check requirements
-      const hero = currentPlayer?.party.leader?.id === heroId 
-        ? currentPlayer.party.leader
-        : currentPlayer?.party.heroes.find(h => h?.id === heroId);
-      
+      // Log the result (hero was already retrieved above)
       if (hero && hero.requirement) {
         // Parse requirement (e.g., "Roll 11+" means sum >= 11)
         const rollMatch = hero.requirement.match(/Roll (\d+)\+/);

@@ -23,11 +23,12 @@ export interface DiceData {
   hasRolled: boolean;
   isCapturing: boolean;
   captureStatus: DiceCaptureStatus;
+  requiredAmount: number | null;
   
   enable: () => void;
   disable: () => void;
   updateStates: (states: Record<string, DiceState>) => void;
-  captureDiceResult: () => Promise<DiceCaptureResponse>;
+  captureDiceResult: (requiredAmount?: number) => Promise<DiceCaptureResponse>;
 }
 
 export const DiceContext = createContext<DiceData | null>(null);
@@ -43,6 +44,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [hasRolled, setHasRolled] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
+  const [requiredAmount, setRequiredAmount] = useState<number | null>(null);
   
   // Check if all dice are stable
   const stable = enabled && Object.keys(diceStates).length > 0 && 
@@ -68,16 +70,16 @@ export function DiceProvider({ children }: DiceProviderProps) {
     }
   }, [isCapturing, enabled, stable, hasRolled]);
 
-  // Update results when dice become stable
+  // Update results in real-time (both while rolling and when stable)
   useEffect(() => {
-    if (enabled && stable && Object.keys(diceStates).length > 0) {
+    if (enabled && Object.keys(diceStates).length > 0) {
       const newResults = Object.values(diceStates)
         .sort((a, b) => a.lastUpdate - b.lastUpdate)
         .map(dice => dice.result);
       
       setResults(newResults);
     }
-  }, [enabled, stable, diceStates]);
+  }, [enabled, diceStates]);
   
   const enable = useCallback(() => {
     setEnabled(true);
@@ -94,7 +96,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
   }, []);
 
   // Capture dice result - ensures only one capture at a time
-  const captureDiceResult = useCallback((): Promise<DiceCaptureResponse> => {
+  const captureDiceResult = useCallback((requiredAmount?: number): Promise<DiceCaptureResponse> => {
     if (isCapturing) {
       return Promise.resolve({
         status: 'complete',
@@ -109,12 +111,14 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setEnabled(true);
     setResults([]);
     setHasRolled(false);
+    setRequiredAmount(requiredAmount || null);
     
     return new Promise((resolve) => {
       const timeout = setTimeout(() => {
         setIsCapturing(false);
         setEnabled(false);
         setCaptureStatus('complete');
+        setRequiredAmount(null);
         resolve({
           status: 'complete',
           error: 'Dice capture timeout - user did not throw dice',
@@ -132,6 +136,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
               setIsCapturing(false);
               setEnabled(false);
               setCaptureStatus('complete');
+              setRequiredAmount(null);
               
               resolve({
                 status: 'complete',
@@ -158,6 +163,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
     hasRolled,
     isCapturing,
     captureStatus,
+    requiredAmount,
     enable,
     disable,
     updateStates,
