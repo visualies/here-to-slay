@@ -44,7 +44,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         <CardSlot label="Party Leader" size="large">
           {player?.party?.leader && (
             <div 
-              className={`${canUseHeroAbility(player.party.leader) ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+              className={`${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : ''}`}
               onClick={canUseHeroAbility(player.party.leader) ? () => handleHeroClick(player.party.leader) : undefined}
             >
               <Card card={player.party.leader} size="fill" />
@@ -57,7 +57,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
             {player?.party?.heroes[i] && (
               <div 
-                className={`${canUseHeroAbility(player.party.heroes[i]) ? 'h-full w-full cursor-pointer hover:scale-105 transition-transform' : ''}`}
+                className={`${canUseHeroAbility(player.party.heroes[i]) ? 'h-full w-full cursor-pointer' : ''}`}
                 onClick={canUseHeroAbility(player.party.heroes[i]) ? () => handleHeroClick(player.party.heroes[i]) : undefined}
               >
                 <Card card={player.party.heroes[i]} size="fill" />

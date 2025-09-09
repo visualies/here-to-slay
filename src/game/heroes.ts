@@ -13,6 +13,7 @@ export const heroRegistry: Card[] = [
       action: 'DRAW',
       amount: 2,
     }],
+    imagePath: '/api/images/heroes/hero-001.png',
   },
   {
     id: 'hero-002',
