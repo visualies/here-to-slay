@@ -48,12 +48,12 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     const hash3 = ((hash2 * 16807) + 0) & 0x7fffffff;
     const hash4 = ((hash3 * 48271) + 0) & 0x7fffffff;
     
-    // Scale rotation based on level (0-5) - much more subtle for low levels
-    const maxRotation = level === 1 ? 3 : level * 10; // Level 1 = 3 degrees, Level 5 = 50 degrees max
+    // Scale rotation based on level (0-5) - much more dramatic for high levels
+    const maxRotation = level === 1 ? 3 : level === 5 ? 30 : level * 10; // Level 1 = 3 degrees, Level 5 = 180 degrees max
     const rotation = (hash2 % (maxRotation * 2 + 1)) - maxRotation;
     
-    // Position stays very slight
-    const maxTranslate = level === 1 ? 1 : Math.min(2, level); // Level 1 = 1px, max 2px
+    // Position randomness - much more dramatic for level 5
+    const maxTranslate = level === 1 ? 1 : level === 5 ? 100 : Math.min(2, level); // Level 1 = 1px, Level 5 = 20px max
     const translateX = (hash3 % (maxTranslate * 2 + 1)) - maxTranslate;
     const translateY = (hash4 % (maxTranslate * 2 + 1)) - maxTranslate;
     

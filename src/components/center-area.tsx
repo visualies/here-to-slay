@@ -8,6 +8,8 @@ import { Card } from "./card";
 import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { heroRegistry } from "../game/heroes";
+import { CardType, HeroClass } from "../types";
 
 interface CenterAreaProps {
   diceResults?: number[];
@@ -17,11 +19,63 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
   const { currentTurn, currentPlayer, players, supportStack } = useGameState();
   const status = useStatus();
-  const { enabled: diceEnabled, stable: diceStable, hasRolled, results: diceHookResults, isCapturing, captureStatus } = useDice();
+  const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
   
   // Track visual deck count - maintains consistent visual appearance
   const [visualDeckCount, setVisualDeckCount] = useState(5);
   const [deckSeed, setDeckSeed] = useState(0);
+  
+  // Cache state - 5 cards of different types
+  const [cacheCards] = useState(() => {
+    return [
+      // Hero card
+      {
+        id: 'cache-hero-1',
+        name: 'Greedy Cheeks',
+        type: CardType.Hero,
+        class: HeroClass.Bard,
+        description: 'Draw 2 cards.',
+        requirement: 6,
+        effect: [{ action: 'DRAW', amount: 2 }]
+      },
+      // Item card
+      {
+        id: 'cache-item-1',
+        name: 'Even Bigger Ring',
+        type: CardType.Item,
+        description: '+2 to all of your rolls.',
+        requirement: 4,
+        effect: [{ action: 'MODIFY_ROLL', amount: 2 }]
+      },
+      // Magic card
+      {
+        id: 'cache-magic-1',
+        name: 'Critical Boost',
+        type: CardType.Magic,
+        description: 'DRAW 3 cards.',
+        requirement: 5,
+        effect: [{ action: 'DRAW', amount: 3 }]
+      },
+      // Monster card
+      {
+        id: 'cache-monster-1',
+        name: 'Arctic Aries',
+        type: CardType.Monster,
+        description: 'Each time you play a Magic card, you may DRAW a card.',
+        requirement: 8,
+        effect: [{ action: 'DRAW', amount: 1, condition: 'MAGIC_PLAYED' }]
+      },
+      // Modifier card
+      {
+        id: 'cache-modifier-1',
+        name: '+4/-1',
+        type: CardType.Modifier,
+        description: 'Add +4 or -1 to any player\'s roll.',
+        requirement: 3,
+        effect: [{ action: 'MODIFY_ROLL', amount: 4, choice: true }]
+      }
+    ];
+  });
   
   // Update visual deck count when cards are drawn, but add one back for visual continuity
   useEffect(() => {
@@ -53,7 +107,15 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
               {Array.from({ length: visualDeckCount }, (_, i) => (
                 <Card 
                   key={`support-${deckSeed}-${i}`}
-                  card={{ name: `Support Deck`, type: 'Hero', class: '', requirement: '' }} 
+                  card={{ 
+                    id: `support-${i}`, 
+                    name: `Support Deck`, 
+                    type: CardType.Hero, 
+                    class: HeroClass.Fighter, 
+                    requirement: 6,
+                    description: 'Support card',
+                    effect: []
+                  }} 
                   isBack={true}
                   stackIndex={i}
                   randomness={1}
@@ -88,8 +150,19 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       {/* Cache positioned absolutely to escape layout constraints */}
       <div className="absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10">
         <div className="text-sm text-gray-600 font-medium">Cache</div>
-        <div className="w-48 h-32 border-2 border-dashed border-gray-300 rounded flex items-center justify-center bg-white shadow-sm">
-          <div className="text-xs text-gray-700">CACHE</div>
+        <div className="flex items-center justify-center">
+          <Stack>
+            {cacheCards.map((card, index) => (
+              <Card 
+                key={card.id}
+                card={card}
+                isBack={false}
+                stackIndex={index}
+                randomness={5}
+                size="deck"
+              />
+            ))}
+          </Stack>
         </div>
       </div>
       
