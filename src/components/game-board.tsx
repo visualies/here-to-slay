@@ -49,7 +49,7 @@ export default function GameBoard() {
     >
       <DiceProvider>
         <GameActionsProvider>
-          <div className="w-full h-screen bg-white relative">
+          <div className="w-full h-screen  relative">
           {/* Room Info and Leave Button */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
             <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm">

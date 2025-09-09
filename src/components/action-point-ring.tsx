@@ -12,7 +12,7 @@ export function ActionPointRing({ current, max, className = "" }: ActionPointRin
   const strokeDasharray = current > 0 ? `${percentage * perimeter} ${perimeter}` : "2 4";
 
   return (
-    <div className={`relative flex items-center justify-center bg-white rounded p-1 ${className}`}>
+    <div className={`relative flex items-center justify-center bg-background rounded p-1 ${className}`}>
       <svg 
         width="28" 
         height="28" 

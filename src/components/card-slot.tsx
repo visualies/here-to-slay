@@ -16,8 +16,9 @@ export function CardSlot({ className, children, label, size = "small" }: CardSlo
         </div>
       )}
       <div className={cn(
-        "bg-white border-2 border-dashed border-gray-300 rounded overflow-hidden aspect-[744/1039] flex items-center justify-center",
-        size === "large" ? "w-24" : "w-20"
+        "bg-background border-2 border-gray-300 rounded overflow-visible aspect-[744/1039] flex items-center justify-center",
+        size === "large" ? "w-24" : "w-20",
+          children ? "border-none" : "border-dashed"
       )}>
         {children}
       </div>

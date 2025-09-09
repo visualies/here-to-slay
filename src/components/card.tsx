@@ -83,7 +83,7 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
       className={`${cardClasses} flex flex-col`}
       style={{ transform: transform, ...borderStyle }}
     >
-      <div className="flex-1 flex flex-col justify-between p-1">
+      <div className="flex-1 flex flex-col justify-between">
         <div className="text-xs font-bold text-center truncate">
           {card.name}
         </div>
