@@ -52,7 +52,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} hover:scale-150 hover:translate-y-[-11rem] transition-transform cursor-pointer hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} hover:scale-200 hover:translate-y-[-8.5rem] transition-transform cursor-pointer hover:z-10 relative`}
             onClick={() => playCard(card.id)}
           >
             <Card card={card} size="large" />
