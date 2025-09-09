@@ -3,6 +3,7 @@
 import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useRoom } from './room-context';
 import { useDice } from '../hooks/use-dice';
+import { updatePlayerActionPoints } from '../lib/players';
 import type { Card } from '../types';
 
 interface HeroUsageState {
@@ -31,7 +32,9 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   const { 
     gameActions, 
     currentPlayer, 
-    currentTurn
+    currentTurn,
+    playersRef,
+    gameStateRef
   } = useRoom();
   const { captureDiceResult } = useDice();
   
@@ -75,7 +78,21 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       }
       
       if (!response.data || response.data.length === 0) {
-        throw new Error('No dice results captured');
+        // Timeout occurred - consume action point and end turn gracefully
+        console.log(`Dice capture timeout for ${hero.name} - consuming action point`);
+        
+        // Consume an action point
+        if (currentPlayer && currentPlayer.actionPoints > 0 && playersRef?.current) {
+          updatePlayerActionPoints(playersRef.current, currentPlayer.id, currentPlayer.actionPoints - 1);
+          
+          // Check if turn should advance (no action points left)
+          if (currentPlayer.actionPoints - 1 === 0) {
+            console.log('No action points left after timeout, advancing turn...');
+            gameActions.advanceTurn();
+          }
+        }
+        
+        return; // End the action gracefully
       }
       
       const results = response.data;

@@ -157,17 +157,26 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setRequiredAmount(requiredAmount || 0);
     
     return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
+      const checkTimeout = () => {
+        // Don't timeout if dice are actively rolling
+        if (captureStatus === 'rolling') {
+          setTimeout(checkTimeout, 1000);
+          return;
+        }
+        
+        // Timeout occurred - gracefully end the action
         setIsCapturing(false);
         setEnabled(false);
         setCaptureStatus('complete');
-        setRequiredAmount(0); // Only reset on timeout/failure
+        setRequiredAmount(0);
         resolve({
           status: 'complete',
-          error: 'Dice capture timeout - user did not throw dice',
-          data: null
+          error: null, // No error - just end the action gracefully
+          data: []
         });
-      }, 30000);
+      };
+      
+      const timeout = setTimeout(checkTimeout, 30000);
 
       // Wait for dice to be stable and hasRolled
       const checkForCompletion = () => {

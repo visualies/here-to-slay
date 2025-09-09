@@ -21,7 +21,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   useEffect(() => {
     const audio = new Audio('/soundtrack.mp3');
     audio.loop = true;
-    audio.volume = 0.3; // Set to 30% volume
+    audio.volume = 0.09; // Set to 9% volume (reduced by 70%)
     
     // Store reference to prevent garbage collection
     (window as any).gameAudio = audio;
