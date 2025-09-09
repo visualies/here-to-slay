@@ -9,6 +9,7 @@ import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { heroRegistry } from "../game/heroes";
+import { modifierRegistry } from "../game/modifiers";
 import { CardType, HeroClass } from "../types";
 
 interface CenterAreaProps {
@@ -25,56 +26,9 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const [visualDeckCount, setVisualDeckCount] = useState(5);
   const [deckSeed, setDeckSeed] = useState(0);
   
-  // Cache state - 5 cards of different types
+  // Cache state - All modifier cards
   const [cacheCards] = useState(() => {
-    return [
-      // Hero card
-      {
-        id: 'cache-hero-1',
-        name: 'Greedy Cheeks',
-        type: CardType.Hero,
-        class: HeroClass.Bard,
-        description: 'Draw 2 cards.',
-        requirement: 6,
-        effect: [{ action: 'DRAW', amount: 2 }]
-      },
-      // Item card
-      {
-        id: 'cache-item-1',
-        name: 'Even Bigger Ring',
-        type: CardType.Item,
-        description: '+2 to all of your rolls.',
-        requirement: 4,
-        effect: [{ action: 'MODIFY_ROLL', amount: 2 }]
-      },
-      // Magic card
-      {
-        id: 'cache-magic-1',
-        name: 'Critical Boost',
-        type: CardType.Magic,
-        description: 'DRAW 3 cards.',
-        requirement: 5,
-        effect: [{ action: 'DRAW', amount: 3 }]
-      },
-      // Monster card
-      {
-        id: 'cache-monster-1',
-        name: 'Arctic Aries',
-        type: CardType.Monster,
-        description: 'Each time you play a Magic card, you may DRAW a card.',
-        requirement: 8,
-        effect: [{ action: 'DRAW', amount: 1, condition: 'MAGIC_PLAYED' }]
-      },
-      // Modifier card
-      {
-        id: 'cache-modifier-1',
-        name: '+4/-1',
-        type: CardType.Modifier,
-        description: 'Add +4 or -1 to any player\'s roll.',
-        requirement: 3,
-        effect: [{ action: 'MODIFY_ROLL', amount: 4, choice: true }]
-      }
-    ];
+    return modifierRegistry;
   });
   
   // Update visual deck count when cards are drawn, but add one back for visual continuity

@@ -26,6 +26,25 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     ? 'w-full h-full' 
     : `${sizeClasses[size]} aspect-[744/1039]`;
 
+  // Get background image for card
+  const getCardBackground = (card: GameCard) => {
+    // If card has imagePath, use it
+    if (card.imagePath) {
+      return `url(${card.imagePath})`;
+    }
+    
+    // Fall back to default images based on type
+    switch (card.type) {
+      case 'Modifier':
+        return 'url(/modifier.png)';
+      case 'Hero':
+      case 'Item':
+      case 'Magic':
+      default:
+        return 'url(/heroBack.png)';
+    }
+  };
+
   // Generate slight random transformations based on card name and index for true randomness
   const getRandomTransform = (seed: string, index?: number, level: number = 0) => {
     if (level === 0) return '';
@@ -49,11 +68,11 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     const hash4 = ((hash3 * 48271) + 0) & 0x7fffffff;
     
     // Scale rotation based on level (0-5) - much more dramatic for high levels
-    const maxRotation = level === 1 ? 3 : level === 5 ? 30 : level * 10; // Level 1 = 3 degrees, Level 5 = 180 degrees max
+    const maxRotation = level === 1 ? 3 : level === 5 ? 40 : level * 10; // Level 1 = 3 degrees, Level 5 = 180 degrees max
     const rotation = (hash2 % (maxRotation * 2 + 1)) - maxRotation;
     
     // Position randomness - much more dramatic for level 5
-    const maxTranslate = level === 1 ? 1 : level === 5 ? 100 : Math.min(2, level); // Level 1 = 1px, Level 5 = 20px max
+    const maxTranslate = level === 1 ? 1 : level === 5 ? 80 : Math.min(2, level); // Level 1 = 1px, Level 5 = 20px max
     const translateX = (hash3 % (maxTranslate * 2 + 1)) - maxTranslate;
     const translateY = (hash4 % (maxTranslate * 2 + 1)) - maxTranslate;
     
@@ -61,54 +80,48 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
   };
 
   const transform = getRandomTransform(card.name, stackIndex, randomness);
-  const cardClasses = `${baseClasses} bg-white rounded overflow-hidden border ${className}`;
   const borderStyle = { borderColor: '#79757350' };
 
-  if (isBack) {
-    return (
-      <div 
-        className={`${baseClasses} bg-cover bg-center rounded overflow-hidden border ${className}`}
-        style={{ 
-          backgroundImage: 'url(/heroBack.png)',
-          transform: transform,
-          ...borderStyle
-        }}
-      >
-      </div>
-    );
-  }
+  // All cards now use background images
+  const backgroundImage = isBack ? 'url(/heroBack.png)' : getCardBackground(card);
 
   return (
     <div 
-      className={`${cardClasses} flex flex-col`}
-      style={{ transform: transform, ...borderStyle }}
+      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden border ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''}`}
+      style={{ 
+        backgroundImage,
+        transform: transform,
+        ...borderStyle
+      }}
     >
-      <div className="flex-1 flex flex-col justify-between">
-        <div className="text-xs font-bold text-center truncate">
-          {card.name}
-        </div>
-        <div className="text-center">
-          <div className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${
-            card.type === 'Hero' ? 'bg-yellow-100 text-yellow-800' :
-            card.type === 'Item' ? 'bg-blue-100 text-blue-800' :
-            card.type === 'Magic' ? 'bg-purple-100 text-purple-800' :
-            card.type === 'Modifier' ? 'bg-green-100 text-green-800' :
-            'bg-red-100 text-red-800'
-          }`}>
-            {card.type}
+      {/* Only show text content for non-modifier cards and non-back cards */}
+      {card.type !== 'Modifier' && !isBack && (
+        <div className="flex-1 flex flex-col justify-between bg-white/80 p-1">
+          <div className="text-xs font-bold text-center truncate">
+            {card.name}
           </div>
-          {card.class && (
-            <div className="text-xs text-gray-600 mt-0.5">
-              {card.class}
+          <div className="text-center">
+            <div className={`inline-block px-1 py-0.5 rounded text-xs font-medium ${
+              card.type === 'Hero' ? 'bg-yellow-100 text-yellow-800' :
+              card.type === 'Item' ? 'bg-blue-100 text-blue-800' :
+              card.type === 'Magic' ? 'bg-purple-100 text-purple-800' :
+              'bg-red-100 text-red-800'
+            }`}>
+              {card.type}
             </div>
-          )}
+            {card.class && (
+              <div className="text-xs text-gray-600 mt-0.5">
+                {card.class}
+              </div>
+            )}
+          </div>
+          <div className="text-xs text-center text-gray-700">
+            {card.requirement && (
+              <div className="font-semibold">{card.requirement}</div>
+            )}
+          </div>
         </div>
-        <div className="text-xs text-center text-gray-700">
-          {card.requirement && (
-            <div className="font-semibold">{card.requirement}</div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

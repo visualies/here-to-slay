@@ -15,6 +15,7 @@ export type Card = {
   description: string;
   requirement?: number;
   effect: Action[];
+  imagePath?: string;
 };
 
 export enum CardType {
