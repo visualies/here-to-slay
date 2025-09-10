@@ -129,41 +129,29 @@ export function GameArea({ diceResults }: GameAreaProps) {
       
       {/* Game board container */}
       <div className="relative h-full grid grid-rows-[minmax(60px,1fr)_2fr_minmax(60px,1fr)] grid-cols-[minmax(60px,1fr)_2fr_minmax(60px,1fr)]">
-        {/* Top-left corner */}
-        <div className={`col-start-1 row-start-1 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
-        
-        {/* Top player area */}
-        <div className={`col-start-2 row-start-1 flex items-center justify-center @container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="top" debugMode={debugMode} />
-        </div>
-        
-        {/* Top-right corner */}
-        <div className={`col-start-3 row-start-1 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
-        
-        {/* Right player area */}
-        <div className={`col-start-3 row-start-2 flex items-center justify-center @container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="right" debugMode={debugMode} />
-        </div>
-        
-        {/* Bottom-left corner */}
-        <div className={`col-start-1 row-start-3 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
-        
-        {/* Bottom player area */}
-        <div className={`col-start-2 row-start-3 flex items-center justify-center @container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="bottom" debugMode={debugMode} />
-        </div>
-        
-        {/* Bottom-right corner */}
-        <div className={`col-start-3 row-start-3 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
-        
-        {/* Left player area */}
-        <div className={`col-start-1 row-start-2 flex items-center justify-center @container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="left" debugMode={debugMode} />
-        </div>
-        
         {/* Center area */}
         <div className={`col-start-2 row-start-2 flex items-center justify-center @container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <CenterArea diceResults={diceResults} debugMode={debugMode} />
+        </div>
+        
+        {/* Top player area - conditional overflow based on available space */}
+        <div className={`col-start-2 row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="top" debugMode={debugMode} allowOverflow={true} />
+        </div>
+        
+        {/* Right player area - conditional overflow based on available space */}
+        <div className={`col-start-3 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="right" debugMode={debugMode} allowOverflow={true} />
+        </div>
+        
+        {/* Bottom player area - conditional overflow based on available space */}
+        <div className={`col-start-2 row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="bottom" debugMode={debugMode} allowOverflow={true} />
+        </div>
+        
+        {/* Left player area - conditional overflow based on available space */}
+        <div className={`col-start-1 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="left" debugMode={debugMode} allowOverflow={true} />
         </div>
       </div>
       

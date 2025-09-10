@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useSizing } from "@/contexts/sizing-context";
 
 interface CardSlotProps {
   className?: string;
@@ -11,6 +12,11 @@ interface CardSlotProps {
 }
 
 export function CardSlot({ className, children, label, size = "default", cardType = "hero", hideOutline = false, noBg = false }: CardSlotProps) {
+  const { cardSize } = useSizing();
+  
+  // Calculate card dimensions based on global sizing context
+  const cardWidth = size === "large" ? cardSize : cardSize * 0.8;
+  
   return (
     <div className={cn("relative", className)}>
       {label && (
@@ -22,11 +28,11 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
         className={cn(
           noBg ? "" : "bg-background",
           "rounded overflow-visible flex items-center justify-center",
-          size === "large" ? "w-[clamp(1rem,15cqw,8rem)]" : "w-[clamp(0.875rem,12cqw,7rem)]", // Responsive widths using container queries
           hideOutline ? "border-none" : children ? "border-none" : "border-2 border-gray-300 border-dashed",
           children ? "shadow-md" : ""
         )}
         style={{
+          width: `${cardWidth}px`,
           aspectRatio: (cardType === "party-leader" || cardType === "monster") ? "827/1417" : "5/7"
         }}
       >

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BlurProvider } from "../contexts/blur-context";
+import { SizingProvider } from "../contexts/sizing-context";
 import { BlurOverlay } from "../components/blur-overlay";
 
 const geistSans = Geist({
@@ -30,8 +31,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <BlurProvider>
-          {children}
-          <BlurOverlay />
+          <SizingProvider>
+            {children}
+            <BlurOverlay />
+          </SizingProvider>
         </BlurProvider>
       </body>
     </html>
