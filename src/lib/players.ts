@@ -33,7 +33,8 @@ export function addPlayerToRoom(
       deck: [],
       party: {
         leader: null,
-        heroes: [null, null, null, null, null, null]
+        heroes: Array(6).fill(null),
+        duplicateHeroes: []
       },
       actionPoints: 0
     };
@@ -85,7 +86,7 @@ export function dealCardsToPlayer(
     ...player,
     hand,
     deck: playerDeck,
-    party: { leader: null, heroes: [null, null, null, null, null, null] },
+    party: { leader: null, heroes: Array(6).fill(null), duplicateHeroes: [] },
     actionPoints: 0
   };
 
@@ -156,19 +157,36 @@ export function addHeroToParty(
   const player = playersMap.get(playerId);
   if (!player) return false;
 
-  const partySlotIndex = player.party.heroes.findIndex(h => h === null);
-  if (partySlotIndex === -1) return false;
+  // Check if there's already a hero of the same class in the main heroes array
+  const hasExistingClass = player.party.heroes.some(h => h && h.class === hero.class);
+  
+  if (hasExistingClass) {
+    // Add to duplicate heroes array
+    const newDuplicateHeroes = [...player.party.duplicateHeroes, hero];
+    
+    const updatedPlayer: Player = {
+      ...player,
+      party: { ...player.party, duplicateHeroes: newDuplicateHeroes }
+    };
+    
+    playersMap.set(playerId, updatedPlayer);
+    return true;
+  } else {
+    // Add to main heroes array
+    const partySlotIndex = player.party.heroes.findIndex(h => h === null);
+    if (partySlotIndex === -1) return false;
 
-  const newPartyHeroes = [...player.party.heroes];
-  newPartyHeroes[partySlotIndex] = hero;
+    const newPartyHeroes = [...player.party.heroes];
+    newPartyHeroes[partySlotIndex] = hero;
 
-  const updatedPlayer: Player = {
-    ...player,
-    party: { ...player.party, heroes: newPartyHeroes }
-  };
+    const updatedPlayer: Player = {
+      ...player,
+      party: { ...player.party, heroes: newPartyHeroes }
+    };
 
-  playersMap.set(playerId, updatedPlayer);
-  return true;
+    playersMap.set(playerId, updatedPlayer);
+    return true;
+  }
 }
 
 export function assignPartyLeaderToPlayer(

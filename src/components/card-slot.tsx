@@ -6,9 +6,10 @@ interface CardSlotProps {
   label?: string;
   size?: "small" | "large" | "xl" | "2xl";
   cardType?: "hero" | "party-leader" | "monster";
+  hideOutline?: boolean;
 }
 
-export function CardSlot({ className, children, label, size = "small", cardType = "hero" }: CardSlotProps) {
+export function CardSlot({ className, children, label, size = "small", cardType = "hero", hideOutline = false }: CardSlotProps) {
   return (
     <div className={cn("relative", className)}>
       {label && (
@@ -18,9 +19,9 @@ export function CardSlot({ className, children, label, size = "small", cardType 
       )}
       <div 
         className={cn(
-          "bg-background border-2 border-gray-300 rounded overflow-visible flex items-center justify-center",
+          "bg-background rounded overflow-visible flex items-center justify-center",
           size === "2xl" ? "w-40" : size === "xl" ? "w-40" : size === "large" ? "w-32" : "w-20",
-          children ? "border-none" : "border-dashed"
+          hideOutline ? "border-none" : children ? "border-none" : "border-2 border-gray-300 border-dashed"
         )}
         style={{
           aspectRatio: (cardType === "party-leader" || cardType === "monster") ? "7/12" : "744/1039"
