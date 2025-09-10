@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import type { Player, Card } from '../types';
 import { createDeck, dealHand } from '../game/deck';
+import { getRandomPartyLeader } from '../game/party-leaders';
 
 export function addPlayerToRoom(
   playersMap: Y.Map<Player>,
@@ -168,4 +169,30 @@ export function addHeroToParty(
 
   playersMap.set(playerId, updatedPlayer);
   return true;
+}
+
+export function assignPartyLeaderToPlayer(
+  playersMap: Y.Map<Player>,
+  playerId: string,
+  partyLeader?: Card
+): void {
+  const player = playersMap.get(playerId);
+  if (!player) return;
+
+  const leader = partyLeader || getRandomPartyLeader();
+  
+  const updatedPlayer: Player = {
+    ...player,
+    party: { ...player.party, leader }
+  };
+
+  playersMap.set(playerId, updatedPlayer);
+}
+
+export function assignRandomPartyLeadersToAllPlayers(playersMap: Y.Map<Player>): void {
+  const players = Array.from(playersMap.keys());
+  
+  players.forEach(playerId => {
+    assignPartyLeaderToPlayer(playersMap, playerId);
+  });
 }

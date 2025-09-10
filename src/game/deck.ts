@@ -59,7 +59,7 @@ export function dealHand(deck: Card[], handSize: number = 5): { hand: Card[], re
 }
 
 export function createSupportStack(): Card[] {
-  // Combine all available cards from registries
+  // Combine all available cards from registries (excluding party leaders)
   const allAvailableCards = [...heroRegistry, ...modifierRegistry];
   
   // Create support stack with 20 random cards from registries

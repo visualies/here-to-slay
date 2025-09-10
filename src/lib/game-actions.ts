@@ -7,7 +7,8 @@ import {
   addCardToPlayerHand,
   getActivePlayers,
   getSortedPlayersByJoinTime,
-  dealCardsToPlayer
+  dealCardsToPlayer,
+  assignRandomPartyLeadersToAllPlayers
 } from './players';
 import { createSupportStack } from '../game/deck';
 
@@ -155,6 +156,10 @@ export function initializeGame(
     console.log('Dealing cards to', player.name);
     dealCardsToPlayer(playersMap, player.id, 5, 10);
   });
+  
+  // Assign random party leaders to all players
+  console.log('initializeGame: Assigning party leaders to all players');
+  assignRandomPartyLeadersToAllPlayers(playersMap);
   
   // Set game metadata
   const firstPlayerId = sortedPlayers[0].id;

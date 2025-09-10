@@ -24,6 +24,7 @@ export enum CardType {
   Magic = 'Magic',
   Monster = 'Monster',
   Modifier = 'Modifier',
+  PartyLeader = 'PartyLeader',
 }
 
 export enum HeroClass {

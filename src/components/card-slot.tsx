@@ -5,9 +5,10 @@ interface CardSlotProps {
   children?: React.ReactNode;
   label?: string;
   size?: "small" | "large";
+  cardType?: "hero" | "party-leader";
 }
 
-export function CardSlot({ className, children, label, size = "small" }: CardSlotProps) {
+export function CardSlot({ className, children, label, size = "small", cardType = "hero" }: CardSlotProps) {
   return (
     <div className={cn("relative", className)}>
       {label && (
@@ -15,11 +16,16 @@ export function CardSlot({ className, children, label, size = "small" }: CardSlo
           {label}
         </div>
       )}
-      <div className={cn(
-        "bg-background border-2 border-gray-300 rounded overflow-visible aspect-[744/1039] flex items-center justify-center",
-        size === "large" ? "w-24" : "w-20",
+      <div 
+        className={cn(
+          "bg-background border-2 border-gray-300 rounded overflow-visible flex items-center justify-center",
+          size === "large" ? "w-24" : "w-20",
           children ? "border-none" : "border-dashed"
-      )}>
+        )}
+        style={{
+          aspectRatio: cardType === "party-leader" ? "7/12" : "744/1039"
+        }}
+      >
         {children}
       </div>
     </div>

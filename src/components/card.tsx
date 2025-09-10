@@ -22,9 +22,16 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
   };
 
   // Always use aspect ratio for non-fill sizes, matching support deck style
-  const baseClasses = size === 'fill' 
-    ? 'w-full h-full' 
-    : `${sizeClasses[size]} aspect-[744/1039]`;
+  const getBaseClasses = () => {
+    if (size === 'fill') {
+      return 'w-full h-full';
+    }
+    
+    const aspectRatio = card.type === 'PartyLeader' ? 'aspect-[7/12]' : 'aspect-[744/1039]';
+    return `${sizeClasses[size]} ${aspectRatio}`;
+  };
+  
+  const baseClasses = getBaseClasses();
 
   // Get background image for card
   const getCardBackground = (card: GameCard) => {
@@ -80,18 +87,18 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
   };
 
   const transform = getRandomTransform(card.name, stackIndex, randomness);
-  const borderStyle = { borderColor: '#79757350' };
 
   // All cards now use background images
   const backgroundImage = isBack ? 'url(/heroBack.png)' : getCardBackground(card);
 
   return (
     <div 
-      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden border ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''}`}
+      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''}`}
       style={{ 
         backgroundImage,
+        backgroundSize: card.type === 'PartyLeader' ? '100% 100%' : 'cover',
         transform: transform,
-        ...borderStyle
+        outlineColor: '#c5c3c0'
       }}
     >
       {/* Only show text content for non-modifier cards, non-back cards, and cards without custom images */}
