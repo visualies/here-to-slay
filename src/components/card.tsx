@@ -94,8 +94,8 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
         ...borderStyle
       }}
     >
-      {/* Only show text content for non-modifier cards and non-back cards */}
-      {card.type !== 'Modifier' && !isBack && (
+      {/* Only show text content for non-modifier cards, non-back cards, and cards without custom images */}
+      {card.type !== 'Modifier' && !isBack && !card.imagePath && (
         <div className="flex-1 flex flex-col justify-between bg-white/80 p-1">
           <div className="text-xs font-bold text-center truncate">
             {card.name}

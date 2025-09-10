@@ -2,6 +2,7 @@
 
 import { CardSlot } from "./card-slot";
 import { Card } from "./card";
+import { Stack } from "./stack";
 import { ActionPointRing } from "./action-point-ring";
 import { useGameState } from "../hooks/use-game-state";
 import { usePlayerPosition } from "../hooks/use-player-position";
@@ -44,10 +45,20 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         <CardSlot label="Party Leader" size="large">
           {player?.party?.leader && (
             <div 
-              className={`${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : ''}`}
+              className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'grayscale'}`}
+              style={{ 
+                minWidth: '100%', 
+                minHeight: '100%',
+                aspectRatio: '744/1039'
+              }}
               onClick={canUseHeroAbility(player.party.leader) ? () => handleHeroClick(player.party.leader) : undefined}
             >
               <Card card={player.party.leader} size="fill" />
+              {!canUseHeroAbility(player.party.leader) && (
+                <Stack>
+                  <div className="absolute inset-0 bg-white/40 rounded" />
+                </Stack>
+              )}
             </div>
           )}
         </CardSlot>
@@ -57,10 +68,20 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
             {player?.party?.heroes[i] && (
               <div 
-                className={`${canUseHeroAbility(player.party.heroes[i]) ? 'h-full w-full cursor-pointer' : ''}`}
+                className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'grayscale'}`}
+                style={{ 
+                  minWidth: '100%', 
+                  minHeight: '100%',
+                  aspectRatio: '744/1039'
+                }}
                 onClick={canUseHeroAbility(player.party.heroes[i]) ? () => handleHeroClick(player.party.heroes[i]) : undefined}
               >
                 <Card card={player.party.heroes[i]} size="fill" />
+                {!canUseHeroAbility(player.party.heroes[i]) && (
+                  <Stack>
+                    <div className="absolute inset-0 bg-white/40 rounded" />
+                  </Stack>
+                )}
               </div>
             )}
           </CardSlot>

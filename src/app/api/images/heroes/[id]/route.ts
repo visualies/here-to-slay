@@ -10,7 +10,16 @@ export async function GET(
   
   // Map hero IDs to their image files
   const imageMap: Record<string, string> = {
-    'hero-001.png': 'hero_mage_1.png',
+    'bard_greedy_cheeks.png': 'bard_greedy_cheeks.png',
+    'bard_dogy_dealer.png': 'bard_dogy_dealer.png',
+    'bard_mellow_dee.png': 'bard_mellow_dee.png',
+    'bard_tipsy_tootie.png': 'bard_tipsy_tootie.png',
+    'wizard_buttons.png': 'wizard_buttons.png',
+    'wizard_fluffy.png': 'wizard_fluffy.png',
+    'wizard_hopper.png': 'wizard_hopper.png',
+    'wizard_snowball.png': 'wizard_snowball.png',
+    'wizard_spooky.png': 'wizard_spooky.png',
+    'wizard_whiskers.png': 'wizard_whiskers.png',
   };
   
   const fileName = imageMap[id] || 'heroBack.png'; // Default fallback
