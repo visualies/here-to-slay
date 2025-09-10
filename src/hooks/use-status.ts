@@ -1,6 +1,8 @@
 import { useGameState } from './use-game-state';
 import { useDice } from '../contexts/dice-context';
 import { getConnectedPlayersCount } from '../lib/presence';
+import { useContext } from 'react';
+import { StatusContext } from '../contexts/status-context';
 
 export type GameStatus = 
   | 'waiting-to-start'
@@ -11,54 +13,69 @@ export type GameStatus =
   | 'dice-results'
   | 'game-ended';
 
-export function useStatus(): GameStatus {
+interface StatusReturn {
+  status: GameStatus;
+  message: any; // current message from StatusContext
+  showMessage: (message: string, type?: 'error' | 'warning' | 'success' | 'info', duration?: number) => void;
+}
+
+export function useStatus(): StatusReturn {
   const { gamePhase, currentTurn, currentPlayer, players } = useGameState();
   const { enabled: diceEnabled, stable: diceStable, hasRolled, captureStatus } = useDice();
+  const statusContext = useContext(StatusContext);
   
   // Get connected players count
   const connectedPlayersCount = getConnectedPlayersCount(players);
   
+  let gameStatus: GameStatus;
+  
   // Game hasn't started yet
   if (gamePhase === 'waiting') {
-    return 'waiting-to-start';
+    gameStatus = 'waiting-to-start';
   }
-  
   // Game has ended
-  if (gamePhase === 'ended') {
-    return 'game-ended';
+  else if (gamePhase === 'ended') {
+    gameStatus = 'game-ended';
   }
   
   // Game is playing - determine current state
-  if (gamePhase === 'playing') {
+  else if (gamePhase === 'playing') {
     const isMyTurn = currentPlayer?.id === currentTurn;
     
     // Dice are enabled - determine dice state
     if (diceEnabled) {
       // Rolling: dice are not stable
       if (!diceStable) {
-        return 'dice-rolling';
+        gameStatus = 'dice-rolling';
       }
-      
       // Waiting: hasRolled is false and dice are stable (waiting for user to throw)
-      if (!hasRolled && diceStable) {
-        return 'dice-capture';
+      else if (!hasRolled && diceStable) {
+        gameStatus = 'dice-capture';
       }
-      
       // Stable: hasRolled is true and dice are stable (dice have been thrown and settled)
-      if (hasRolled && diceStable) {
-        return 'dice-results';
+      else if (hasRolled && diceStable) {
+        gameStatus = 'dice-results';
+      } else {
+        gameStatus = 'dice-results';
       }
     }
-    
     // It's my turn
-    if (isMyTurn) {
-      return 'your-turn';
+    else if (isMyTurn) {
+      gameStatus = 'your-turn';
     }
-    
     // It's someone else's turn
-    return 'waiting-for-turn';
+    else {
+      gameStatus = 'waiting-for-turn';
+    }
   }
-  
   // Default fallback - show dice results
-  return 'dice-results';
+  else {
+    gameStatus = 'dice-results';
+  }
+
+  return {
+    status: gameStatus,
+    message: statusContext?.currentMessage || null,
+    showMessage: statusContext?.showMessage || (() => {})
+  };
 }

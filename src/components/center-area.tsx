@@ -19,7 +19,7 @@ interface CenterAreaProps {
 export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
   const { currentTurn, currentPlayer, players, supportStack } = useGameState();
-  const status = useStatus();
+  const { status } = useStatus();
   const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
   
   // Track visual deck count - maintains consistent visual appearance

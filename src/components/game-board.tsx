@@ -8,6 +8,7 @@ import { RoomManager } from "./room-manager";
 import { RoomProvider } from "../contexts/room-context";
 import { GameActionsProvider } from "../contexts/game-actions-context";
 import { DiceProvider } from "../contexts/dice-context";
+import { StatusProvider } from "../contexts/status-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -48,7 +49,8 @@ export default function GameBoard() {
       playerColor={playerData.color}
     >
       <DiceProvider>
-        <GameActionsProvider>
+        <StatusProvider>
+          <GameActionsProvider>
           <div className="w-full h-screen  relative">
           {/* Room Info and Leave Button */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
@@ -77,7 +79,8 @@ export default function GameBoard() {
             roomId={currentRoomId}
           />
           </div>
-        </GameActionsProvider>
+          </GameActionsProvider>
+        </StatusProvider>
       </DiceProvider>
     </RoomProvider>
   );

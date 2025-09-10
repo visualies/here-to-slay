@@ -4,6 +4,7 @@ import { createContext, useContext, ReactNode, useState, useCallback } from 'rea
 import { useRoom } from './room-context';
 import { useDice } from '../hooks/use-dice';
 import { updatePlayerActionPoints } from '../lib/players';
+import { useStatus } from '../hooks/use-status';
 import type { Card } from '../types';
 
 interface HeroUsageState {
@@ -37,6 +38,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     gameStateRef
   } = useRoom();
   const { captureDiceResult } = useDice();
+  const { showMessage } = useStatus();
   
   // Track hero abilities used this turn
   const [heroUsageThisTurn, setHeroUsageThisTurn] = useState<HeroUsageState>({});
@@ -58,19 +60,22 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   // Use hero ability method
   const useHeroAbility = useCallback(async (hero: Card): Promise<void> => {
     if (!canUseHeroAbility(hero)) {
-      throw new Error(`Cannot use hero ability for ${hero.name}`);
+      showMessage(`Cannot use hero ability for ${hero.name}`, 'error');
+      return;
     }
     
     // Additional checks: can only actually use abilities on your turn and with your heroes
     if (!currentPlayer || currentTurn !== currentPlayer.id) {
-      throw new Error(`Can only use hero abilities on your turn`);
+      showMessage(`Can only use hero abilities on your turn`, 'error');
+      return;
     }
     
     // Check if hero is in current player's party
     const isMyHero = currentPlayer.party.leader?.id === hero.id || 
                      currentPlayer.party.heroes.some(h => h?.id === hero.id);
     if (!isMyHero) {
-      throw new Error(`Can only use your own hero abilities`);
+      showMessage(`Can only use your own hero abilities`, 'error');
+      return;
     }
     
     // Mark hero as used this turn
@@ -126,7 +131,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
       });
       throw error;
     }
-  }, [canUseHeroAbility, captureDiceResult, currentPlayer]);
+  }, [canUseHeroAbility, captureDiceResult, currentPlayer, showMessage]);
   
   // Enhanced advanceTurn that resets hero usage
   const handleAdvanceTurn = useCallback(() => {
