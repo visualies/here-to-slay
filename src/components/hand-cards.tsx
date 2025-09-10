@@ -55,7 +55,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
             className={`${index > 0 ? styles.cardSpacing : ''} hover:scale-200 hover:translate-y-[-8.5rem] transition-transform cursor-pointer hover:z-10 relative`}
             onClick={() => playCard(card.id)}
           >
-            <Card card={card} size="large" />
+            <Card card={card} size="default" />
           </div>
         ))
       ) : (
@@ -80,7 +80,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
                       effect: []
                     }} 
                     isBack={true} 
-                    size="large" 
+                    size="default" 
                   />
                 </div>
               </div>

@@ -83,7 +83,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
         <div className="flex flex-col items-center gap-2">
           <div className="flex gap-4">
             {Array.from({ length: 3 }, (_, i) => (
-              <CardSlot key={i} label={i === 0 ? "Monsters" : undefined} size="2xl" cardType="monster">
+              <CardSlot key={i} label={i === 0 ? "Monsters" : undefined} size="large" cardType="monster">
                 {monsters[i] && (
                   <div className="h-full w-full relative">
                     <Card card={monsters[i]} size="fill" preview={true} />
@@ -114,7 +114,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
                 isBack={false}
                 stackIndex={index}
                 randomness={5}
-                size="deck"
+                size="default"
               />
             ))}
           </Stack>

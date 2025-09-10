@@ -8,32 +8,36 @@ import { getRandomTransform, getRandomHoverRotation, getCenterDirectedMovement }
 interface CardProps {
   card: GameCard;
   isBack?: boolean;
-  size?: 'small' | 'medium' | 'deck' | 'large' | 'xl' | 'fill';
+  size?: 'default' | 'large' | 'fill';
   className?: string;
   stackIndex?: number;
   randomness?: number; // 0-5, where 0 = no randomness, 5 = full randomness
   preview?: boolean; // Whether to enable preview hover effects (scale, rotate, blur)
 }
 
-export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0, preview = false }: CardProps) {
+export function Card({ card, isBack = false, size = 'default', className = '', stackIndex, randomness = 0, preview = false }: CardProps) {
   const { setBlurred } = useBlur();
   const [hoverTransform, setHoverTransform] = useState('');
   const sizeClasses = {
-    small: 'w-20',
-    medium: 'w-24', 
-    deck: 'w-28',
-    large: 'w-32',
-    xl: 'w-40',
+    default: 'w-28', // Hero cards (744x1039)
+    large: 'w-32',   // Party Leader/Monster cards (827x1417) - slightly larger
     fill: 'w-full h-full'
   };
 
-  // Always use aspect ratio for non-fill sizes
+  // Use different aspect ratios based on card type
   const getBaseClasses = () => {
     if (size === 'fill') {
       return 'w-full h-full';
     }
     
-    return `${sizeClasses[size]} aspect-[744/1039]`;
+    // Determine aspect ratio based on card type or size
+    const isLargeCard = size === 'large' || 
+      card.type === 'Monster' || 
+      (card.type === 'Hero' && card.class === 'Party Leader');
+    
+    const aspectRatio = isLargeCard ? 'aspect-[827/1417]' : 'aspect-[5/7]';
+    
+    return `${sizeClasses[size]} ${aspectRatio}`;
   };
   
   const baseClasses = getBaseClasses();
