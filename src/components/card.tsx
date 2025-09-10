@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Card as GameCard } from "../types";
 import { useBlur } from "../contexts/blur-context";
 import { getRandomTransform, getRandomHoverRotation } from "../lib/utils";
@@ -16,6 +17,7 @@ interface CardProps {
 
 export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0, preview = false }: CardProps) {
   const { setBlurred } = useBlur();
+  const [hoverTransform, setHoverTransform] = useState('');
   const sizeClasses = {
     small: 'w-20',
     medium: 'w-24', 
@@ -58,22 +60,57 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
   const transform = getRandomTransform(card.name, stackIndex, randomness);
   const hoverRotation = getRandomHoverRotation(card.name, stackIndex);
 
+  // Calculate center-directed movement on hover
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (!preview) return;
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    
+    const cardCenterX = rect.left + rect.width / 2;
+    const cardCenterY = rect.top + rect.height / 2;
+    
+    const deltaX = centerX - cardCenterX;
+    const deltaY = centerY - cardCenterY;
+    
+    // Calculate distance from center
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // Scale the movement based on distance (stronger effect for cards further from center)
+    const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
+    const scale = Math.min(distance / maxDistance, 1);
+    
+    // Apply movement towards center (scaled by distance)
+    const moveX = deltaX * scale * 0.3; // 30% of the way towards center
+    const moveY = deltaY * scale * 0.3;
+    
+    setHoverTransform(`translate(${moveX}px, ${moveY}px)`);
+    setBlurred(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (!preview) return;
+    setHoverTransform('');
+    setBlurred(false);
+  };
+
   // All cards now use background images
   const backgroundImage = isBack ? 'url(/heroBack.png)' : getCardBackground(card);
 
   return (
     <div 
-      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:-translate-y-8 hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
+      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
       style={{ 
         backgroundImage,
-        transform: transform,
+        transform: hoverTransform ? `${transform} ${hoverTransform}` : transform,
         outlineColor: '#c5c3c0',
         ...(preview && {
           '--hover-rotation': `${hoverRotation}deg`
         })
       } as React.CSSProperties & { '--hover-rotation'?: string }}
-      onMouseEnter={() => preview && setBlurred(true)}
-      onMouseLeave={() => preview && setBlurred(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Only show text content for non-modifier cards, non-back cards, and cards without custom images */}
       {card.type !== 'Modifier' && !isBack && !card.imagePath && (
