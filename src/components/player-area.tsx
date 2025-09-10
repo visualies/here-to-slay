@@ -59,61 +59,93 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         </CardSlot>
       </div>
       <div className="flex flex-col gap-1 relative">
-        {/* Duplicate heroes row - absolutely positioned to escape DOM flow */}
-        <div className="absolute -top-[120px] left-0 flex gap-1 z-20">
-          {Array.from({ length: 6 }, (_, slotIndex) => {
-            // Get the duplicate hero for this specific slot
-            const duplicateHeroes = player?.party?.duplicateHeroes || [];
-            const heroInSlot = duplicateHeroes[slotIndex] || null;
+        {(() => {
+          const duplicateHeroes = player?.party?.duplicateHeroes || [];
+          const originalHeroes = player?.party?.heroes || [];
+          
+          // Group duplicates by their matching original hero's column position
+          const duplicatesByColumn = Array.from({ length: 6 }, () => [] as typeof duplicateHeroes);
+          
+          duplicateHeroes.forEach(duplicateHero => {
+            if (!duplicateHero) return;
             
-            return (
-              <CardSlot key={`duplicate-${slotIndex}`} label={undefined} size="large" hideOutline={true} noBg={true}>
-                {heroInSlot && (
-                  <div
-                    key={`${heroInSlot.id}-${slotIndex}`}
-                    className={`h-full w-full relative ${canUseHeroAbility(heroInSlot) ? 'cursor-pointer' : 'saturate-60'}`}
-                    style={{ 
-                      minWidth: '100%', 
-                      minHeight: '100%',
-                      aspectRatio: '744/1039'
-                    }}
-                    onClick={canUseHeroAbility(heroInSlot) ? () => handleHeroClick(heroInSlot) : undefined}
-                  >
-                    <Card card={heroInSlot} size="fill" />
-                    {!canUseHeroAbility(heroInSlot) && (
-                      <div className="absolute inset-0 bg-white/50 rounded" />
-                    )}
-                  </div>
-                )}
-              </CardSlot>
+            // Find which column this duplicate belongs to (based on matching class)
+            const matchingColumnIndex = originalHeroes.findIndex(originalHero => 
+              originalHero && originalHero.class === duplicateHero.class
             );
-          })}
-        </div>
-        {/* Original heroes row */}
-        <div className="flex gap-1">
-          {Array.from({ length: 6 }, (_, i) => (
-            <CardSlot key={i} label={undefined} size="large">
-              {player?.party?.heroes[i] && (
-                <div 
-                  className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'saturate-60'}`}
-                  style={{ 
-                    minWidth: '100%', 
-                    minHeight: '100%',
-                    aspectRatio: '744/1039'
-                  }}
-                  onClick={canUseHeroAbility(player.party.heroes[i]!) ? () => handleHeroClick(player.party.heroes[i]!) : undefined}
-                >
-                  <Card card={player.party.heroes[i]} size="fill" preview={true} />
-                  {!canUseHeroAbility(player.party.heroes[i]) && (
+            
+            if (matchingColumnIndex !== -1) {
+              duplicatesByColumn[matchingColumnIndex].push(duplicateHero);
+            }
+          });
+          
+          return (
+            <div className="flex gap-1">
+              {Array.from({ length: 6 }, (_, columnIndex) => {
+                const originalHero = originalHeroes[columnIndex];
+                const columnDuplicates = duplicatesByColumn[columnIndex];
+                const maxStackHeight = 120; // Fixed container height
+                const totalCardsInColumn = 1 + columnDuplicates.length; // 1 original + duplicates
+                const cardSpacing = totalCardsInColumn > 1 ? maxStackHeight / (totalCardsInColumn - 1) : 0;
+                
+                return (
+                  <div key={`column-${columnIndex}`} className="relative">
+                    {/* Original hero (always at bottom of stack) */}
                     <Stack>
-                      <div className="absolute inset-0 bg-white/50 rounded" />
+                      <CardSlot label={undefined} size="large">
+                        {originalHero && (
+                          <div 
+                            className={`h-full w-full relative ${canUseHeroAbility(originalHero) ? 'cursor-pointer' : 'saturate-60'}`}
+                            style={{ 
+                              minWidth: '100%', 
+                              minHeight: '100%',
+                              aspectRatio: '744/1039'
+                            }}
+                            onClick={canUseHeroAbility(originalHero) ? () => handleHeroClick(originalHero) : undefined}
+                          >
+                            <Card card={originalHero} size="fill" preview={true} />
+                            {!canUseHeroAbility(originalHero) && (
+                              <Stack>
+                                <div className="absolute inset-0 bg-white/50 rounded" />
+                              </Stack>
+                            )}
+                          </div>
+                        )}
+                      </CardSlot>
                     </Stack>
-                  )}
-                </div>
-              )}
-            </CardSlot>
-          ))}
-        </div>
+                    
+                    {/* Duplicate heroes stacked above original */}
+                    {columnDuplicates.map((duplicateHero, stackIndex) => (
+                      <Stack key={`duplicate-${duplicateHero.id}`}>
+                        <div 
+                          className="absolute left-0"
+                          style={{ top: `-${cardSpacing * (stackIndex + 1)}px` }}
+                        >
+                          <CardSlot label={undefined} size="large" hideOutline={true} noBg={true}>
+                            <div
+                              className={`h-full w-full relative ${canUseHeroAbility(duplicateHero) ? 'cursor-pointer' : 'saturate-60'}`}
+                              style={{ 
+                                minWidth: '100%', 
+                                minHeight: '100%',
+                                aspectRatio: '744/1039'
+                              }}
+                              onClick={canUseHeroAbility(duplicateHero) ? () => handleHeroClick(duplicateHero) : undefined}
+                            >
+                              <Card card={duplicateHero} size="fill" />
+                              {!canUseHeroAbility(duplicateHero) && (
+                                <div className="absolute inset-0 bg-white/50 rounded" />
+                              )}
+                            </div>
+                          </CardSlot>
+                        </div>
+                      </Stack>
+                    ))}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
