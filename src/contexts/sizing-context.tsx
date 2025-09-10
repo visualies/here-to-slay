@@ -47,10 +47,14 @@ export function SizingProvider({ children }: SizingProviderProps) {
       // This ensures both sides fit within their constraints
       const baseCardSize = Math.min(horizontalSpacePerCard, verticalSpacePerCard);
       
+      // Since PartyWrapper now handles aspect ratio constraints, we need to make cards smaller
+      // to fit within the constrained boxes. Reduce by a factor to account for the aspect ratio.
+      const constrainedCardSize = baseCardSize * 0.7; // Reduce by 30% to fit within aspect ratio boxes
+      
       // Apply reasonable bounds
-      const minSize = 40;
-      const maxSize = 250;
-      const boundedSize = Math.max(minSize, Math.min(maxSize, baseCardSize));
+      const minSize = 30;
+      const maxSize = 200;
+      const boundedSize = Math.max(minSize, Math.min(maxSize, constrainedCardSize));
       
       // Debug logging
       console.log('Sizing Context:', {
@@ -59,9 +63,10 @@ export function SizingProvider({ children }: SizingProviderProps) {
         perCard: { horizontal: horizontalSpacePerCard, vertical: verticalSpacePerCard },
         isHorizontalSmaller,
         base: baseCardSize,
+        constrained: constrainedCardSize,
         final: boundedSize,
         constrainedBy: isHorizontalSmaller ? 'horizontal (top/bottom)' : 'vertical (left/right)',
-        strategy: 'Use smaller space to prevent overflow'
+        strategy: 'Reduce card size to fit within PartyWrapper aspect ratio constraints'
       });
       
       setCardSize(boundedSize);

@@ -127,6 +127,21 @@
   }
 }
 
+/* Container query utilities for object-fit: contain behavior */
+@layer utilities {
+  .cq-container {
+    container-type: size;
+    display: grid;
+    place-items: center;
+  }
+  .cq-contain {
+    --w: 1;
+    --h: 1;
+    width: min(100cqw, calc(100cqh * var(--w) / var(--h)));
+    aspect-ratio: var(--w) / var(--h);
+  }
+}
+
 /* Container query utilities for party wrapper */
 @layer utilities {
   .party-container {
@@ -134,6 +149,11 @@
   }
   .party-wrapper {
     width: 100cqmin;
-    height: 100cqmin;
+  }
+  .party-wrapper.horizontal {
+    aspect-ratio: 37 / 10;
+  }
+  .party-wrapper.vertical {
+    aspect-ratio: 10 / 37;
   }
 }
