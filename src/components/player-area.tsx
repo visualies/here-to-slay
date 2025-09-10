@@ -119,7 +119,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
                                 }}
                                 onClick={canUseHeroAbility(hero) ? () => handleHeroClick(hero) : undefined}
                               >
-                                <Card card={hero} size="fill" preview={stackIndex === columnHeroes.length - 1} />
+                                <Card card={hero} size="fill" preview={true} />
                                 {!canUseHeroAbility(hero) && (
                                   <Stack>
                                     <div className="absolute inset-0 bg-white/50 rounded" />
