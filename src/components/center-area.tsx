@@ -28,7 +28,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   
   // Cache state - All modifier cards
   const [cacheCards] = useState(() => {
-    return modifierRegistry;
+    return [];
   });
   
   // Update visual deck count when cards are drawn, but add one back for visual continuity
