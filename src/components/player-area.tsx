@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { CardSlot } from "./card-slot";
 import { Card } from "./card";
 import { Stack } from "./stack";
@@ -21,6 +22,19 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
   const { players, currentPlayer, currentTurn } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
   const { useHeroAbility, canUseHeroAbility } = useGameActions();
+  
+  // Responsive stack height based on viewport
+  const [stackHeight, setStackHeight] = useState(120);
+  
+  useEffect(() => {
+    const updateStackHeight = () => {
+      setStackHeight(Math.max(60, Math.min(120, window.innerWidth * 0.08)));
+    };
+    
+    updateStackHeight();
+    window.addEventListener('resize', updateStackHeight);
+    return () => window.removeEventListener('resize', updateStackHeight);
+  }, []);
   
   // Find the player that should be at this position
   const player = players.find(p => getPlayerPosition(p.id) === position) || null;
@@ -92,7 +106,7 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
             <div className="flex gap-1">
               {Array.from({ length: MAX_PARTY_COLUMNS }, (_, columnIndex) => {
                 const columnHeroes = herosByColumn[columnIndex];
-                const maxStackHeight = 120; // Fixed container height
+                const maxStackHeight = stackHeight; // Use responsive stack height
                 const totalCardsInColumn = columnHeroes.length;
                 const cardSpacing = totalCardsInColumn > 1 ? maxStackHeight / (totalCardsInColumn - 1) : 0;
                 

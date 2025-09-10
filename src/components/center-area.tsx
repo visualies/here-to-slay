@@ -97,7 +97,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Discard</div>
-          <div className="w-28 aspect-[744/1039] bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
+          <div className="w-[clamp(3.5rem,10cqw,7rem)] aspect-[744/1039] bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
             <div className="text-xs text-gray-700">DISCARD</div>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {status === 'waiting-for-turn' && (
         <StatusArea header={`Waiting for ${currentTurnPlayerName}'s turn`}>
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
             <Clock className="w-4 h-4 text-gray-500" />
           </div>
         </StatusArea>
@@ -142,7 +142,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {status === 'your-turn' && (
         <StatusArea header={`Your turn - ${currentPlayer?.actionPoints || 0} action points`}>
-          <div className="w-12 h-12 bg-green-100 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
+          <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
             <User className="w-4 h-4 text-green-500" />
           </div>
         </StatusArea>

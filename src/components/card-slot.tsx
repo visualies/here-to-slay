@@ -22,7 +22,7 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
         className={cn(
           noBg ? "" : "bg-background",
           "rounded overflow-visible flex items-center justify-center",
-          size === "large" ? "w-32" : "w-28", // Match card component widths
+          size === "large" ? "w-[clamp(1rem,15cqw,8rem)]" : "w-[clamp(0.875rem,12cqw,7rem)]", // Responsive widths using container queries
           hideOutline ? "border-none" : children ? "border-none" : "border-2 border-gray-300 border-dashed",
           children ? "shadow-md" : ""
         )}
