@@ -15,9 +15,10 @@ import { CardType, HeroClass } from "../types";
 
 interface CenterAreaProps {
   diceResults?: number[];
+  debugMode?: boolean;
 }
 
-export function CenterArea({ diceResults = [] }: CenterAreaProps) {
+export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
   const { currentTurn, currentPlayer, players, supportStack, monsters } = useGameState();
   const { status } = useStatus();
@@ -53,7 +54,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const displayResults = diceEnabled ? diceHookResults : diceResults;
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 relative">
+    <div className={`flex flex-col items-center justify-center gap-6 relative ${debugMode ? 'bg-red-500/10 border border-red-500/30 p-4' : ''}`}>
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
@@ -103,7 +104,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
       </div>
       
       {/* Cache positioned absolutely to escape layout constraints */}
-      <div className="absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10">
+      <div className={`absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10 ${debugMode ? 'border-red-500/70 border-2 p-2' : ''}`}>
         <div className="text-sm text-gray-600 font-medium">Cache</div>
         <div className="flex items-center justify-center">
           <Stack>

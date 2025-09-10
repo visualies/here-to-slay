@@ -27,6 +27,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
     disable: disableDice
   } = useDice();
 
+  // Debug mode from environment variable
+  const debugMode = process.env.NEXT_PUBLIC_DEBUG_MODE === 'true';
+
   // Determine if it's the current player's turn
   const isMyTurn = currentPlayer?.id === currentTurn && gamePhase === 'playing';
 
@@ -125,30 +128,42 @@ export function GameArea({ diceResults }: GameAreaProps) {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[320px_1fr_320px] grid-cols-[400px_1fr_400px]">
+      <div className="relative h-full grid grid-rows-[350px_1fr_350px] grid-cols-[400px_1fr_400px]">
+        {/* Top-left corner */}
+        <div className={`col-start-1 row-start-1 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
+        
         {/* Top player area */}
-        <div className="col-start-2 row-start-1 flex items-center justify-center">
-          <PlayerArea position="top" />
+        <div className={`col-start-2 row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="top" debugMode={debugMode} />
         </div>
+        
+        {/* Top-right corner */}
+        <div className={`col-start-3 row-start-1 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
         
         {/* Right player area */}
-        <div className="col-start-3 row-start-2 flex items-center justify-center">
-          <PlayerArea position="right" />
+        <div className={`col-start-3 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="right" debugMode={debugMode} />
         </div>
+        
+        {/* Bottom-left corner */}
+        <div className={`col-start-1 row-start-3 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
         
         {/* Bottom player area */}
-        <div className="col-start-2 row-start-3 flex items-center justify-center">
-          <PlayerArea position="bottom" />
+        <div className={`col-start-2 row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="bottom" debugMode={debugMode} />
         </div>
         
+        {/* Bottom-right corner */}
+        <div className={`col-start-3 row-start-3 ${debugMode ? 'border-red-500/70 border-2' : ''}`}></div>
+        
         {/* Left player area */}
-        <div className="col-start-1 row-start-2 flex items-center justify-center">
-          <PlayerArea position="left" />
+        <div className={`col-start-1 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="left" debugMode={debugMode} />
         </div>
         
         {/* Center area */}
-        <div className="col-start-2 row-start-2 flex items-center justify-center">
-          <CenterArea diceResults={diceResults} />
+        <div className={`col-start-2 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <CenterArea diceResults={diceResults} debugMode={debugMode} />
         </div>
       </div>
       

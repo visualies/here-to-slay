@@ -14,9 +14,10 @@ const MAX_PARTY_COLUMNS = 6;
 
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
+  debugMode?: boolean;
 }
 
-function PlayerAreaContent({ position }: { position: PlayerAreaProps['position'] }) {
+function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAreaProps['position'], debugMode?: boolean }) {
   const { players, currentPlayer, currentTurn } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
   const { useHeroAbility, canUseHeroAbility } = useGameActions();
@@ -35,7 +36,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
   };
 
   return (
-    <div className="relative flex items-center gap-4 p-4">
+    <div className={`relative flex items-center gap-4 p-4 ${debugMode ? 'bg-red-500/10 border border-red-500/30' : ''}`}>
       <div className="relative flex-shrink-0">
         {player && (
           <div className="absolute top-1/2 -translate-y-1/2 -left-10 z-10">
@@ -149,7 +150,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
   );
 }
 
-export function PlayerArea({ position }: PlayerAreaProps) {
+export function PlayerArea({ position, debugMode = false }: PlayerAreaProps) {
   const rotationClass = {
     top: "rotate-180",
     right: "-rotate-90", 
@@ -159,9 +160,9 @@ export function PlayerArea({ position }: PlayerAreaProps) {
 
   return rotationClass ? (
     <div className={rotationClass}>
-      <PlayerAreaContent position={position} />
+      <PlayerAreaContent position={position} debugMode={debugMode} />
     </div>
   ) : (
-    <PlayerAreaContent position={position} />
+    <PlayerAreaContent position={position} debugMode={debugMode} />
   );
 }
