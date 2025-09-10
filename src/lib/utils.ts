@@ -62,3 +62,72 @@ export function getRandomHoverRotation(seed: string, index?: number) {
   
   return rotation;
 }
+
+// Calculate center-directed movement for hover effects
+export function getCenterDirectedMovement(
+  cardRect: DOMRect, 
+  windowWidth: number, 
+  windowHeight: number, 
+  movementScale: number = 0.05
+) {
+  // Toggle constants for different movement effects
+  const ENABLE_CENTER_MOVEMENT = false;
+  const ENABLE_UPWARD_MOVEMENT = true;
+  const ENABLE_BOUNDS_CHECKING = true;
+  const UPWARD_MOVEMENT_PIXELS = 24;
+  
+  const centerX = windowWidth / 2;
+  const centerY = windowHeight / 2;
+  
+  const cardCenterX = cardRect.left + cardRect.width / 2;
+  const cardCenterY = cardRect.top + cardRect.height / 2;
+  
+  const deltaX = centerX - cardCenterX;
+  const deltaY = centerY - cardCenterY;
+  
+  // Calculate distance from center
+  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+  
+  // Scale the movement based on distance (stronger effect for cards further from center)
+  const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
+  const scale = Math.min(distance / maxDistance, 1);
+  
+  // Apply movement towards center (scaled by distance) plus slight upward movement
+  let moveX = ENABLE_CENTER_MOVEMENT ? deltaX * scale * movementScale : 0;
+  let moveY = ENABLE_CENTER_MOVEMENT ? deltaY * scale * movementScale : 0;
+  
+  // Add upward movement if enabled
+  if (ENABLE_UPWARD_MOVEMENT) {
+    moveY -= UPWARD_MOVEMENT_PIXELS;
+  }
+  
+  // Calculate bounds to prevent clipping when scaled (2x scale)
+  if (ENABLE_BOUNDS_CHECKING) {
+    const scaledWidth = cardRect.width * 2;
+    const scaledHeight = cardRect.height * 2;
+    
+    // Calculate the new position after movement and scaling
+    const newLeft = cardRect.left + moveX - (scaledWidth - cardRect.width) / 2;
+    const newTop = cardRect.top + moveY - (scaledHeight - cardRect.height) / 2;
+    const newRight = newLeft + scaledWidth;
+    const newBottom = newTop + scaledHeight;
+    
+    // Adjust movement to keep card within viewport bounds (with some tolerance)
+    const tolerance = 24; // Allow 20px of clipping before adjusting
+    
+    if (newLeft < -tolerance) {
+      moveX += -(newLeft + tolerance);
+    }
+    if (newRight > windowWidth + tolerance) {
+      moveX -= (newRight - windowWidth - tolerance);
+    }
+    if (newTop < -tolerance) {
+      moveY += -(newTop + tolerance);
+    }
+    if (newBottom > windowHeight + tolerance) {
+      moveY -= (newBottom - windowHeight - tolerance);
+    }
+  }
+  
+  return `translate(${moveX}px, ${moveY}px)`;
+}

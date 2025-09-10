@@ -103,7 +103,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
                   }}
                   onClick={canUseHeroAbility(player.party.heroes[i]!) ? () => handleHeroClick(player.party.heroes[i]!) : undefined}
                 >
-                  <Card card={player.party.heroes[i]} size="fill" />
+                  <Card card={player.party.heroes[i]} size="fill" preview={true} />
                   {!canUseHeroAbility(player.party.heroes[i]) && (
                     <Stack>
                       <div className="absolute inset-0 bg-white/50 rounded" />

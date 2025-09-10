@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Card as GameCard } from "../types";
 import { useBlur } from "../contexts/blur-context";
-import { getRandomTransform, getRandomHoverRotation } from "../lib/utils";
+import { getRandomTransform, getRandomHoverRotation, getCenterDirectedMovement } from "../lib/utils";
 
 interface CardProps {
   card: GameCard;
@@ -65,27 +65,9 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     if (!preview) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
+    const movement = getCenterDirectedMovement(rect, window.innerWidth, window.innerHeight);
     
-    const cardCenterX = rect.left + rect.width / 2;
-    const cardCenterY = rect.top + rect.height / 2;
-    
-    const deltaX = centerX - cardCenterX;
-    const deltaY = centerY - cardCenterY;
-    
-    // Calculate distance from center
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    
-    // Scale the movement based on distance (stronger effect for cards further from center)
-    const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
-    const scale = Math.min(distance / maxDistance, 1);
-    
-    // Apply movement towards center (scaled by distance)
-    const moveX = deltaX * scale * 0.3; // 30% of the way towards center
-    const moveY = deltaY * scale * 0.3;
-    
-    setHoverTransform(`translate(${moveX}px, ${moveY}px)`);
+    setHoverTransform(movement);
     setBlurred(true);
   };
 
