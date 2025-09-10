@@ -165,15 +165,11 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
 }
 
 export function PlayerArea({ position, debugMode = false }: PlayerAreaProps) {
-  const rotationClass = {
-    top: "rotate-180",
-    right: "-rotate-90", 
-    left: "rotate-90",
-    bottom: ""
-  }[position];
+  // Rotation is now handled by PartyWrapper, so we just need to handle the 180° rotation for top
+  const needsTopRotation = position === "top";
 
-  return rotationClass ? (
-    <div className={rotationClass}>
+  return needsTopRotation ? (
+    <div className="rotate-180">
       <PlayerAreaContent position={position} debugMode={debugMode} />
     </div>
   ) : (
