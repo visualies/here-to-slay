@@ -7,7 +7,7 @@ export function BlurOverlay() {
 
   return (
     <div 
-      className={`fixed inset-0 bg-black/20 backdrop-blur-sm z-40 pointer-events-none transition-all duration-300 ease-in-out ${
+      className={`fixed inset-0 bg-black/10 backdrop-blur-[2px] z-40 pointer-events-none transition-all duration-300 ease-in-out ${
         isBlurred ? 'opacity-100' : 'opacity-0'
       }`}
       style={{ 

@@ -86,7 +86,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
               <CardSlot key={i} label={i === 0 ? "Monsters" : undefined} size="2xl" cardType="monster">
                 {monsters[i] && (
                   <div className="h-full w-full relative">
-                    <Card card={monsters[i]} size="fill" />
+                    <Card card={monsters[i]} size="fill" preview={true} />
                   </div>
                 )}
               </CardSlot>

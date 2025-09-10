@@ -48,7 +48,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
               className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'saturate-50'}`}
               onClick={canUseHeroAbility(player.party.leader!) ? () => handleHeroClick(player.party.leader!) : undefined}
             >
-              <Card card={player.party.leader} size="fill" />
+              <Card card={player.party.leader} size="fill" preview={true} />
               {!canUseHeroAbility(player.party.leader) && (
                 <Stack>
                   <div className="absolute inset-0 bg-white/30 rounded" />

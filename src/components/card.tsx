@@ -11,9 +11,10 @@ interface CardProps {
   className?: string;
   stackIndex?: number;
   randomness?: number; // 0-5, where 0 = no randomness, 5 = full randomness
+  preview?: boolean; // Whether to enable preview hover effects (scale, rotate, blur)
 }
 
-export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0 }: CardProps) {
+export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0, preview = false }: CardProps) {
   const { setBlurred } = useBlur();
   const sizeClasses = {
     small: 'w-20',
@@ -24,14 +25,13 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     fill: 'w-full h-full'
   };
 
-  // Always use aspect ratio for non-fill sizes, matching support deck style
+  // Always use aspect ratio for non-fill sizes
   const getBaseClasses = () => {
     if (size === 'fill') {
       return 'w-full h-full';
     }
     
-    const aspectRatio = (card.type === 'PartyLeader' || card.type === 'Monster') ? 'aspect-[7/12]' : 'aspect-[744/1039]';
-    return `${sizeClasses[size]} ${aspectRatio}`;
+    return `${sizeClasses[size]} aspect-[744/1039]`;
   };
   
   const baseClasses = getBaseClasses();
@@ -63,16 +63,17 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
 
   return (
     <div 
-      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${card.type === 'Monster' ? 'random-rotate hover:scale-[2] hover:-translate-y-4 hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'random-rotate hover:rotate-[var(--hover-rotation)] transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
+      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:-translate-y-8 hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
       style={{ 
         backgroundImage,
-        backgroundSize: (card.type === 'PartyLeader' || card.type === 'Monster') ? '100% 100%' : 'cover',
         transform: transform,
         outlineColor: '#c5c3c0',
-        '--hover-rotation': `${hoverRotation}deg`
-      } as React.CSSProperties & { '--hover-rotation': string }}
-      onMouseEnter={() => card.type === 'Monster' && setBlurred(true)}
-      onMouseLeave={() => card.type === 'Monster' && setBlurred(false)}
+        ...(preview && {
+          '--hover-rotation': `${hoverRotation}deg`
+        })
+      } as React.CSSProperties & { '--hover-rotation'?: string }}
+      onMouseEnter={() => preview && setBlurred(true)}
+      onMouseLeave={() => preview && setBlurred(false)}
     >
       {/* Only show text content for non-modifier cards, non-back cards, and cards without custom images */}
       {card.type !== 'Modifier' && !isBack && !card.imagePath && (
