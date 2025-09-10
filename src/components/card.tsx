@@ -13,10 +13,10 @@ interface CardProps {
 
 export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0 }: CardProps) {
   const sizeClasses = {
-    small: 'w-12',
-    medium: 'w-16', 
-    deck: 'w-20',
-    large: 'w-24',
+    small: 'w-20',
+    medium: 'w-24', 
+    deck: 'w-28',
+    large: 'w-32',
     xl: 'w-40',
     fill: 'w-full h-full'
   };

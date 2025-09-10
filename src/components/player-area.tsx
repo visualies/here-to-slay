@@ -60,7 +60,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
       </div>
       <div className="flex gap-1">
         {Array.from({ length: 6 }, (_, i) => (
-          <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
+          <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="large">
             {player?.party?.heroes[i] && (
               <div 
                 className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'saturate-60'}`}

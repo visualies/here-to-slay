@@ -96,7 +96,7 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
         
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Discard</div>
-          <div className="w-20 aspect-[744/1039] bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
+          <div className="w-28 aspect-[744/1039] bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
             <div className="text-xs text-gray-700">DISCARD</div>
           </div>
         </div>

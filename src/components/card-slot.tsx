@@ -19,7 +19,7 @@ export function CardSlot({ className, children, label, size = "small", cardType 
       <div 
         className={cn(
           "bg-background border-2 border-gray-300 rounded overflow-visible flex items-center justify-center",
-          size === "2xl" ? "w-40" : size === "xl" ? "w-32" : size === "large" ? "w-24" : "w-20",
+          size === "2xl" ? "w-40" : size === "xl" ? "w-40" : size === "large" ? "w-32" : "w-20",
           children ? "border-none" : "border-dashed"
         )}
         style={{
