@@ -125,7 +125,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[320px_1fr_320px] grid-cols-[320px_1fr_320px]">
+      <div className="relative h-full grid grid-rows-[320px_1fr_320px] grid-cols-[400px_1fr_400px]">
         {/* Top player area */}
         <div className="col-start-2 row-start-1 flex items-center justify-center">
           <PlayerArea position="top" />
