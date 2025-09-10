@@ -171,22 +171,22 @@ export function GameArea({ diceResults }: GameAreaProps) {
         
         {/* Top player area - conditional overflow based on available space */}
         <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="top" debugMode={debugMode} allowOverflow={shouldTopBottomOverflow} />
+          <PlayerArea position="top" debugMode={debugMode} />
         </div>
         
         {/* Right player area - conditional overflow based on available space */}
         <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="right" debugMode={debugMode} allowOverflow={!shouldTopBottomOverflow} />
+          <PlayerArea position="right" debugMode={debugMode} />
         </div>
         
         {/* Bottom player area - conditional overflow based on available space */}
         <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="bottom" debugMode={debugMode} allowOverflow={shouldTopBottomOverflow} />
+          <PlayerArea position="bottom" debugMode={debugMode} />
         </div>
         
         {/* Left player area - conditional overflow based on available space */}
         <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="left" debugMode={debugMode} allowOverflow={!shouldTopBottomOverflow} />
+          <PlayerArea position="left" debugMode={debugMode} />
         </div>
       </div>
       

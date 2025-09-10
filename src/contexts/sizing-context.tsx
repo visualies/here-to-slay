@@ -40,13 +40,16 @@ export function SizingProvider({ children }: SizingProviderProps) {
       const horizontalSpacePerCard = (horizontalSpace - totalGapSpace) / cardsPerParty;
       const verticalSpacePerCard = (verticalSpace - totalGapSpace) / cardsPerParty;
       
-      // Use the larger of the two as the base size
-      // The smaller side will be allowed to overflow into corners
-      const baseCardSize = Math.max(horizontalSpacePerCard, verticalSpacePerCard);
+      // Determine which side is smaller (will overflow)
+      const isHorizontalSmaller = horizontalSpacePerCard < verticalSpacePerCard;
+      
+      // Use the smaller of the two spaces to ensure no overflow
+      // This ensures both sides fit within their constraints
+      const baseCardSize = Math.min(horizontalSpacePerCard, verticalSpacePerCard);
       
       // Apply reasonable bounds
       const minSize = 40;
-      const maxSize = 120;
+      const maxSize = 250;
       const boundedSize = Math.max(minSize, Math.min(maxSize, baseCardSize));
       
       // Debug logging
@@ -54,9 +57,11 @@ export function SizingProvider({ children }: SizingProviderProps) {
         viewport: { width: viewportWidth, height: viewportHeight },
         spaces: { horizontal: horizontalSpace, vertical: verticalSpace },
         perCard: { horizontal: horizontalSpacePerCard, vertical: verticalSpacePerCard },
+        isHorizontalSmaller,
         base: baseCardSize,
         final: boundedSize,
-        smallerSide: horizontalSpacePerCard < verticalSpacePerCard ? 'horizontal' : 'vertical'
+        constrainedBy: isHorizontalSmaller ? 'horizontal (top/bottom)' : 'vertical (left/right)',
+        strategy: 'Use smaller space to prevent overflow'
       });
       
       setCardSize(boundedSize);

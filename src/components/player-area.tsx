@@ -17,10 +17,9 @@ const MAX_PARTY_COLUMNS = 6;
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
   debugMode?: boolean;
-  allowOverflow?: boolean;
 }
 
-function PlayerAreaContent({ position, debugMode = false, allowOverflow = false }: { position: PlayerAreaProps['position'], debugMode?: boolean, allowOverflow?: boolean }) {
+function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAreaProps['position'], debugMode?: boolean }) {
   const { players, currentPlayer, currentTurn } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
   const { useHeroAbility, canUseHeroAbility } = useGameActions();
@@ -29,42 +28,8 @@ function PlayerAreaContent({ position, debugMode = false, allowOverflow = false 
   // Use global card size for consistent stacking
   const stackHeight = cardSize * 0.8; // Slightly smaller than card size for stacking effect
   
-  // Calculate if this position should overflow based on available space
-  const shouldOverflow = allowOverflow && (() => {
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const horizontalSpace = viewportWidth * 0.6;
-    const verticalSpace = viewportHeight * 0.6;
-    
-    // Calculate space per card for each direction
-    const cardsPerParty = 6;
-    const cardGap = 4;
-    const totalGapSpace = (cardsPerParty - 1) * cardGap;
-    const horizontalSpacePerCard = (horizontalSpace - totalGapSpace) / cardsPerParty;
-    const verticalSpacePerCard = (verticalSpace - totalGapSpace) / cardsPerParty;
-    
-    // Determine which side is smaller
-    const isHorizontalSmaller = horizontalSpacePerCard < verticalSpacePerCard;
-    
-    // Top/Bottom parties should overflow if horizontal space is smaller
-    // Left/Right parties should overflow if vertical space is smaller
-    const shouldOverflowForPosition = (position === 'top' || position === 'bottom') 
-      ? isHorizontalSmaller 
-      : !isHorizontalSmaller;
-    
-    // Debug logging
-    if (debugMode) {
-      console.log(`PlayerArea ${position}:`, {
-        viewport: { width: viewportWidth, height: viewportHeight },
-        spaces: { horizontal: horizontalSpace, vertical: verticalSpace },
-        perCard: { horizontal: horizontalSpacePerCard, vertical: verticalSpacePerCard },
-        isHorizontalSmaller,
-        shouldOverflow: shouldOverflowForPosition
-      });
-    }
-    
-    return shouldOverflowForPosition;
-  })();
+  // Use the global sizing context for consistent card sizing
+  // The overflow decision is handled at the grid level, not here
   
   // Find the player that should be at this position
   const player = players.find(p => getPlayerPosition(p.id) === position) || null;
@@ -80,10 +45,10 @@ function PlayerAreaContent({ position, debugMode = false, allowOverflow = false 
   };
 
   return (
-    <div className={`relative flex items-center gap-4 p-4 ${debugMode ? 'bg-red-500/10 border border-red-500/30' : ''} ${shouldOverflow ? 'overflow-visible' : ''}`}>
+    <div className={`relative flex items-center gap-4 p-4 ${debugMode ? 'bg-red-500/10 border border-red-500/30' : ''}`}>
       {debugMode && (
         <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded">
-          Card Size: {Math.round(cardSize)}px {shouldOverflow ? '(Overflow)' : ''}
+          Card Size: {Math.round(cardSize)}px
         </div>
       )}
       <div className="relative flex-shrink-0">
@@ -199,7 +164,7 @@ function PlayerAreaContent({ position, debugMode = false, allowOverflow = false 
   );
 }
 
-export function PlayerArea({ position, debugMode = false, allowOverflow = false }: PlayerAreaProps) {
+export function PlayerArea({ position, debugMode = false }: PlayerAreaProps) {
   const rotationClass = {
     top: "rotate-180",
     right: "-rotate-90", 
@@ -209,9 +174,9 @@ export function PlayerArea({ position, debugMode = false, allowOverflow = false 
 
   return rotationClass ? (
     <div className={rotationClass}>
-      <PlayerAreaContent position={position} debugMode={debugMode} allowOverflow={allowOverflow} />
+      <PlayerAreaContent position={position} debugMode={debugMode} />
     </div>
   ) : (
-    <PlayerAreaContent position={position} debugMode={debugMode} allowOverflow={allowOverflow} />
+    <PlayerAreaContent position={position} debugMode={debugMode} />
   );
 }
