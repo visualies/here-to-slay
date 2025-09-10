@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Container Query Demo</title>
+    <style>
+        /* SETTING THE SCENE - ignore this and scroll down to the 'demo styles' for the meat'n'bones
+        -----------------------------------------*/
+        /* standard resets */
+        * {
+            box-sizing: border-box;
+        }
+        /* fill the viewport */
+        html, body {
+            height: 100%;
+        }
+        body {
+            /* center the demo on the page */
+            display: grid;
+            place-items: center;
+            
+            /* create some spacing so we can actually see what's going on */
+            padding: 1em;
+            margin: 0;
+            
+            /* center the text on the page */
+            text-align: center;
+        }
+            .container {
+                /* center the blue box in the green box */
+                display: grid;
+                place-items: center;
+                
+                /* the arbitrary initial dimensions of the green box */
+                height: 80vh;
+                width: 50vw;
+                
+                /* add resize controls */
+                overflow: auto;
+                resize: both;
+                
+                background-color: green;
+            }
+                .box {
+                    background-color: blue;
+                }
+
+
+        /* DEMO STYLES 
+        ------------------------*/
+        .container {
+            /* create a new container so that container-query units can be used */
+            container-type: size;
+        }
+            .box {
+                /* Set your desired aspect ratio as width:height */
+                --w: 16;
+                --h: 9;
+
+                /* Fit inside container while preserving aspect ratio (object-fit: contain for divs) */
+                width: min(100cqw, calc(100cqh * var(--w) / var(--h)));
+                aspect-ratio: var(--w) / var(--h);
+            }
+    </style>
+</head>
+<body>
+    <figure>
+        <div class="container">
+            <div class="box"></div>
+        </div>
+        <figcaption>
+            Resize the green box, and the blue box will resize to 'contain'
+        </figcaption>
+    </figure>
+</body>
+</html>
