@@ -8,7 +8,7 @@ import type { Player, DicePosition, MultiplayerRoom as Room } from '../types';
 
 // Room API functions
 export async function createRoom(name: string = 'Here to Slay Game'): Promise<Room> {
-  const response = await fetch('http://localhost:1234/api/create-room', {
+  const response = await fetch('/api/rooms/create-room', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
@@ -23,7 +23,7 @@ export async function createRoom(name: string = 'Here to Slay Game'): Promise<Ro
 }
 
 export async function joinRoom(roomId: string, playerId: string, playerName: string, playerColor: string): Promise<{ success: boolean; room: Room }> {
-  const response = await fetch('http://localhost:1234/api/join-room', {
+  const response = await fetch('/api/rooms/join-room', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ roomId, playerId, playerName, playerColor })
@@ -38,7 +38,7 @@ export async function joinRoom(roomId: string, playerId: string, playerName: str
 }
 
 export async function getRoomInfo(roomId: string): Promise<Room> {
-  const response = await fetch(`http://localhost:1234/api/room-info?id=${roomId}`);
+  const response = await fetch(`/api/rooms/room-info?id=${roomId}`);
   
   if (!response.ok) {
     const error = await response.json();
@@ -75,7 +75,7 @@ export class MultiplayerGame {
     const wsUrl = `ws://localhost:1234?room=${roomId}`;
     
     // Test server connectivity first
-    fetch('http://localhost:1234/api/test')
+    fetch('/api/rooms/test')
       .catch(error => {
         console.error(`[DEBUG] MultiplayerGame - Server test failed:`, error);
       });

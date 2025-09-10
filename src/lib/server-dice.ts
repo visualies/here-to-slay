@@ -43,7 +43,7 @@ export class ServerDiceManager {
   private ws: WebSocket | null = null;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
   private diceServerUrl: string = 'ws://localhost:1235';
-  private diceApiUrl: string = 'http://localhost:1235';
+  private diceApiUrl: string = '';
 
   constructor(roomId: string, onStatesUpdate: (states: ServerDiceStates) => void) {
     this.roomId = roomId;
@@ -126,7 +126,7 @@ export class ServerDiceManager {
     if (!this.initialized) return;
 
     try {
-      await fetch(`${this.diceApiUrl}/api/dice/move`, {
+      await fetch('/api/dice/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: this.roomId, diceId, position, isKinematic })
@@ -144,7 +144,7 @@ export class ServerDiceManager {
     }
 
     try {
-      await fetch(`${this.diceApiUrl}/api/dice/throw`, {
+      await fetch('/api/dice/throw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: this.roomId, diceId, velocity, angularVelocity })
@@ -163,7 +163,7 @@ export class ServerDiceManager {
     }
 
     try {
-      await fetch(`${this.diceApiUrl}/api/dice/throw-all`, {
+      await fetch('/api/dice/throw-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: this.roomId, velocity, angularVelocity })
@@ -179,7 +179,7 @@ export class ServerDiceManager {
     if (!this.initialized) return;
 
     try {
-      await fetch(`${this.diceApiUrl}/api/dice/move-all`, {
+      await fetch('/api/dice/move-all', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: this.roomId, leadDiceId, leadPosition, isKinematic })
@@ -194,7 +194,7 @@ export class ServerDiceManager {
     if (!this.initialized) return;
 
     try {
-      await fetch(`${this.diceApiUrl}/api/dice/move-multiple`, {
+      await fetch('/api/dice/move-multiple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ roomId: this.roomId, dicePositions, isKinematic })
