@@ -45,7 +45,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
         <CardSlot label="Party Leader" size="large">
           {player?.party?.leader && (
             <div 
-              className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'grayscale'}`}
+              className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'saturate-50'}`}
               style={{ 
                 minWidth: '100%', 
                 minHeight: '100%',
@@ -56,7 +56,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
               <Card card={player.party.leader} size="fill" />
               {!canUseHeroAbility(player.party.leader) && (
                 <Stack>
-                  <div className="absolute inset-0 bg-white/40 rounded" />
+                  <div className="absolute inset-0 bg-white/30 rounded" />
                 </Stack>
               )}
             </div>
@@ -68,7 +68,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="small">
             {player?.party?.heroes[i] && (
               <div 
-                className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'grayscale'}`}
+                className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'saturate-60'}`}
                 style={{ 
                   minWidth: '100%', 
                   minHeight: '100%',
@@ -79,7 +79,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
                 <Card card={player.party.heroes[i]} size="fill" />
                 {!canUseHeroAbility(player.party.heroes[i]) && (
                   <Stack>
-                    <div className="absolute inset-0 bg-white/40 rounded" />
+                    <div className="absolute inset-0 bg-white/50 rounded" />
                   </Stack>
                 )}
               </div>

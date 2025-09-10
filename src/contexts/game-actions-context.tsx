@@ -48,18 +48,29 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   
   // Check if current player can use hero ability
   const canUseHeroAbility = useCallback((hero: Card): boolean => {
-    if (!currentPlayer || currentTurn !== currentPlayer.id) return false;
-    if (heroUsageThisTurn[hero.id]) return false; // Already used this turn
+    if (!currentPlayer) return false;
+    if (heroUsageThisTurn[hero.id]) return false; // Already used this turn - this is the only disable condition
     
-    // Check if hero is in current player's party
-    if (currentPlayer.party.leader?.id === hero.id) return true;
-    return currentPlayer.party.heroes.some(h => h?.id === hero.id);
-  }, [currentPlayer, currentTurn, heroUsageThisTurn]);
+    // All heroes that haven't been used this turn should appear enabled (colorful)
+    return true;
+  }, [currentPlayer, heroUsageThisTurn]);
   
   // Use hero ability method
   const useHeroAbility = useCallback(async (hero: Card): Promise<void> => {
     if (!canUseHeroAbility(hero)) {
       throw new Error(`Cannot use hero ability for ${hero.name}`);
+    }
+    
+    // Additional checks: can only actually use abilities on your turn and with your heroes
+    if (!currentPlayer || currentTurn !== currentPlayer.id) {
+      throw new Error(`Can only use hero abilities on your turn`);
+    }
+    
+    // Check if hero is in current player's party
+    const isMyHero = currentPlayer.party.leader?.id === hero.id || 
+                     currentPlayer.party.heroes.some(h => h?.id === hero.id);
+    if (!isMyHero) {
+      throw new Error(`Can only use your own hero abilities`);
     }
     
     // Mark hero as used this turn

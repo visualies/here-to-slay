@@ -1,6 +1,7 @@
 import type { Card } from '../types';
 import { CardType, HeroClass } from '../types';
 import { heroRegistry } from './heroes';
+import { modifierRegistry } from './modifiers';
 
 export function createDeck(): Card[] {
   const deck: Card[] = [];
@@ -58,13 +59,20 @@ export function dealHand(deck: Card[], handSize: number = 5): { hand: Card[], re
 }
 
 export function createSupportStack(): Card[] {
-  // Support stack with hero back cards
-  return Array.from({ length: 20 }, (_, i) => ({
-    id: `support-${i}`,
-    name: 'Hero Back',
-    type: CardType.Hero,
-    description: 'Support card back',
-    requirement: '',
-    effect: []
-  }));
+  // Combine all available cards from registries
+  const allAvailableCards = [...heroRegistry, ...modifierRegistry];
+  
+  // Create support stack with 20 random cards from registries
+  const supportCards: Card[] = [];
+  for (let i = 0; i < 20; i++) {
+    const randomIndex = Math.floor(Math.random() * allAvailableCards.length);
+    const selectedCard = allAvailableCards[randomIndex];
+    // Create a unique copy with a new ID to avoid conflicts
+    supportCards.push({
+      ...selectedCard,
+      id: `support-${selectedCard.id}-${i}`
+    });
+  }
+  
+  return supportCards;
 }
