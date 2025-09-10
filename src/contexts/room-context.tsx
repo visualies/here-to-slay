@@ -31,6 +31,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const [gamePhase, setGamePhase] = useState<string>('waiting');
   const [currentTurn, setCurrentTurn] = useState<string>('');
   const [supportStack, setSupportStack] = useState<Card[]>([]);
+  const [monsters, setMonsters] = useState<Card[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
   // Initialize Yjs when roomId changes
@@ -91,6 +92,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
         setGamePhase(gameState.gamePhase);
         setCurrentTurn(gameState.currentTurn);
         setSupportStack(gameState.supportStack);
+        setMonsters(gameState.monsters || []);
       }
     );
     
@@ -170,6 +172,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     gamePhase,
     currentTurn,
     supportStack,
+    monsters,
     
     // Player info
     currentPlayer,

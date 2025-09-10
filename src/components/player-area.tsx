@@ -42,7 +42,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
             />
           </div>
         )}
-        <CardSlot label="Party Leader" size="large" cardType="party-leader">
+        <CardSlot label="Party Leader" size="2xl" cardType="party-leader">
           {player?.party?.leader && (
             <div 
               className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'saturate-50'}`}

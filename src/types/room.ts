@@ -17,6 +17,7 @@ export type Room = {
   gamePhase: string;
   currentTurn: string;
   supportStack: Card[];
+  monsters: Card[];
   
   // Player info
   currentPlayer: Player | null;

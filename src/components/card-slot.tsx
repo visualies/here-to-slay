@@ -4,8 +4,8 @@ interface CardSlotProps {
   className?: string;
   children?: React.ReactNode;
   label?: string;
-  size?: "small" | "large";
-  cardType?: "hero" | "party-leader";
+  size?: "small" | "large" | "xl" | "2xl";
+  cardType?: "hero" | "party-leader" | "monster";
 }
 
 export function CardSlot({ className, children, label, size = "small", cardType = "hero" }: CardSlotProps) {
@@ -19,11 +19,11 @@ export function CardSlot({ className, children, label, size = "small", cardType 
       <div 
         className={cn(
           "bg-background border-2 border-gray-300 rounded overflow-visible flex items-center justify-center",
-          size === "large" ? "w-24" : "w-20",
+          size === "2xl" ? "w-40" : size === "xl" ? "w-32" : size === "large" ? "w-24" : "w-20",
           children ? "border-none" : "border-dashed"
         )}
         style={{
-          aspectRatio: cardType === "party-leader" ? "7/12" : "744/1039"
+          aspectRatio: (cardType === "party-leader" || cardType === "monster") ? "7/12" : "744/1039"
         }}
       >
         {children}

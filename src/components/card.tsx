@@ -27,7 +27,7 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
       return 'w-full h-full';
     }
     
-    const aspectRatio = card.type === 'PartyLeader' ? 'aspect-[7/12]' : 'aspect-[744/1039]';
+    const aspectRatio = (card.type === 'PartyLeader' || card.type === 'Monster') ? 'aspect-[7/12]' : 'aspect-[744/1039]';
     return `${sizeClasses[size]} ${aspectRatio}`;
   };
   
@@ -96,7 +96,7 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
       className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''}`}
       style={{ 
         backgroundImage,
-        backgroundSize: card.type === 'PartyLeader' ? '100% 100%' : 'cover',
+        backgroundSize: (card.type === 'PartyLeader' || card.type === 'Monster') ? '100% 100%' : 'cover',
         transform: transform,
         outlineColor: '#c5c3c0'
       }}

@@ -11,6 +11,7 @@ import {
   assignRandomPartyLeadersToAllPlayers
 } from './players';
 import { createSupportStack } from '../game/deck';
+import { getAllMonsters } from '../game/monsters';
 
 export function playCard(
   playersMap: Y.Map<Player>,
@@ -161,11 +162,17 @@ export function initializeGame(
   console.log('initializeGame: Assigning party leaders to all players');
   assignRandomPartyLeadersToAllPlayers(playersMap);
   
+  // Assign 3 random monsters to the game
+  const allMonsters = getAllMonsters();
+  const selectedMonsters = [...allMonsters].sort(() => 0.5 - Math.random()).slice(0, 3);
+  console.log('initializeGame: Assigning monsters:', selectedMonsters.map(m => m.name));
+  
   // Set game metadata
   const firstPlayerId = sortedPlayers[0].id;
   updatePlayerActionPoints(playersMap, firstPlayerId, 3);
   gameStateMap.set('currentTurn', firstPlayerId);
   gameStateMap.set('supportStack', createSupportStack());
+  gameStateMap.set('monsters', selectedMonsters);
   gameStateMap.set('phase', 'playing');
   
   console.log('initializeGame: Game metadata set:', {

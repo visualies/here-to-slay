@@ -5,5 +5,6 @@ export type GameState = {
   players: Player[];
   currentTurn: string;
   supportStack: Card[];
+  monsters: Card[];
   phase: 'waiting' | 'playing' | 'ended';
 };

@@ -5,13 +5,14 @@ import { getConnectedPlayers } from '../lib/presence';
 
 // Hook for game state data
 export function useGameState() {
-  const { players, gamePhase, currentTurn, supportStack, currentPlayer, otherPlayers } = useRoom();
+  const { players, gamePhase, currentTurn, supportStack, monsters, currentPlayer, otherPlayers } = useRoom();
   
   return {
     players,
     gamePhase, 
     currentTurn,
     supportStack,
+    monsters,
     currentPlayer,
     otherPlayers
   };

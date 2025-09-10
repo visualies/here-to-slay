@@ -5,6 +5,7 @@ import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";
 import { StartRound } from "./start-round";
 import { Card } from "./card";
+import { CardSlot } from "./card-slot";
 import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -18,7 +19,7 @@ interface CenterAreaProps {
 
 export function CenterArea({ diceResults = [] }: CenterAreaProps) {
   const { drawCard, initializeGame, isHost } = useGameActions();
-  const { currentTurn, currentPlayer, players, supportStack } = useGameState();
+  const { currentTurn, currentPlayer, players, supportStack, monsters } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
   
@@ -80,15 +81,15 @@ export function CenterArea({ diceResults = [] }: CenterAreaProps) {
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-gray-600 font-medium">Monsters</div>
           <div className="flex gap-2">
             {Array.from({ length: 3 }, (_, i) => (
-              <div
-                key={i}
-                className="w-24 aspect-[827/1417] bg-cover bg-center rounded overflow-hidden flex items-center justify-center border-2 border-gray-300"
-                style={{ backgroundImage: 'url(/monsterBackBlack.png)' }}
-              >
-              </div>
+              <CardSlot key={i} label={i === 0 ? "Monsters" : undefined} size="2xl" cardType="monster">
+                {monsters[i] && (
+                  <div className="h-full w-full relative">
+                    <Card card={monsters[i]} size="fill" />
+                  </div>
+                )}
+              </CardSlot>
             ))}
           </div>
         </div>
