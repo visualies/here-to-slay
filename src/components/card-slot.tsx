@@ -7,9 +7,10 @@ interface CardSlotProps {
   size?: "default" | "large";
   cardType?: "hero" | "party-leader" | "monster";
   hideOutline?: boolean;
+  noBg?: boolean;
 }
 
-export function CardSlot({ className, children, label, size = "default", cardType = "hero", hideOutline = false }: CardSlotProps) {
+export function CardSlot({ className, children, label, size = "default", cardType = "hero", hideOutline = false, noBg = false }: CardSlotProps) {
   return (
     <div className={cn("relative", className)}>
       {label && (
@@ -19,7 +20,8 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
       )}
       <div 
         className={cn(
-          "bg-background rounded overflow-visible flex items-center justify-center",
+          noBg ? "" : "bg-background",
+          "rounded overflow-visible flex items-center justify-center",
           size === "large" ? "w-32" : "w-28", // Match card component widths
           hideOutline ? "border-none" : children ? "border-none" : "border-2 border-gray-300 border-dashed",
           children ? "shadow-md" : ""

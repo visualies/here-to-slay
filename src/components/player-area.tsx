@@ -58,16 +58,16 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           )}
         </CardSlot>
       </div>
-      <div className="flex flex-col gap-1">
-        {/* Duplicate heroes row */}
-        <div className="flex gap-1">
+      <div className="flex flex-col gap-1 relative">
+        {/* Duplicate heroes row - absolutely positioned to escape DOM flow */}
+        <div className="absolute -top-[120px] left-0 flex gap-1 z-20">
           {Array.from({ length: 6 }, (_, slotIndex) => {
             // Get the duplicate hero for this specific slot
             const duplicateHeroes = player?.party?.duplicateHeroes || [];
             const heroInSlot = duplicateHeroes[slotIndex] || null;
             
             return (
-              <CardSlot key={`duplicate-${slotIndex}`} label={undefined} size="large" hideOutline={true}>
+              <CardSlot key={`duplicate-${slotIndex}`} label={undefined} size="large" hideOutline={true} noBg={true}>
                 {heroInSlot && (
                   <div
                     key={`${heroInSlot.id}-${slotIndex}`}
@@ -114,8 +114,6 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
             </CardSlot>
           ))}
         </div>
-        {/* Equal sized padding to prevent hero row shift */}
-        <div className="h-[120px]"></div>
       </div>
     </div>
   );
