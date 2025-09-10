@@ -125,24 +125,24 @@ export function GameArea({ diceResults }: GameAreaProps) {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[260px_1fr_260px] grid-cols-[260px_1fr_260px]">
+      <div className="relative h-full grid grid-rows-[320px_1fr_320px] grid-cols-[320px_1fr_320px]">
         {/* Top player area */}
-        <div className="col-start-2 row-start-1 flex items-end justify-center pb-4">
+        <div className="col-start-2 row-start-1 flex items-center justify-center">
           <PlayerArea position="top" />
         </div>
         
         {/* Right player area */}
-        <div className="col-start-3 row-start-2 flex items-center justify-center pr-12">
+        <div className="col-start-3 row-start-2 flex items-center justify-center">
           <PlayerArea position="right" />
         </div>
         
         {/* Bottom player area */}
-        <div className="col-start-2 row-start-3 flex items-start justify-center pt-4">
+        <div className="col-start-2 row-start-3 flex items-center justify-center">
           <PlayerArea position="bottom" />
         </div>
         
         {/* Left player area */}
-        <div className="col-start-1 row-start-2 flex items-center justify-center pl-12">
+        <div className="col-start-1 row-start-2 flex items-center justify-center">
           <PlayerArea position="left" />
         </div>
         
