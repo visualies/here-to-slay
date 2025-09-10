@@ -1,6 +1,8 @@
 "use client";
 
 import type { Card as GameCard } from "../types";
+import { useBlur } from "../contexts/blur-context";
+import { getRandomTransform, getRandomHoverRotation } from "../lib/utils";
 
 interface CardProps {
   card: GameCard;
@@ -12,6 +14,7 @@ interface CardProps {
 }
 
 export function Card({ card, isBack = false, size = 'deck', className = '', stackIndex, randomness = 0 }: CardProps) {
+  const { setBlurred } = useBlur();
   const sizeClasses = {
     small: 'w-20',
     medium: 'w-24', 
@@ -52,54 +55,24 @@ export function Card({ card, isBack = false, size = 'deck', className = '', stac
     }
   };
 
-  // Generate slight random transformations based on card name and index for true randomness
-  const getRandomTransform = (seed: string, index?: number, level: number = 0) => {
-    if (level === 0) return '';
-    
-    let hash = 0;
-    const fullSeed = seed + (index !== undefined ? index.toString() : '');
-    for (let i = 0; i < fullSeed.length; i++) {
-      const char = fullSeed.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    
-    // Add extra randomization with index if provided
-    if (index !== undefined) {
-      hash = hash ^ (index * 31);
-    }
-    
-    // Create multiple hash values for better distribution
-    const hash2 = ((hash * 1103515245) + 12345) & 0x7fffffff;
-    const hash3 = ((hash2 * 16807) + 0) & 0x7fffffff;
-    const hash4 = ((hash3 * 48271) + 0) & 0x7fffffff;
-    
-    // Scale rotation based on level (0-5) - much more dramatic for high levels
-    const maxRotation = level === 1 ? 3 : level === 5 ? 40 : level * 10; // Level 1 = 3 degrees, Level 5 = 180 degrees max
-    const rotation = (hash2 % (maxRotation * 2 + 1)) - maxRotation;
-    
-    // Position randomness - much more dramatic for level 5
-    const maxTranslate = level === 1 ? 1 : level === 5 ? 80 : Math.min(2, level); // Level 1 = 1px, Level 5 = 20px max
-    const translateX = (hash3 % (maxTranslate * 2 + 1)) - maxTranslate;
-    const translateY = (hash4 % (maxTranslate * 2 + 1)) - maxTranslate;
-    
-    return `rotate(${rotation}deg) translate(${translateX}px, ${translateY}px)`;
-  };
-
   const transform = getRandomTransform(card.name, stackIndex, randomness);
+  const hoverRotation = getRandomHoverRotation(card.name, stackIndex);
 
   // All cards now use background images
   const backgroundImage = isBack ? 'url(/heroBack.png)' : getCardBackground(card);
 
   return (
     <div 
-      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''}`}
+      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${card.type === 'Monster' ? 'random-rotate hover:scale-[2] hover:-translate-y-4 hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'random-rotate hover:rotate-[var(--hover-rotation)] transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
       style={{ 
         backgroundImage,
         backgroundSize: (card.type === 'PartyLeader' || card.type === 'Monster') ? '100% 100%' : 'cover',
         transform: transform,
-        outlineColor: '#c5c3c0'
-      }}
+        outlineColor: '#c5c3c0',
+        '--hover-rotation': `${hoverRotation}deg`
+      } as React.CSSProperties & { '--hover-rotation': string }}
+      onMouseEnter={() => card.type === 'Monster' && setBlurred(true)}
+      onMouseLeave={() => card.type === 'Monster' && setBlurred(false)}
     >
       {/* Only show text content for non-modifier cards, non-back cards, and cards without custom images */}
       {card.type !== 'Modifier' && !isBack && !card.imagePath && (

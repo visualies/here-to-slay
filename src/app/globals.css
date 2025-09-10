@@ -119,3 +119,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Tailwind class for random rotation */
+@layer utilities {
+  .random-rotate {
+    --hover-rotation: 0deg;
+  }
+}
