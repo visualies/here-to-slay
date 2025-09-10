@@ -58,29 +58,59 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
           )}
         </CardSlot>
       </div>
-      <div className="flex gap-1">
-        {Array.from({ length: 6 }, (_, i) => (
-          <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="large">
-            {player?.party?.heroes[i] && (
-              <div 
-                className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'saturate-60'}`}
-                style={{ 
-                  minWidth: '100%', 
-                  minHeight: '100%',
-                  aspectRatio: '744/1039'
-                }}
-                onClick={canUseHeroAbility(player.party.heroes[i]) ? () => handleHeroClick(player.party.heroes[i]) : undefined}
-              >
-                <Card card={player.party.heroes[i]} size="fill" />
-                {!canUseHeroAbility(player.party.heroes[i]) && (
-                  <Stack>
-                    <div className="absolute inset-0 bg-white/50 rounded" />
-                  </Stack>
-                )}
-              </div>
-            )}
-          </CardSlot>
-        ))}
+      <div className="flex flex-col gap-1">
+        {/* Duplicate heroes row */}
+        <div className="flex gap-1">
+          {Array.from({ length: 6 }, (_, i) => (
+            <CardSlot key={`duplicate-${i}`} label={i === 0 ? `${player?.name || 'Player'}'s Duplicate Heroes` : undefined} size="large">
+              {player?.party?.heroes[i + 6] && (
+                <div 
+                  className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i + 6]) ? 'cursor-pointer' : 'saturate-60'}`}
+                  style={{ 
+                    minWidth: '100%', 
+                    minHeight: '100%',
+                    aspectRatio: '744/1039'
+                  }}
+                  onClick={canUseHeroAbility(player.party.heroes[i + 6]) ? () => handleHeroClick(player.party.heroes[i + 6]) : undefined}
+                >
+                  <Card card={player.party.heroes[i + 6]} size="fill" />
+                  {!canUseHeroAbility(player.party.heroes[i + 6]) && (
+                    <Stack>
+                      <div className="absolute inset-0 bg-white/50 rounded" />
+                    </Stack>
+                  )}
+                </div>
+              )}
+            </CardSlot>
+          ))}
+        </div>
+        {/* Original heroes row */}
+        <div className="flex gap-1">
+          {Array.from({ length: 6 }, (_, i) => (
+            <CardSlot key={i} label={i === 0 ? `${player?.name || 'Player'}'s Heroes` : undefined} size="large">
+              {player?.party?.heroes[i] && (
+                <div 
+                  className={`h-full w-full relative ${canUseHeroAbility(player.party.heroes[i]) ? 'cursor-pointer' : 'saturate-60'}`}
+                  style={{ 
+                    minWidth: '100%', 
+                    minHeight: '100%',
+                    aspectRatio: '744/1039'
+                  }}
+                  onClick={canUseHeroAbility(player.party.heroes[i]) ? () => handleHeroClick(player.party.heroes[i]) : undefined}
+                >
+                  <Card card={player.party.heroes[i]} size="fill" />
+                  {!canUseHeroAbility(player.party.heroes[i]) && (
+                    <Stack>
+                      <div className="absolute inset-0 bg-white/50 rounded" />
+                    </Stack>
+                  )}
+                </div>
+              )}
+            </CardSlot>
+          ))}
+        </div>
+        {/* Equal sized padding to prevent hero row shift */}
+        <div className="h-[120px]"></div>
       </div>
     </div>
   );
