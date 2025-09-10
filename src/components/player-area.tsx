@@ -32,7 +32,7 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
   };
 
   return (
-    <div className="relative flex items-center gap-4now p-4">
+    <div className="relative flex items-center gap-4 p-4">
       <div className="relative flex-shrink-0">
         {player && (
           <div className="absolute top-1/2 -translate-y-1/2 -left-10 z-10">
