@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useGameState, useGameActions, usePlayerPresence } from "../hooks/use-game-state";
 import { usePlayerPosition } from "../hooks/use-player-position";
 import { useDice } from "../contexts/dice-context";
@@ -29,6 +29,41 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
   // Debug mode from environment variable
   const debugMode = process.env.NEXT_PUBLIC_DEBUG_MODE === 'true';
+  
+  // Calculate which side should overflow
+  const [shouldTopBottomOverflow, setShouldTopBottomOverflow] = useState(false);
+  
+  useEffect(() => {
+    const calculateOverflow = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const horizontalSpace = viewportWidth * 0.6;
+      const verticalSpace = viewportHeight * 0.6;
+      
+      const cardsPerParty = 6;
+      const cardGap = 4;
+      const totalGapSpace = (cardsPerParty - 1) * cardGap;
+      const horizontalSpacePerCard = (horizontalSpace - totalGapSpace) / cardsPerParty;
+      const verticalSpacePerCard = (verticalSpace - totalGapSpace) / cardsPerParty;
+      
+      // Top/Bottom should overflow if horizontal space is smaller
+      const shouldOverflow = horizontalSpacePerCard < verticalSpacePerCard;
+      setShouldTopBottomOverflow(shouldOverflow);
+      
+      if (debugMode) {
+        console.log('GameArea overflow calculation:', {
+          viewport: { width: viewportWidth, height: viewportHeight },
+          spaces: { horizontal: horizontalSpace, vertical: verticalSpace },
+          perCard: { horizontal: horizontalSpacePerCard, vertical: verticalSpacePerCard },
+          shouldTopBottomOverflow: shouldOverflow
+        });
+      }
+    };
+    
+    calculateOverflow();
+    window.addEventListener('resize', calculateOverflow);
+    return () => window.removeEventListener('resize', calculateOverflow);
+  }, [debugMode]);
 
   // Determine if it's the current player's turn
   const isMyTurn = currentPlayer?.id === currentTurn && gamePhase === 'playing';
@@ -135,26 +170,33 @@ export function GameArea({ diceResults }: GameAreaProps) {
         </div>
         
         {/* Top player area - conditional overflow based on available space */}
-        <div className={`col-start-2 row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="top" debugMode={debugMode} allowOverflow={true} />
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="top" debugMode={debugMode} allowOverflow={shouldTopBottomOverflow} />
         </div>
         
         {/* Right player area - conditional overflow based on available space */}
-        <div className={`col-start-3 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="right" debugMode={debugMode} allowOverflow={true} />
+        <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="right" debugMode={debugMode} allowOverflow={!shouldTopBottomOverflow} />
         </div>
         
         {/* Bottom player area - conditional overflow based on available space */}
-        <div className={`col-start-2 row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="bottom" debugMode={debugMode} allowOverflow={true} />
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="bottom" debugMode={debugMode} allowOverflow={shouldTopBottomOverflow} />
         </div>
         
         {/* Left player area - conditional overflow based on available space */}
-        <div className={`col-start-1 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PlayerArea position="left" debugMode={debugMode} allowOverflow={true} />
+        <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+          <PlayerArea position="left" debugMode={debugMode} allowOverflow={!shouldTopBottomOverflow} />
         </div>
       </div>
       
+
+      {/* Debug overflow indicator */}
+      {debugMode && (
+        <div className="absolute top-4 left-4 z-50 bg-black text-white px-2 py-1 rounded text-xs">
+          Overflow: {shouldTopBottomOverflow ? 'Top/Bottom' : 'Left/Right'}
+        </div>
+      )}
 
       {/* Control Panel - shows different content based on game phase */}
       <div className="absolute bottom-4 right-4 z-40">
