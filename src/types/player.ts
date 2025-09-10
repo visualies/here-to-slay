@@ -17,7 +17,6 @@ export type Player = {
   party: {
     leader: Card | null;
     heroes: (Card | null)[];
-    duplicateHeroes: (Card | null)[];
   };
   actionPoints: number;
 };

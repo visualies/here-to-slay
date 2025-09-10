@@ -86,7 +86,7 @@ export function dealCardsToPlayer(
     ...player,
     hand,
     deck: playerDeck,
-    party: { leader: null, heroes: Array(6).fill(null), duplicateHeroes: [] },
+    party: { leader: null, heroes: [] },
     actionPoints: 0
   };
 
@@ -157,36 +157,17 @@ export function addHeroToParty(
   const player = playersMap.get(playerId);
   if (!player) return false;
 
-  // Check if there's already a hero of the same class in the main heroes array
-  const hasExistingClass = player.party.heroes.some(h => h && h.class === hero.class);
+  // Simply add the hero to the heroes array - no more duplicate logic needed
+  // The UI will handle stacking automatically based on class
+  const newHeroes = [...player.party.heroes, hero];
   
-  if (hasExistingClass) {
-    // Add to duplicate heroes array
-    const newDuplicateHeroes = [...player.party.duplicateHeroes, hero];
-    
-    const updatedPlayer: Player = {
-      ...player,
-      party: { ...player.party, duplicateHeroes: newDuplicateHeroes }
-    };
-    
-    playersMap.set(playerId, updatedPlayer);
-    return true;
-  } else {
-    // Add to main heroes array
-    const partySlotIndex = player.party.heroes.findIndex(h => h === null);
-    if (partySlotIndex === -1) return false;
-
-    const newPartyHeroes = [...player.party.heroes];
-    newPartyHeroes[partySlotIndex] = hero;
-
-    const updatedPlayer: Player = {
-      ...player,
-      party: { ...player.party, heroes: newPartyHeroes }
-    };
-
-    playersMap.set(playerId, updatedPlayer);
-    return true;
-  }
+  const updatedPlayer: Player = {
+    ...player,
+    party: { ...player.party, heroes: newHeroes }
+  };
+  
+  playersMap.set(playerId, updatedPlayer);
+  return true;
 }
 
 export function assignPartyLeaderToPlayer(

@@ -9,6 +9,9 @@ import { usePlayerPosition } from "../hooks/use-player-position";
 import { useGameActions } from "../hooks/use-game-actions";
 import type { Card as CardType } from "../types";
 
+// Configuration constants
+const MAX_PARTY_COLUMNS = 6;
+
 interface PlayerAreaProps {
   position: "top" | "right" | "bottom" | "left";
 }
@@ -60,86 +63,81 @@ function PlayerAreaContent({ position }: { position: PlayerAreaProps['position']
       </div>
       <div className="flex flex-col gap-1 relative">
         {(() => {
-          const duplicateHeroes = player?.party?.duplicateHeroes || [];
-          const originalHeroes = player?.party?.heroes || [];
+          // Get all heroes from the unified heroes array
+          const allHeroes = (player?.party?.heroes || []).filter(h => h !== null);
           
-          // Group duplicates by their matching original hero's column position
-          const duplicatesByColumn = Array.from({ length: 6 }, () => [] as typeof duplicateHeroes);
+          // Group all heroes by class into columns
+          const herosByColumn = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as typeof allHeroes);
           
-          duplicateHeroes.forEach(duplicateHero => {
-            if (!duplicateHero) return;
+          allHeroes.forEach(hero => {
+            if (!hero) return;
             
-            // Find which column this duplicate belongs to (based on matching class)
-            const matchingColumnIndex = originalHeroes.findIndex(originalHero => 
-              originalHero && originalHero.class === duplicateHero.class
+            // Find existing column with same class, or use first empty column
+            let targetColumn = herosByColumn.findIndex(column => 
+              column.length > 0 && column[0].class === hero.class
             );
             
-            if (matchingColumnIndex !== -1) {
-              duplicatesByColumn[matchingColumnIndex].push(duplicateHero);
+            if (targetColumn === -1) {
+              // Find first empty column
+              targetColumn = herosByColumn.findIndex(column => column.length === 0);
+            }
+            
+            if (targetColumn !== -1) {
+              herosByColumn[targetColumn].push(hero);
             }
           });
           
           return (
             <div className="flex gap-1">
-              {Array.from({ length: 6 }, (_, columnIndex) => {
-                const originalHero = originalHeroes[columnIndex];
-                const columnDuplicates = duplicatesByColumn[columnIndex];
+              {Array.from({ length: MAX_PARTY_COLUMNS }, (_, columnIndex) => {
+                const columnHeroes = herosByColumn[columnIndex];
                 const maxStackHeight = 120; // Fixed container height
-                const totalCardsInColumn = 1 + columnDuplicates.length; // 1 original + duplicates
+                const totalCardsInColumn = columnHeroes.length;
                 const cardSpacing = totalCardsInColumn > 1 ? maxStackHeight / (totalCardsInColumn - 1) : 0;
                 
                 return (
                   <div key={`column-${columnIndex}`} className="relative">
-                    {/* Original hero (always at bottom of stack) */}
-                    <Stack>
-                      <CardSlot label={undefined} size="large">
-                        {originalHero && (
-                          <div 
-                            className={`h-full w-full relative ${canUseHeroAbility(originalHero) ? 'cursor-pointer' : 'saturate-60'}`}
-                            style={{ 
-                              minWidth: '100%', 
-                              minHeight: '100%',
-                              aspectRatio: '744/1039'
-                            }}
-                            onClick={canUseHeroAbility(originalHero) ? () => handleHeroClick(originalHero) : undefined}
-                          >
-                            <Card card={originalHero} size="fill" preview={true} />
-                            {!canUseHeroAbility(originalHero) && (
-                              <Stack>
-                                <div className="absolute inset-0 bg-white/50 rounded" />
-                              </Stack>
-                            )}
-                          </div>
-                        )}
-                      </CardSlot>
-                    </Stack>
-                    
-                    {/* Duplicate heroes stacked above original */}
-                    {columnDuplicates.map((duplicateHero, stackIndex) => (
-                      <Stack key={`duplicate-${duplicateHero.id}`}>
+                    {columnHeroes.map((hero, stackIndex) => (
+                      <Stack key={`hero-${hero.id}-${stackIndex}`}>
                         <div 
-                          className="absolute left-0"
-                          style={{ top: `-${cardSpacing * (stackIndex + 1)}px` }}
+                          className={stackIndex === 0 ? "" : "absolute left-0"}
+                          style={stackIndex === 0 ? {} : { top: `-${cardSpacing * stackIndex}px` }}
                         >
-                          <CardSlot label={undefined} size="large" hideOutline={true} noBg={true}>
-                            <div
-                              className={`h-full w-full relative ${canUseHeroAbility(duplicateHero) ? 'cursor-pointer' : 'saturate-60'}`}
-                              style={{ 
-                                minWidth: '100%', 
-                                minHeight: '100%',
-                                aspectRatio: '744/1039'
-                              }}
-                              onClick={canUseHeroAbility(duplicateHero) ? () => handleHeroClick(duplicateHero) : undefined}
-                            >
-                              <Card card={duplicateHero} size="fill" />
-                              {!canUseHeroAbility(duplicateHero) && (
-                                <div className="absolute inset-0 bg-white/50 rounded" />
-                              )}
-                            </div>
+                          <CardSlot 
+                            label={undefined} 
+                            size="large" 
+                            hideOutline={stackIndex > 0} 
+                            noBg={stackIndex > 0}
+                          >
+                            {hero && (
+                              <div 
+                                className={`h-full w-full relative ${canUseHeroAbility(hero) ? 'cursor-pointer' : 'saturate-60'}`}
+                                style={{ 
+                                  minWidth: '100%', 
+                                  minHeight: '100%',
+                                  aspectRatio: '744/1039'
+                                }}
+                                onClick={canUseHeroAbility(hero) ? () => handleHeroClick(hero) : undefined}
+                              >
+                                <Card card={hero} size="fill" preview={stackIndex === columnHeroes.length - 1} />
+                                {!canUseHeroAbility(hero) && (
+                                  <Stack>
+                                    <div className="absolute inset-0 bg-white/50 rounded" />
+                                  </Stack>
+                                )}
+                              </div>
+                            )}
                           </CardSlot>
                         </div>
                       </Stack>
                     ))}
+                    
+                    {/* Empty slot if no heroes in this column */}
+                    {columnHeroes.length === 0 && (
+                      <Stack>
+                        <CardSlot label={undefined} size="large" />
+                      </Stack>
+                    )}
                   </div>
                 );
               })}
