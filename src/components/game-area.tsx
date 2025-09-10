@@ -171,28 +171,28 @@ export function GameArea({ diceResults }: GameAreaProps) {
         </div>
         
         {/* Top player area - conditional overflow based on available space */}
-        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 flex items-center justify-center party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <PartyWrapper orientation="horizontal" debugMode={debugMode}>
             <PlayerArea position="top" debugMode={debugMode} />
           </PartyWrapper>
         </div>
         
         {/* Right player area - conditional overflow based on available space */}
-        <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+        <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <PartyWrapper orientation="vertical" debugMode={debugMode}>
             <PlayerArea position="right" debugMode={debugMode} />
           </PartyWrapper>
         </div>
         
         {/* Bottom player area - conditional overflow based on available space */}
-        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 flex items-center justify-center party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <PartyWrapper orientation="horizontal" debugMode={debugMode}>
             <PlayerArea position="bottom" debugMode={debugMode} />
           </PartyWrapper>
         </div>
         
         {/* Left player area - conditional overflow based on available space */}
-        <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
+        <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} flex items-center justify-center party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <PartyWrapper orientation="vertical" debugMode={debugMode}>
             <PlayerArea position="left" debugMode={debugMode} />
           </PartyWrapper>

@@ -126,3 +126,14 @@
     --hover-rotation: 0deg;
   }
 }
+
+/* Container query utilities for party wrapper */
+@layer utilities {
+  .party-container {
+    container-type: size;
+  }
+  .party-wrapper {
+    width: 100cqmin;
+    height: 100cqmin;
+  }
+}

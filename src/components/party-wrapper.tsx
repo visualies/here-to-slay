@@ -13,28 +13,20 @@ export function PartyWrapper({ children, orientation, debugMode = false }: Party
   // Card aspect ratio from your sample: 645 x 174 ≈ 3.7:1
   const cardAspectRatio = 3.7;
   
-  // Calculate the wrapper dimensions based on orientation
-  const wrapperStyle = orientation === "horizontal" 
-    ? {
-        // For horizontal parties (top/bottom), use the card's natural aspect ratio
-        aspectRatio: `${cardAspectRatio}/1`,
-        width: "100%",
-        height: "auto"
-      }
-    : {
-        // For vertical parties (left/right), use the inverse aspect ratio
-        aspectRatio: `1/${cardAspectRatio}`,
-        width: "auto", 
-        height: "100%"
-      };
+  // Calculate the aspect ratio based on orientation
+  const aspectRatio = orientation === "horizontal" 
+    ? `${cardAspectRatio}/1` 
+    : `1/${cardAspectRatio}`;
 
   return (
     <div 
       className={cn(
-        "flex items-center justify-center",
+        "flex items-center justify-center party-wrapper",
         debugMode ? "bg-green-500/20 border-2 border-green-500 p-2" : ""
       )}
-      style={wrapperStyle}
+      style={{ 
+        aspectRatio
+      }}
     >
       <div className={cn(
         "w-full h-full flex items-center justify-center",
