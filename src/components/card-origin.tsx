@@ -1,15 +1,18 @@
 "use client";
 
+import { CardSlot } from "./card-slot";
+
 interface CardOriginProps {
   aspectRatio: "large" | "default";
   orientation: "horizontal" | "vertical";
+  debugMode?: boolean;
 }
 
-export function CardOrigin({ aspectRatio, orientation }: CardOriginProps) {
+export function CardOrigin({ aspectRatio, orientation, debugMode = false }: CardOriginProps) {
   // Determine colors and aspect ratio based on props
   const isLarge = aspectRatio === "large";
-  const bgColor = isLarge ? "bg-green-500/30" : "bg-blue-500/30";
-  const outlineColor = isLarge ? "outline-green-500" : "outline-blue-500";
+  const bgColor = debugMode ? (isLarge ? "bg-green-500/30" : "bg-blue-500/30") : "";
+  const outlineColor = debugMode ? (isLarge ? "outline-green-500" : "outline-blue-500") : "";
   
   // Calculate aspect ratio based on orientation and size
   let cardAspectRatio: string;
@@ -29,13 +32,20 @@ export function CardOrigin({ aspectRatio, orientation }: CardOriginProps) {
 
   return (
     <div
-      className={`${bgColor} outline outline-2 ${outlineColor} flex-shrink-0`}
+      className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center`}
       style={{
         ...sizeProps,
         aspectRatio: cardAspectRatio,
         transform,
         ...(orientation === "vertical" && !isLarge ? { maxHeight: `${100/6 - 2}%` } : {})
       }}
-    />
+    >
+      {!isLarge && (
+        <CardSlot 
+          size="auto"
+          cardType="hero"
+        />
+      )}
+    </div>
   );
 }

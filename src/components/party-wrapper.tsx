@@ -40,15 +40,15 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         )}
         
         {/* Party Leader card slot with light blue outline */}
-        <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
-          <CardOrigin aspectRatio="large" orientation="horizontal" />
+        <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
+          <CardOrigin aspectRatio="large" orientation="horizontal" debugMode={debugMode} />
         </div>
         
         {/* Container for the 6 cards with light blue outline */}
-        <div className="flex items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
+        <div className={`flex items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
           {/* Blue squares with 5:7 aspect ratio */}
           {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="horizontal" />
+            <CardOrigin key={i} aspectRatio="default" orientation="horizontal" debugMode={debugMode} />
           ))}
         </div>
       </div>
@@ -67,15 +67,15 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         )}
         
         {/* Party Leader card slot with light blue outline */}
-        <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
-          <CardOrigin aspectRatio="large" orientation="vertical" />
+        <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
+          <CardOrigin aspectRatio="large" orientation="vertical" debugMode={debugMode} />
         </div>
         
         {/* Container for the 6 cards with light blue outline */}
-        <div className="flex flex-col items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
+        <div className={`flex flex-col items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
           {/* Blue squares with 7:5 aspect ratio (swapped from 5:7) */}
           {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="vertical" />
+            <CardOrigin key={i} aspectRatio="default" orientation="vertical" debugMode={debugMode} />
           ))}
         </div>
       </div>
