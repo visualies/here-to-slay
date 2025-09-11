@@ -1,14 +1,16 @@
 "use client";
 
 import { CardSlot } from "./card-slot";
+import { RotationWrapper } from "./rotation-wrapper";
 
 interface CardOriginProps {
   aspectRatio: "large" | "default";
   orientation: "horizontal" | "vertical";
+  side?: "top" | "bottom" | "left" | "right";
   debugMode?: boolean;
 }
 
-export function CardOrigin({ aspectRatio, orientation, debugMode = false }: CardOriginProps) {
+export function CardOrigin({ aspectRatio, orientation, side, debugMode = false }: CardOriginProps) {
   // Determine colors and aspect ratio based on props
   const isLarge = aspectRatio === "large";
   const bgColor = debugMode ? (isLarge ? "bg-green-500/30" : "bg-blue-500/30") : "";
@@ -25,6 +27,7 @@ export function CardOrigin({ aspectRatio, orientation, debugMode = false }: Card
   // Apply scaling for large cards (party leader)
   const transform = isLarge ? "scale(1.5)" : undefined;
   
+  
   // Set dimensions based on orientation
   const sizeProps = orientation === "horizontal" 
     ? { height: '100%' }
@@ -32,7 +35,7 @@ export function CardOrigin({ aspectRatio, orientation, debugMode = false }: Card
 
   return (
     <div
-      className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center`}
+      className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center relative`}
       style={{
         ...sizeProps,
         aspectRatio: cardAspectRatio,
@@ -41,10 +44,17 @@ export function CardOrigin({ aspectRatio, orientation, debugMode = false }: Card
       }}
     >
       {!isLarge && (
-        <CardSlot 
-          size="auto"
-          cardType="hero"
-        />
+        <RotationWrapper
+          orientation={orientation}
+          side={side}
+          aspectRatio={cardAspectRatio}
+          debugMode={debugMode}
+        >
+          <CardSlot 
+            size="auto"
+            cardType="hero"
+          />
+        </RotationWrapper>
       )}
     </div>
   );
