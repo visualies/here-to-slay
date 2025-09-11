@@ -1,3 +1,35 @@
+/**
+ * CardOrigin - Responsive layout container that participates fully in DOM flow
+ * 
+ * CORE PRINCIPLE: This container never escapes normal layout flow, ensuring
+ * it works seamlessly with CSS Grid, Flexbox, and responsive design systems.
+ * 
+ * Layout Integration:
+ * - **Stays in DOM flow**: Maintains CSS aspect-ratio, flex-shrink, sizing props
+ * - **Grid/Flex friendly**: Can be measured, positioned, and scaled by parents
+ * - **Responsive**: Automatically adapts to container queries and viewport changes
+ * - **Transforms safely**: Only applies transforms that don't affect layout
+ *   (scale for party leaders), never escapes positioning context
+ * 
+ * Rotation Architecture:
+ * - **Automatic detection**: When orientation=vertical + side=left/right detected
+ * - **Preserves container**: CardOrigin itself never rotates or repositions
+ * - **Delegates rotation**: Passes rotation responsibility to RotationWrapper child
+ * - **Maintains aspect ratios**: Container keeps its defined proportions while
+ *   content inside gets properly oriented
+ * 
+ * This design ensures rotated card areas integrate seamlessly with the overall
+ * layout system, maintaining responsive behavior and predictable positioning
+ * across all screen sizes and orientations.
+ * 
+ * Props:
+ * - aspectRatio: "large" (party leaders) | "default" (regular cards)
+ * - orientation: "horizontal" (top/bottom) | "vertical" (left/right)  
+ * - side: Determines rotation direction when needed
+ * - children: Any content (CardSlots, Cards, etc.)
+ *
+ * - Also see rotation-wrapper.tsx
+ */
 "use client";
 
 import { ReactNode } from "react";

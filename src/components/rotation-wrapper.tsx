@@ -1,3 +1,23 @@
+/**
+ * RotationWrapper - Handles content rotation for card slots on left/right sides
+ *
+ * This wrapper solves a fundamental layout problem: when CardOrigin containers are
+ * rotated (e.g., for left/right party areas), the content inside calculates its
+ * dimensions BEFORE rotation is applied, leading to incorrect aspect ratios.
+ *
+ * Solution:
+ * 1. Measures the parent CardOrigin's actual pixel dimensions
+ * 2. When rotation is needed (vertical orientation + left/right side):
+ *    - Uses absolute positioning to avoid affecting parent layout
+ *    - Applies SWAPPED dimensions (height->width, width->height) to itself
+ *    - Children see "landscape" dimensions and calculate accordingly
+ *    - Applies rotation transform to make content appear upright
+ * 3. Result: Properly proportioned, readable content on rotated sides
+ *
+ * Rotation directions:
+ * - Left side: +90° (top of content faces center)
+ * - Right side: -90° (top of content faces center)
+ */
 "use client";
 
 import { ReactNode, useEffect, useRef, useState } from "react";
