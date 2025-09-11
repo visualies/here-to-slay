@@ -114,7 +114,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
     <div
       className={cn(
         "cq-contain flex items-center justify-center",
-        debugMode ? "bg-green-500/20 border-2 border-green-500 p-2" : ""
+        debugMode ? "bg-red-200 outline outline-2 outline-red-300 p-2" : ""
       )}
       style={{
         "--w": orientation === "horizontal" ? cardAspectRatio : 1,

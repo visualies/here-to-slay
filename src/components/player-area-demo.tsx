@@ -10,7 +10,7 @@ export function PlayerAreaDemo({ position, debugMode = false }: PlayerAreaDemoPr
   const needsSideRotation = position === "left" || position === "right";
 
   const content = (
-    <div className={`flex gap-1 h-full w-full ${debugMode ? 'bg-red-500/10 border border-red-500/30' : ''}`}>
+    <div className={`flex gap-1 h-full w-full ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300' : ''}`}>
       {Array.from({ length: 6 }, (_, index) => (
         <div
           key={`demo-rect-${index}`}

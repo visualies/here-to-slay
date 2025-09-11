@@ -45,7 +45,7 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
   };
 
   return (
-    <div className={`relative flex items-center gap-4 p-4 ${debugMode ? 'bg-red-500/10 border border-red-500/30' : ''}`}>
+    <div className={`relative flex items-center gap-4 p-4 ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300' : ''}`}>
       {debugMode && (
         <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded">
           Card Size: {Math.round(cardSize)}px
