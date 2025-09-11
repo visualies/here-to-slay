@@ -171,22 +171,22 @@ export function GameArea({ diceResults }: GameAreaProps) {
         </div>
         
         {/* Top player area - conditional overflow based on available space */}
-        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 cq-container party-container ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-1 cq-container party-container !flex !items-start !justify-center ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
           <PartyWrapper orientation="horizontal" debugMode={debugMode} position="top" />
         </div>
         
         {/* Right player area - conditional overflow based on available space */}
-        <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
+        <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container !flex !items-center !justify-end ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
           <PartyWrapper orientation="vertical" debugMode={debugMode} position="right" />
         </div>
         
         {/* Bottom player area - conditional overflow based on available space */}
-        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 cq-container party-container ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
+        <div className={`${shouldTopBottomOverflow ? 'col-start-1 col-span-3' : 'col-start-2'} row-start-3 cq-container party-container !flex !items-end !justify-center ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
           <PartyWrapper orientation="horizontal" debugMode={debugMode} position="bottom" />
         </div>
         
         {/* Left player area - conditional overflow based on available space */}
-        <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
+        <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container !flex !items-center !justify-start ${debugMode ? 'outline outline-2 outline-red-300' : ''}`}>
           <PartyWrapper orientation="vertical" debugMode={debugMode} position="left" />
         </div>
       </div>
