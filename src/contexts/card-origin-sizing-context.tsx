@@ -22,6 +22,8 @@ interface CardOriginSizingContextType {
   getCenterScale: (aspectRatio: "large" | "default", orientation: "horizontal" | "vertical") => number;
   // Get exact dimensions to copy from target
   getTargetDimensions: (targetId: string) => { width: number; height: number } | null;
+  // Get unscaled dimensions (removes scale transforms like party leader 1.5x)
+  getUnscaledTargetDimensions: (targetId: string) => { width: number; height: number } | null;
 }
 
 const CardOriginSizingContext = createContext<CardOriginSizingContextType | undefined>(undefined);
@@ -139,6 +141,21 @@ export function CardOriginSizingProvider({ children }: CardOriginSizingProviderP
     return { width: targetSize.width, height: targetSize.height };
   }, [sizes]);
 
+  const getUnscaledTargetDimensions = useCallback((targetId: string): { width: number; height: number } | null => {
+    const targetSize = sizes[targetId];
+    if (!targetSize) return null;
+    
+    // If this is a large aspect ratio (party leader), remove the 1.5x scale
+    if (targetSize.aspectRatio === "large") {
+      return { 
+        width: targetSize.width / 1.5, 
+        height: targetSize.height / 1.5 
+      };
+    }
+    
+    return { width: targetSize.width, height: targetSize.height };
+  }, [sizes]);
+
   const getAllSizes = useCallback(() => sizes, [sizes]);
 
   // Cleanup on unmount
@@ -157,7 +174,8 @@ export function CardOriginSizingProvider({ children }: CardOriginSizingProviderP
     getCardOriginSize,
     getAllSizes,
     getCenterScale,
-    getTargetDimensions
+    getTargetDimensions,
+    getUnscaledTargetDimensions
   };
 
   return (

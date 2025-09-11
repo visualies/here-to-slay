@@ -25,7 +25,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   const { currentTurn, currentPlayer, players, supportStack, monsters } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
-  const { getTargetDimensions } = useCardOriginSizing();
+  const { getTargetDimensions, getUnscaledTargetDimensions } = useCardOriginSizing();
   
   // Track visual deck count - maintains consistent visual appearance
   const [visualDeckCount, setVisualDeckCount] = useState(5);
@@ -58,13 +58,16 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   
   // Get dimensions for center-discard to match party-bottom-default
   const discardDimensions = getTargetDimensions('party-bottom-default');
+  
+  // Get dimensions for monster slots to match party leader size (already scaled)
+  const monsterDimensions = getTargetDimensions('party-bottom-large');
 
   return (
     <div 
-      className={`flex flex-col items-center justify-center gap-6 relative ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300 p-4' : ''}`}
+      className={`flex flex-col items-center justify-center relative ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300 p-4' : ''}`}
     >
       
-      <div className="flex items-center justify-center gap-8">
+      <div className="flex items-center justify-center gap-[8%]">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
           <CardOrigin 
@@ -100,15 +103,26 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="flex gap-4">
+          <div className="text-sm text-gray-600 font-medium">Monsters</div>
+          <div className="flex justify-center gap-[5%]">
             {Array.from({ length: 3 }, (_, i) => (
-              <CardSlot key={i} label={i === 0 ? "Monsters" : undefined} size="large" cardType="monster">
-                {monsters[i] && (
-                  <div className="h-full w-full relative">
-                    <Card card={monsters[i]} size="fill" preview={true} />
-                  </div>
-                )}
-              </CardSlot>
+              <div key={i} className="flex flex-col items-center gap-2">
+                <CardOrigin 
+                  id={`center-monster-${i}`}
+                  aspectRatio="default" 
+                  orientation="horizontal" 
+                  debugMode={debugMode}
+                  dimensions={monsterDimensions || undefined}
+                >
+                  <CardSlot size="auto" cardType="monster" hideOutline={!!monsters[i]}>
+                    {monsters[i] && (
+                      <div className="h-full w-full relative">
+                        <Card card={monsters[i]} size="fill" preview={true} />
+                      </div>
+                    )}
+                  </CardSlot>
+                </CardOrigin>
+              </div>
             ))}
           </div>
         </div>
@@ -166,60 +180,62 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       </div>
       
       {/* Status Area - Dynamic content based on status */}
-      {status === 'waiting-to-start' && (
-        <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
-          <StartRound 
-            onStartRound={initializeGame} 
-            disabled={!isHost}
-          />
-        </StatusArea>
-      )}
-      
-      {status === 'waiting-for-turn' && (
-        <StatusArea header={`Waiting for ${currentTurnPlayerName}'s turn`}>
-          <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-            <Clock className="w-4 h-4 text-gray-500" />
-          </div>
-        </StatusArea>
-      )}
-      
-      {status === 'your-turn' && (
-        <StatusArea header={`Your turn - ${currentPlayer?.actionPoints || 0} action points`}>
-          <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
-            <User className="w-4 h-4 text-green-500" />
-          </div>
-        </StatusArea>
-      )}
-      
-      {status === 'dice-rolling' && (
-        <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
-          <DiceResults 
-            diceResults={displayResults} 
-          />
-        </StatusArea>
-      )}
-      
-      {status === 'dice-capture' && (
-        <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice`}>
-          <DiceResults 
-            diceResults={displayResults} 
-          />
-        </StatusArea>
-      )}
-      
-      {status === 'dice-results' && (
-        <StatusArea header={`Dice Results`}>
-          <DiceResults 
-            diceResults={displayResults} 
-          />
-        </StatusArea>
-      )}
-      
-      {status === 'game-ended' && (
-        <StatusArea header="Dice Results">
-          <DiceResults diceResults={diceResults} />
-        </StatusArea>
-      )}
+      <div className="mt-[6%]">
+        {status === 'waiting-to-start' && (
+          <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
+            <StartRound 
+              onStartRound={initializeGame} 
+              disabled={!isHost}
+            />
+          </StatusArea>
+        )}
+        
+        {status === 'waiting-for-turn' && (
+          <StatusArea header={`Waiting for ${currentTurnPlayerName}'s turn`}>
+            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+              <Clock className="w-4 h-4 text-gray-500" />
+            </div>
+          </StatusArea>
+        )}
+        
+        {status === 'your-turn' && (
+          <StatusArea header={`Your turn - ${currentPlayer?.actionPoints || 0} action points`}>
+            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
+              <User className="w-4 h-4 text-green-500" />
+            </div>
+          </StatusArea>
+        )}
+        
+        {status === 'dice-rolling' && (
+          <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
+            <DiceResults 
+              diceResults={displayResults} 
+            />
+          </StatusArea>
+        )}
+        
+        {status === 'dice-capture' && (
+          <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice`}>
+            <DiceResults 
+              diceResults={displayResults} 
+            />
+          </StatusArea>
+        )}
+        
+        {status === 'dice-results' && (
+          <StatusArea header={`Dice Results`}>
+            <DiceResults 
+              diceResults={displayResults} 
+            />
+          </StatusArea>
+        )}
+        
+        {status === 'game-ended' && (
+          <StatusArea header="Dice Results">
+            <DiceResults diceResults={diceResults} />
+          </StatusArea>
+        )}
+      </div>
     </div>
   );
 }
