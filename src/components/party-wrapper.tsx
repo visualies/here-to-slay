@@ -95,8 +95,8 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
     // The green wrapper IS the aspect-ratio box (object-fit: contain behavior)
     <div
       className={cn(
-        "cq-contain flex items-center justify-center",
-        debugMode ? "bg-red-200 outline outline-2 outline-red-300 p-2" : ""
+        "cq-contain flex items-center justify-center p-2",
+        debugMode ? "bg-red-200 outline outline-2 outline-red-300" : ""
       )}
       style={{
         "--w": orientation === "horizontal" ? cardAspectRatio : 1,
