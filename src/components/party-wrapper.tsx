@@ -100,7 +100,8 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
               className="bg-blue-500/30 outline outline-2 outline-blue-500 flex-shrink-0"
               style={{
                 width: '100%',
-                aspectRatio: '7/5'
+                aspectRatio: '7/5',
+                maxHeight: `${100/6 - 2}%`
               }}
             />
           ))}
