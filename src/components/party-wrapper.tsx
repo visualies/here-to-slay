@@ -13,50 +13,88 @@ interface PartyWrapperProps {
 export function PartyWrapper({ children, orientation, debugMode = false, position }: PartyWrapperProps) {
   // Calculate aspect ratio for 1 party leader + 6 cards with 5:7 ratio
   // Reduced from 37/7 to 4.5:1 for better proportions
-  const cardAspectRatio = position === 'top' || position === 'bottom' ? 5 : 3.7;
+  const cardAspectRatio = position === 'top' || position === 'bottom' ? 5 : 5;
 
-  // Render cards directly for top/bottom positions
-  const renderCards = () => {
-    if (position === 'top' || position === 'bottom') {
-      return (
-        <div className="w-full h-full flex items-center justify-center">
-          {/* Debug info */}
-          {debugMode && (
-            <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white">
-              {position} - PartyWrapper Cards
-            </div>
-          )}
-          
-          {/* Party Leader card slot with light blue outline */}
-          <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
+  // Render cards directly for top/bottom positions (horizontal layout)
+  const renderHorizontalCards = () => {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        {/* Debug info */}
+        {debugMode && (
+          <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white">
+            {position} - PartyWrapper Cards
+          </div>
+        )}
+        
+        {/* Party Leader card slot with light blue outline */}
+        <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
+          <div
+            className="bg-green-500/30 outline outline-2 outline-green-500"
+            style={{
+              height: '100%',
+              aspectRatio: '3/5',
+              transform: 'scale(1.5)'
+            }}
+          />
+        </div>
+        
+        {/* Container for the 6 cards with light blue outline */}
+        <div className="flex items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
+          {/* Blue squares with 5:7 aspect ratio */}
+          {Array.from({ length: 6 }, (_, i) => (
             <div
-              className="bg-green-500/30 outline outline-2 outline-green-500"
+              key={i}
+              className="bg-blue-500/30 outline outline-2 outline-blue-500 flex-shrink-0"
               style={{
                 height: '100%',
-                aspectRatio: '3/5',
-                transform: 'scale(1.5)'
+                aspectRatio: '5/7'
               }}
             />
-          </div>
-          
-          {/* Container for the 6 cards with light blue outline */}
-          <div className="flex items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
-            {/* Blue squares with 5:7 aspect ratio */}
-            {Array.from({ length: 6 }, (_, i) => (
-              <div
-                key={i}
-                className="bg-blue-500/30 outline outline-2 outline-blue-500 flex-shrink-0"
-                style={{
-                  height: '100%',
-                  aspectRatio: '5/7'
-                }}
-              />
-            ))}
-          </div>
+          ))}
         </div>
-      );
-    }
-    return children;
+      </div>
+    );
+  };
+
+  // Render cards for left/right positions (vertical layout)
+  const renderVerticalCards = () => {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center">
+        {/* Debug info */}
+        {debugMode && (
+          <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white">
+            {position} - PartyWrapper Cards (Vertical)
+          </div>
+        )}
+        
+        {/* Party Leader card slot with light blue outline */}
+        <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
+          <div
+            className="bg-green-500/30 outline outline-2 outline-green-500"
+            style={{
+              width: '100%',
+              aspectRatio: '5/3',
+              transform: 'scale(1.5)'
+            }}
+          />
+        </div>
+        
+        {/* Container for the 6 cards with light blue outline */}
+        <div className="flex flex-col items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
+          {/* Blue squares with 7:5 aspect ratio (swapped from 5:7) */}
+          {Array.from({ length: 6 }, (_, i) => (
+            <div
+              key={i}
+              className="bg-blue-500/30 outline outline-2 outline-blue-500 flex-shrink-0"
+              style={{
+                width: '100%',
+                aspectRatio: '7/5'
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -71,18 +109,10 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         "--h": orientation === "horizontal" ? 1 : cardAspectRatio
       } as React.CSSProperties}
     >
-      {/* For vertical parties, we need to handle the rotation differently */}
-      {orientation === "vertical" ? (
-        <div className="w-full h-full flex items-center justify-center">
-          <div className="rotate-90 w-full h-full flex items-center justify-center">
-            {renderCards()}
-          </div>
-        </div>
-      ) : (
-        <div className="w-full h-full">
-          {renderCards()}
-        </div>
-      )}
+      <div className="w-full h-full">
+        {/* Use appropriate render function based on position */}
+        {position === 'top' || position === 'bottom' ? renderHorizontalCards() : renderVerticalCards()}
+      </div>
     </div>
   );
 }

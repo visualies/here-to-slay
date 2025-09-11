@@ -177,9 +177,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
         
         {/* Right player area - conditional overflow based on available space */}
         <div className={`col-start-3 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PartyWrapper orientation="vertical" debugMode={debugMode}>
-            <PlayerArea position="right" debugMode={debugMode} />
-          </PartyWrapper>
+          <PartyWrapper orientation="vertical" debugMode={debugMode} position="right" />
         </div>
         
         {/* Bottom player area - conditional overflow based on available space */}
@@ -189,9 +187,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
         
         {/* Left player area - conditional overflow based on available space */}
         <div className={`col-start-1 ${shouldTopBottomOverflow ? 'row-start-2' : 'row-start-1 row-span-3'} cq-container party-container ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
-          <PartyWrapper orientation="vertical" debugMode={debugMode}>
-            <PlayerArea position="left" debugMode={debugMode} />
-          </PartyWrapper>
+          <PartyWrapper orientation="vertical" debugMode={debugMode} position="left" />
         </div>
       </div>
       
