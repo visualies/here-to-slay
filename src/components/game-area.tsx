@@ -164,7 +164,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       />
       
       {/* Game board container */}
-      <div className="relative h-full grid grid-rows-[minmax(60px,1fr)_2fr_minmax(60px,1fr)] grid-cols-[minmax(60px,1fr)_2fr_minmax(60px,1fr)]">
+      <div className="relative h-full grid grid-rows-[minmax(60px,1fr)_2fr_minmax(60px,1fr)] grid-cols-[minmax(40px,0.5fr)_2fr_minmax(40px,0.5fr)]">
         {/* Center area */}
         <div className={`col-start-2 row-start-2 flex items-center justify-center ${debugMode ? 'border-red-500/70 border-2' : ''}`}>
           <CenterArea diceResults={diceResults} debugMode={debugMode} />

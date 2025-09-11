@@ -13,7 +13,7 @@ interface PartyWrapperProps {
 export function PartyWrapper({ children, orientation, debugMode = false, position }: PartyWrapperProps) {
   // Calculate aspect ratio for 1 party leader + 6 cards with 5:7 ratio
   // Reduced from 37/7 to 4.5:1 for better proportions
-  const cardAspectRatio = position === 'top' || position === 'bottom' ? 4.7 : 3.7;
+  const cardAspectRatio = position === 'top' || position === 'bottom' ? 5 : 3.7;
 
   // Render cards directly for top/bottom positions
   const renderCards = () => {
@@ -27,14 +27,17 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
             </div>
           )}
           
-          {/* Party Leader card slot - outside the container */}
-          <div
-            className="bg-green-500/30 outline outline-2 outline-green-500 flex-shrink-0"
-            style={{
-              height: '100%',
-              aspectRatio: '5/7'
-            }}
-          />
+          {/* Party Leader card slot with light blue outline */}
+          <div className="outline outline-1 outline-blue-300 flex items-center justify-center" style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
+            <div
+              className="bg-green-500/30 outline outline-2 outline-green-500"
+              style={{
+                height: '100%',
+                aspectRatio: '3/5',
+                transform: 'scale(1.5)'
+              }}
+            />
+          </div>
           
           {/* Container for the 6 cards with light blue outline */}
           <div className="flex items-center justify-center outline outline-1 outline-blue-300" style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
