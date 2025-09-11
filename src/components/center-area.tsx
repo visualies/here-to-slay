@@ -180,7 +180,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       </div>
       
       {/* Status Area - Dynamic content based on status */}
-      <div className="mt-[6%]">
+      <div className="mt-[2%]">
         {status === 'waiting-to-start' && (
           <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
             <StartRound 

@@ -8,6 +8,7 @@ import {CardSlot} from "@/components/card-slot";
 import { Card } from "@/components/card";
 import { useGameState } from "@/hooks/use-game-state";
 import { usePlayerPosition } from "@/hooks/use-player-position";
+import { Stack } from "@/components/stack";
 
 interface PartyWrapperProps {
   children?: ReactNode;
@@ -18,7 +19,7 @@ interface PartyWrapperProps {
 
 export function PartyWrapper({ children, orientation, debugMode = false, position }: PartyWrapperProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { scales, register } = useSizing();
+  const { scales, register, cardSize } = useSizing();
   const scale = position ? scales[position] ?? 1 : 1;
   const { players } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
@@ -61,12 +62,40 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         
         {/* Container for the 6 cards with light blue outline */}
         <div className={`flex items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
-          {/* Blue squares with 5:7 aspect ratio */}
-          {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="horizontal" side={position} debugMode={debugMode}>
-              <CardSlot size="auto" cardType="hero" />
-            </CardOrigin>
-          ))}
+          {(() => {
+            const MAX_PARTY_COLUMNS = 6;
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
+            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as any[]);
+            allHeroes.forEach((hero) => {
+              let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
+              if (target === -1) target = columns.findIndex(col => col.length === 0);
+              if (target !== -1) columns[target].push(hero);
+            });
+            return Array.from({ length: MAX_PARTY_COLUMNS }, (_, columnIndex) => {
+              const columnHeroes = columns[columnIndex];
+              const total = columnHeroes.length;
+              const spacingPercent = total > 1 ? 70 / (total - 1) : 0; // distribute up to ~80% height like original
+              return (
+                <CardOrigin key={columnIndex} aspectRatio="default" orientation="horizontal" side={position} debugMode={debugMode}>
+                  {total === 0 ? (
+                    <CardSlot size="auto" cardType="hero" />
+                  ) : (
+                    <CardSlot size="auto" cardType="hero" noBg>
+                      <Stack className="w-full h-full">
+                        {columnHeroes.map((hero, stackIndex) => (
+                          <div key={`hero-${hero.id}-${stackIndex}`} className="relative h-full" style={{ transform: stackIndex === 0 ? undefined : `translateY(-${spacingPercent * stackIndex}%)` }}>
+                            <div className="h-full w-full relative">
+                              <Card card={hero} size="fill" preview={true} />
+                            </div>
+                          </div>
+                        ))}
+                      </Stack>
+                    </CardSlot>
+                  )}
+                </CardOrigin>
+              );
+            });
+          })()}
         </div>
       </div>
     );
@@ -98,12 +127,40 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         
         {/* Container for the 6 cards with light blue outline */}
         <div className={`flex flex-col items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
-          {/* Blue squares with 7:5 aspect ratio (swapped from 5:7) */}
-          {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="vertical" side={position} debugMode={debugMode}>
-              <CardSlot size="auto" cardType="hero" />
-            </CardOrigin>
-          ))}
+          {(() => {
+            const MAX_PARTY_COLUMNS = 6;
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
+            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as any[]);
+            allHeroes.forEach((hero) => {
+              let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
+              if (target === -1) target = columns.findIndex(col => col.length === 0);
+              if (target !== -1) columns[target].push(hero);
+            });
+            return Array.from({ length: MAX_PARTY_COLUMNS }, (_, columnIndex) => {
+              const columnHeroes = columns[columnIndex];
+              const total = columnHeroes.length;
+              const spacingPercent = total > 1 ? 80 / (total - 1) : 0;
+              return (
+                <CardOrigin key={columnIndex} aspectRatio="default" orientation="vertical" side={position} debugMode={debugMode}>
+                  {total === 0 ? (
+                    <CardSlot size="auto" cardType="hero" />
+                  ) : (
+                    <CardSlot size="auto" cardType="hero" noBg>
+                      <Stack className="w-full h-full">
+                        {columnHeroes.map((hero, stackIndex) => (
+                          <div key={`hero-${hero.id}-${stackIndex}`} className="relative h-full" style={{ transform: stackIndex === 0 ? undefined : `translateY(-${spacingPercent * stackIndex}%)` }}>
+                            <div className="h-full w-full relative">
+                              <Card card={hero} size="fill" preview={true} />
+                            </div>
+                          </div>
+                        ))}
+                      </Stack>
+                    </CardSlot>
+                  )}
+                </CardOrigin>
+              );
+            });
+          })()}
         </div>
       </div>
     );
