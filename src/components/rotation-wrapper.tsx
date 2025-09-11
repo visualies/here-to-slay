@@ -22,7 +22,7 @@ export function RotationWrapper({
   
   // Determine if content needs rotation based on orientation and side
   const needsRotation = (orientation === "vertical" && (side === "left" || side === "right"));
-  const rotationDegrees = side === "left" ? -90 : side === "right" ? 90 : 0;
+  const rotationDegrees = side === "left" ? 90 : side === "right" ? -90 : 0;
 
   useEffect(() => {
     if (!parentRef.current?.parentElement) return;

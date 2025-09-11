@@ -1,6 +1,6 @@
 "use client";
 
-import { CardSlot } from "./card-slot";
+import { ReactNode } from "react";
 import { RotationWrapper } from "./rotation-wrapper";
 
 interface CardOriginProps {
@@ -8,9 +8,10 @@ interface CardOriginProps {
   orientation: "horizontal" | "vertical";
   side?: "top" | "bottom" | "left" | "right";
   debugMode?: boolean;
+  children?: ReactNode;
 }
 
-export function CardOrigin({ aspectRatio, orientation, side, debugMode = false }: CardOriginProps) {
+export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, children }: CardOriginProps) {
   // Determine colors and aspect ratio based on props
   const isLarge = aspectRatio === "large";
   const bgColor = debugMode ? (isLarge ? "bg-green-500/30" : "bg-blue-500/30") : "";
@@ -43,17 +44,14 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false }
         ...(orientation === "vertical" && !isLarge ? { maxHeight: `${100/6 - 2}%` } : {})
       }}
     >
-      {!isLarge && (
+      {children && (
         <RotationWrapper
           orientation={orientation}
           side={side}
           aspectRatio={cardAspectRatio}
           debugMode={debugMode}
         >
-          <CardSlot 
-            size="auto"
-            cardType="hero"
-          />
+          {children}
         </RotationWrapper>
       )}
     </div>

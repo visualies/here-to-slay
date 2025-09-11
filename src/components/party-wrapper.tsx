@@ -4,6 +4,7 @@ import { ReactNode, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useSizing } from "@/contexts/sizing-context";
 import { CardOrigin } from "./card-origin";
+import {CardSlot} from "@/components/card-slot";
 
 interface PartyWrapperProps {
   children?: ReactNode;
@@ -48,7 +49,9 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         <div className={`flex items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
           {/* Blue squares with 5:7 aspect ratio */}
           {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="horizontal" side={position} debugMode={debugMode} />
+            <CardOrigin key={i} aspectRatio="default" orientation="horizontal" side={position} debugMode={debugMode}>
+              <CardSlot size="auto" cardType="hero" />
+            </CardOrigin>
           ))}
         </div>
       </div>
@@ -75,7 +78,9 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         <div className={`flex flex-col items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
           {/* Blue squares with 7:5 aspect ratio (swapped from 5:7) */}
           {Array.from({ length: 6 }, (_, i) => (
-            <CardOrigin key={i} aspectRatio="default" orientation="vertical" side={position} debugMode={debugMode} />
+            <CardOrigin key={i} aspectRatio="default" orientation="vertical" side={position} debugMode={debugMode}>
+              <CardSlot size="auto" cardType="hero" />
+            </CardOrigin>
           ))}
         </div>
       </div>
