@@ -19,7 +19,7 @@
  */
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { useSizing } from "@/contexts/sizing-context";
 
 interface RotationWrapperProps {
@@ -49,7 +49,7 @@ export function RotationWrapper({
   // Get the scale for this side
   const scale = side ? scales[side] ?? 1 : 1;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!parentRef.current?.parentElement) return;
     
     const updateDimensions = () => {
