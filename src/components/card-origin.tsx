@@ -27,13 +27,15 @@
  * - orientation: "horizontal" (top/bottom) | "vertical" (left/right)  
  * - side: Determines rotation direction when needed
  * - children: Any content (CardSlots, Cards, etc.)
+ * - id: Unique identifier for this card origin (auto-generated if not provided)
  *
  * - Also see rotation-wrapper.tsx
  */
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useLayoutEffect, useRef, useMemo } from "react";
 import { RotationWrapper } from "./rotation-wrapper";
+import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
 
 interface CardOriginProps {
   aspectRatio: "large" | "default";
@@ -41,9 +43,32 @@ interface CardOriginProps {
   side?: "top" | "bottom" | "left" | "right";
   debugMode?: boolean;
   children?: ReactNode;
+  id?: string; // Unique identifier for this card origin
+  dimensions?: { width: number; height: number }; // Custom dimensions to override default sizing
 }
 
-export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, children }: CardOriginProps) {
+export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, children, id, dimensions }: CardOriginProps) {
+  const { registerCardOrigin, getCenterScale } = useCardOriginSizing();
+  const elementRef = useRef<HTMLDivElement>(null);
+  
+  // Generate unique ID if not provided
+  const cardOriginId = useMemo(() => {
+    if (id) return id;
+    
+    // Auto-generate ID based on side and aspect ratio
+    if (side) {
+      return `party-${side}-${aspectRatio}`;
+    } else {
+      return `center-${aspectRatio}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+  }, [id, side, aspectRatio]);
+
+  // Register with sizing context
+  useLayoutEffect(() => {
+    registerCardOrigin(cardOriginId, elementRef.current, aspectRatio, orientation);
+    return () => registerCardOrigin(cardOriginId, null, aspectRatio, orientation);
+  }, [registerCardOrigin, cardOriginId, aspectRatio, orientation]);
+
   // Determine colors and aspect ratio based on props
   const isLarge = aspectRatio === "large";
   const bgColor = debugMode ? (isLarge ? "bg-green-500/30" : "bg-blue-500/30") : "";
@@ -58,24 +83,52 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
   }
   
   // Apply scaling for large cards (party leader)
-  const transform = isLarge ? "scale(1.5)" : undefined;
+  let transform = isLarge ? "scale(1.5)" : undefined;
   
+  // Set dimensions based on props
+  let sizeProps: React.CSSProperties;
   
-  // Set dimensions based on orientation
-  const sizeProps = orientation === "horizontal" 
-    ? { height: '100%' }
-    : { width: '100%' };
+  if (dimensions) {
+    // Custom dimensions provided - use them directly
+    sizeProps = {
+      width: `${dimensions.width}px`,
+      height: `${dimensions.height}px`,
+      aspectRatio: 'unset' // Override the CSS aspect-ratio
+    };
+  } else {
+    // Normal sizing for party wrappers and center elements
+    sizeProps = orientation === "horizontal" 
+      ? { height: '100%' }
+      : { width: '100%' };
+    
+    // Apply center area scaling for center elements without custom dimensions
+    if (!side) {
+      const centerScale = getCenterScale(aspectRatio, orientation);
+      transform = transform ? `${transform} scale(${centerScale})` : `scale(${centerScale})`;
+    }
+  }
 
   return (
     <div
+      ref={elementRef}
       className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center relative`}
       style={{
         ...sizeProps,
-        aspectRatio: cardAspectRatio,
+        ...(!dimensions ? { aspectRatio: cardAspectRatio } : {}),
         transform,
         ...(orientation === "vertical" && !isLarge ? { maxHeight: `${100/6 - 2}%` } : {})
       }}
     >
+      {debugMode && (
+        <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white z-50">
+          {cardOriginId}
+          {dimensions && (
+            <div className="text-green-300">
+              → custom dims: {dimensions.width}x{dimensions.height}
+            </div>
+          )}
+        </div>
+      )}
       {children && (
         <RotationWrapper
           orientation={orientation}

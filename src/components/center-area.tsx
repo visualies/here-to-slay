@@ -1,11 +1,13 @@
 import { useGameActions, useGameState } from "../hooks/use-game-state";
 import { useStatus } from "../hooks/use-status";
 import { useDice } from "../hooks/use-dice";
+import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
 import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";
 import { StartRound } from "./start-round";
 import { Card } from "./card";
 import { CardSlot } from "./card-slot";
+import { CardOrigin } from "./card-origin";
 import { Stack } from "./stack";
 import { Clock, User, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -23,13 +25,14 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   const { currentTurn, currentPlayer, players, supportStack, monsters } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
+  const { getTargetDimensions } = useCardOriginSizing();
   
   // Track visual deck count - maintains consistent visual appearance
   const [visualDeckCount, setVisualDeckCount] = useState(5);
   const [deckSeed, setDeckSeed] = useState(0);
   
   // Cache state - All modifier cards
-  const [cacheCards] = useState(() => {
+  const [cacheCards] = useState<any[]>(() => {
     return [];
   });
   
@@ -52,9 +55,15 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
 
   // Determine which dice results to show
   const displayResults = diceEnabled ? diceHookResults : diceResults;
+  
+  // Get dimensions for center-discard to match party-bottom-default
+  const discardDimensions = getTargetDimensions('party-bottom-default');
 
   return (
-    <div className={`flex flex-col items-center justify-center gap-6 relative ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300 p-4' : ''}`}>
+    <div 
+      className={`flex flex-col items-center justify-center gap-6 relative ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300 p-4' : ''}`}
+    >
+      
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
@@ -97,9 +106,20 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Discard</div>
-          <div className="w-[clamp(3.5rem,10cqw,7rem)] aspect-[744/1039] bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
-            <div className="text-xs text-gray-700">DISCARD</div>
-          </div>
+          <CardOrigin 
+            id="center-discard"
+            aspectRatio="default" 
+            orientation="horizontal" 
+            debugMode={debugMode}
+            dimensions={discardDimensions || undefined}
+          >
+            <CardSlot size="auto" cardType="hero" label="">
+              {/* Discard pile content - can be replaced with actual discard cards later */}
+              <div className="w-full h-full bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
+                <div className="text-xs text-gray-700">DISCARD</div>
+              </div>
+            </CardSlot>
+          </CardOrigin>
         </div>
       </div>
       

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { BlurProvider } from "../contexts/blur-context";
 import { SizingProvider } from "../contexts/sizing-context";
+import { CardOriginSizingProvider } from "../contexts/card-origin-sizing-context";
 import { BlurOverlay } from "../components/blur-overlay";
 
 const geistSans = Geist({
@@ -32,8 +33,10 @@ export default function RootLayout({
       >
         <BlurProvider>
           <SizingProvider>
-            {children}
-            <BlurOverlay />
+            <CardOriginSizingProvider>
+              {children}
+              <BlurOverlay />
+            </CardOriginSizingProvider>
           </SizingProvider>
         </BlurProvider>
       </body>

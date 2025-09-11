@@ -21,6 +21,7 @@
 
 import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { useSizing } from "@/contexts/sizing-context";
+import { useCardOriginSizing } from "@/contexts/card-origin-sizing-context";
 
 interface RotationWrapperProps {
   children: ReactNode;
@@ -42,6 +43,7 @@ export function RotationWrapper({
   const parentRef = useRef<HTMLDivElement>(null);
   const [parentDimensions, setParentDimensions] = useState({ width: 0, height: 0 });
   const { scales } = useSizing();
+  const { getAllSizes } = useCardOriginSizing(); // Available for future use if needed
   
   // Determine if content needs rotation based on orientation and side
   const needsRotation = (orientation === "vertical" && (side === "left" || side === "right")) || 
