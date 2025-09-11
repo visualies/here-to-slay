@@ -8,7 +8,8 @@ import {
   getActivePlayers,
   getSortedPlayersByJoinTime,
   dealCardsToPlayer,
-  assignRandomPartyLeadersToAllPlayers
+  assignRandomPartyLeadersToAllPlayers,
+  assignPartyLeaderToPlayer
 } from './players';
 import { createSupportStack } from '../game/deck';
 import { getAllMonsters } from '../game/monsters';
@@ -203,5 +204,6 @@ export function addPlayerToGame(
   }
 
   dealCardsToPlayer(playersMap, playerIdToAdd, 5, 10);
+  assignPartyLeaderToPlayer(playersMap, playerIdToAdd);
   console.log('addPlayerToGame: Added player to existing game', playerPresence.name);
 }

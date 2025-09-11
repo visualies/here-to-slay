@@ -9,6 +9,7 @@ import { Card } from "@/components/card";
 import { useGameState } from "@/hooks/use-game-state";
 import { usePlayerPosition } from "@/hooks/use-player-position";
 import { Stack } from "@/components/stack";
+import { Card as CardType } from "@/types/card";
 
 interface PartyWrapperProps {
   children?: ReactNode;
@@ -17,9 +18,9 @@ interface PartyWrapperProps {
   position?: 'top' | 'bottom' | 'left' | 'right';
 }
 
-export function PartyWrapper({ children, orientation, debugMode = false, position }: PartyWrapperProps) {
+export function PartyWrapper({ orientation, debugMode = false, position }: PartyWrapperProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { scales, register, cardSize } = useSizing();
+  const { scales, register } = useSizing();
   const scale = position ? scales[position] ?? 1 : 1;
   const { players } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
@@ -50,7 +51,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="horizontal" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader" noBg>
+            <CardSlot size="auto" cardType="party-leader" noBg={!!player?.party?.leader}>
               {player?.party?.leader && (
                 <div className="h-full w-full relative">
                   <Card card={player.party.leader} size="fill" preview={true} />
@@ -64,8 +65,8 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         <div className={`flex items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
           {(() => {
             const MAX_PARTY_COLUMNS = 6;
-            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
-            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as any[]);
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as CardType[];
+            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as CardType[]);
             allHeroes.forEach((hero) => {
               let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
               if (target === -1) target = columns.findIndex(col => col.length === 0);
@@ -80,7 +81,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
                   {total === 0 ? (
                     <CardSlot size="auto" cardType="hero" />
                   ) : (
-                    <CardSlot size="auto" cardType="hero" noBg>
+                    <CardSlot size="auto" cardType="hero" noBg={true}>
                       <Stack className="w-full h-full">
                         {columnHeroes.map((hero, stackIndex) => (
                           <div key={`hero-${hero.id}-${stackIndex}`} className="relative h-full" style={{ transform: stackIndex === 0 ? undefined : `translateY(-${spacingPercent * stackIndex}%)` }}>
@@ -115,7 +116,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="vertical" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader" noBg>
+            <CardSlot size="auto" cardType="party-leader" noBg={!!player?.party?.leader}>
               {player?.party?.leader && (
                 <div className="h-full w-full relative">
                   <Card card={player.party.leader} size="fill" preview={true} />
@@ -129,8 +130,8 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         <div className={`flex flex-col items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
           {(() => {
             const MAX_PARTY_COLUMNS = 6;
-            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
-            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as any[]);
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as CardType[];
+            const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as CardType[]);
             allHeroes.forEach((hero) => {
               let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
               if (target === -1) target = columns.findIndex(col => col.length === 0);
@@ -145,7 +146,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
                   {total === 0 ? (
                     <CardSlot size="auto" cardType="hero" />
                   ) : (
-                    <CardSlot size="auto" cardType="hero" noBg>
+                    <CardSlot size="auto" cardType="hero" noBg={true}>
                       <Stack className="w-full h-full">
                         {columnHeroes.map((hero, stackIndex) => (
                           <div key={`hero-${hero.id}-${stackIndex}`} className="relative h-full" style={{ transform: stackIndex === 0 ? undefined : `translateY(-${spacingPercent * stackIndex}%)` }}>

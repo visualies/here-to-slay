@@ -11,7 +11,8 @@ export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
     }
   });
   
-  return players;
+  // Sort players by joinTime to ensure consistent ordering across all clients
+  return players.sort((a, b) => a.joinTime - b.joinTime);
 }
 
 export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
