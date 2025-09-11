@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import { useSizing } from "@/contexts/sizing-context";
 import { CardOrigin } from "./card-origin";
 import {CardSlot} from "@/components/card-slot";
+import { Card } from "@/components/card";
+import { useGameState } from "@/hooks/use-game-state";
+import { usePlayerPosition } from "@/hooks/use-player-position";
 
 interface PartyWrapperProps {
   children?: ReactNode;
@@ -17,6 +20,9 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
   const containerRef = useRef<HTMLDivElement | null>(null);
   const { scales, register } = useSizing();
   const scale = position ? scales[position] ?? 1 : 1;
+  const { players } = useGameState();
+  const { getPlayerPosition } = usePlayerPosition();
+  const player = position ? (players.find(p => getPlayerPosition(p.id) === position) || null) : null;
 
   // Register this wrapper for measurement. Done in layout effect to run before paint.
   useLayoutEffect(() => {
@@ -43,7 +49,13 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="horizontal" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader" />
+            <CardSlot size="auto" cardType="party-leader">
+              {player?.party?.leader && (
+                <div className="h-full w-full relative">
+                  <Card card={player.party.leader} size="fill" preview={true} />
+                </div>
+              )}
+            </CardSlot>
           </CardOrigin>
         </div>
         
@@ -74,7 +86,13 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="vertical" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader" />
+            <CardSlot size="auto" cardType="party-leader">
+              {player?.party?.leader && (
+                <div className="h-full w-full relative">
+                  <Card card={player.party.leader} size="fill" preview={true} />
+                </div>
+              )}
+            </CardSlot>
           </CardOrigin>
         </div>
         
