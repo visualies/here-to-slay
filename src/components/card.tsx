@@ -33,7 +33,7 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
     // Determine aspect ratio based on card type or size
     const isLargeCard = size === 'large' || 
       card.type === 'Monster' || 
-      (card.type === 'Hero' && card.class === 'Party Leader');
+      card.type === 'PartyLeader';
     
     const aspectRatio = isLargeCard ? 'aspect-[827/1417]' : 'aspect-[5/7]';
     
@@ -86,7 +86,7 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
 
   return (
     <div 
-      className={`${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:rotate-[var(--hover-rotation)] hover:z-50 hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
+      className={`card ${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:rotate-[var(--hover-rotation)] hover:z-[60] hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative' : 'transition-transform duration-300 ease-in-out cursor-pointer relative'}`}
       style={{ 
         backgroundImage,
         transform: hoverTransform ? `${transform} ${hoverTransform}` : transform,

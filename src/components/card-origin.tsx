@@ -111,7 +111,7 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
   return (
     <div
       ref={elementRef}
-      className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center relative`}
+      className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center relative has-[.card:hover]:z-[60]`}
       style={{
         ...sizeProps,
         ...(!dimensions ? { aspectRatio: cardAspectRatio } : {}),
