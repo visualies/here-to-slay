@@ -42,7 +42,9 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
-          <CardOrigin aspectRatio="large" orientation="horizontal" side={position} debugMode={debugMode} />
+          <CardOrigin aspectRatio="large" orientation="horizontal" side={position} debugMode={debugMode}>
+            <CardSlot size="auto" cardType="party-leader" />
+          </CardOrigin>
         </div>
         
         {/* Container for the 6 cards with light blue outline */}
@@ -71,7 +73,9 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
-          <CardOrigin aspectRatio="large" orientation="vertical" side={position} debugMode={debugMode} />
+          <CardOrigin aspectRatio="large" orientation="vertical" side={position} debugMode={debugMode}>
+            <CardSlot size="auto" cardType="party-leader" />
+          </CardOrigin>
         </div>
         
         {/* Container for the 6 cards with light blue outline */}

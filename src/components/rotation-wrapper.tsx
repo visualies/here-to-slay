@@ -28,6 +28,7 @@ interface RotationWrapperProps {
   side?: "top" | "bottom" | "left" | "right";
   aspectRatio: string;
   debugMode?: boolean;
+  parentScale?: number; // Scale applied to the CardOrigin itself (e.g., 1.5 for party leaders)
 }
 
 export function RotationWrapper({ 
@@ -35,7 +36,8 @@ export function RotationWrapper({
   orientation, 
   side, 
   aspectRatio, 
-  debugMode = false 
+  debugMode = false,
+  parentScale = 1
 }: RotationWrapperProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [parentDimensions, setParentDimensions] = useState({ width: 0, height: 0 });
@@ -56,10 +58,11 @@ export function RotationWrapper({
       const parent = parentRef.current?.parentElement;
       if (parent) {
         const rect = parent.getBoundingClientRect();
-        // Use the scale from useSizing hook to get unscaled dimensions
+        // Use both the PartyWrapper scale and CardOrigin scale to get true unscaled dimensions
+        const totalScale = scale * parentScale;
         setParentDimensions({ 
-          width: rect.width / scale, 
-          height: rect.height / scale 
+          width: rect.width / totalScale, 
+          height: rect.height / totalScale 
         });
       }
     };
@@ -70,7 +73,7 @@ export function RotationWrapper({
     resizeObserver.observe(parentRef.current.parentElement);
     
     return () => resizeObserver.disconnect();
-  }, [scale]);
+  }, [scale, parentScale]);
 
 
   // Check if we need dimension swapping (left/right sides) vs just rotation (top)
