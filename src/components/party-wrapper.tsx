@@ -50,7 +50,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', height: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="horizontal" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader">
+            <CardSlot size="auto" cardType="party-leader" noBg>
               {player?.party?.leader && (
                 <div className="h-full w-full relative">
                   <Card card={player.party.leader} size="fill" preview={true} />
@@ -115,7 +115,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Party Leader card slot with light blue outline */}
         <div className={`${debugMode ? "outline outline-1 outline-blue-300" : ""} flex items-center justify-center`} style={{ padding: '1%', width: '100%', aspectRatio: '7/7' }}>
           <CardOrigin aspectRatio="large" orientation="vertical" side={position} debugMode={debugMode}>
-            <CardSlot size="auto" cardType="party-leader">
+            <CardSlot size="auto" cardType="party-leader" noBg>
               {player?.party?.leader && (
                 <div className="h-full w-full relative">
                   <Card card={player.party.leader} size="fill" preview={true} />
@@ -180,7 +180,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
       ref={containerRef}
     >
       <div
-        className="w-full h-full"
+        className="w-full h-full relative overflow-visible has-[.card:hover]:z-[60]"
         data-scale={scale.toFixed(3)}
         style={{ transform: `scale(${scale})`, transformOrigin: "center", willChange: "transform" }}
       >

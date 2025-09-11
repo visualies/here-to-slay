@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import type { Player, Card } from '../types';
 import { createDeck, dealHand } from '../game/deck';
-import { getRandomPartyLeader } from '../game/party-leaders';
+import { getRandomPartyLeader, getAllPartyLeaders } from '../game/party-leaders';
 
 export function addPlayerToRoom(
   playersMap: Y.Map<Player>,
@@ -191,7 +191,22 @@ export function assignPartyLeaderToPlayer(
 export function assignRandomPartyLeadersToAllPlayers(playersMap: Y.Map<Player>): void {
   const players = Array.from(playersMap.keys());
   
-  players.forEach(playerId => {
-    assignPartyLeaderToPlayer(playersMap, playerId);
+  // Get all available party leaders and shuffle them
+  const allPartyLeaders = getAllPartyLeaders();
+  const shuffledLeaders = [...allPartyLeaders].sort(() => 0.5 - Math.random());
+  
+  // Check if we have enough unique party leaders for all players
+  if (players.length > shuffledLeaders.length) {
+    console.warn(`Not enough party leaders (${shuffledLeaders.length}) for all players (${players.length}). Some players will not receive party leaders.`);
+  }
+  
+  // Assign each player a unique party leader (only if we have enough)
+  players.forEach((playerId, index) => {
+    if (index < shuffledLeaders.length) {
+      const partyLeader = shuffledLeaders[index];
+      assignPartyLeaderToPlayer(playersMap, playerId, partyLeader);
+    } else {
+      console.warn(`No party leader available for player ${playerId} (index ${index})`);
+    }
   });
 }
