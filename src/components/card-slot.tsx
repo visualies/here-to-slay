@@ -26,7 +26,6 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
       <div 
         className={cn(
           "rounded flex items-center justify-center relative",
-          hideOutline ? "border-none" : children ? "border-none" : "border-2 border-gray-300 border-dashed",
           children ? "shadow-md" : "",
           isAutoSize ? "w-full h-full" : ""
         )}
@@ -40,12 +39,18 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
             backgroundSize: "60%",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat"
+          } : {}),
+          ...(!hideOutline && !children ? {
+            borderWidth: "3px", 
+            borderColor: "#C5C3C1",
+            borderRadius: "0.375rem",
+            borderStyle: "dashed"
           } : {})
         }}
       >
         {/* White overlay */}
         {!children && !noBg && (
-          <div className="absolute inset-0 bg-white/80 rounded" />
+          <div className="absolute inset-0 rounded" style={{ backgroundColor: "#C5C3C1", opacity: "0.2" }} />
         )}
         
         {/* Content layer */}
