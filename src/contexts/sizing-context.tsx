@@ -1,10 +1,16 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, ReactNode, useCallback } from "react";
+
+type Position = 'top' | 'right' | 'bottom' | 'left';
 
 interface SizingContextType {
+  // Legacy field to avoid breaking callers; not used for layout anymore
   cardSize: number;
-  isCalculating: boolean;
+  // Per-position content scale so that both sides in a pair match the smaller side
+  scales: Record<Position, number>;
+  // Register an element that should be measured for a given position
+  register: (position: Position, element: HTMLElement | null) => void;
 }
 
 const SizingContext = createContext<SizingContextType | undefined>(undefined);
@@ -14,73 +20,114 @@ interface SizingProviderProps {
 }
 
 export function SizingProvider({ children }: SizingProviderProps) {
-  const [cardSize, setCardSize] = useState(80);
-  const [isCalculating, setIsCalculating] = useState(true);
+  // Keep a stable map of elements per position
+  const elementsRef = useRef<Partial<Record<Position, HTMLElement>>>({});
+  const [sizes, setSizes] = useState<Partial<Record<Position, { width: number; height: number }>>>({});
+  const [scales, setScales] = useState<Record<Position, number>>({ top: 1, right: 1, bottom: 1, left: 1 });
 
-  useEffect(() => {
-    const calculateOptimalCardSize = () => {
-      setIsCalculating(true);
-      
-      // Get viewport dimensions
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate the actual available space for each party position
-      // Top/Bottom parties: horizontal space (2fr column)
-      // Left/Right parties: vertical space (2fr row)
-      const horizontalSpace = viewportWidth * 0.6; // Approximate 2fr column space
-      const verticalSpace = viewportHeight * 0.6; // Approximate 2fr row space
-      
-      // Calculate how many cards can fit in each direction
-      const cardsPerParty = 6;
-      const cardGap = 4; // 4px gap between cards
-      const totalGapSpace = (cardsPerParty - 1) * cardGap;
-      
-      // Calculate available space per card for each direction
-      const horizontalSpacePerCard = (horizontalSpace - totalGapSpace) / cardsPerParty;
-      const verticalSpacePerCard = (verticalSpace - totalGapSpace) / cardsPerParty;
-      
-      // Determine which side is smaller (will overflow)
-      const isHorizontalSmaller = horizontalSpacePerCard < verticalSpacePerCard;
-      
-      // Use the smaller of the two spaces to ensure no overflow
-      // This ensures both sides fit within their constraints
-      const baseCardSize = Math.min(horizontalSpacePerCard, verticalSpacePerCard);
-      
-      // Since PartyWrapper now handles aspect ratio constraints, we need to make cards smaller
-      // to fit within the constrained boxes. Reduce by a factor to account for the aspect ratio.
-      const constrainedCardSize = baseCardSize * 0.7; // Reduce by 30% to fit within aspect ratio boxes
-      
-      // Apply reasonable bounds
-      const minSize = 30;
-      const maxSize = 200;
-      const boundedSize = Math.max(minSize, Math.min(maxSize, constrainedCardSize));
-      
-      // Debug logging
-      console.log('Sizing Context:', {
-        viewport: { width: viewportWidth, height: viewportHeight },
-        spaces: { horizontal: horizontalSpace, vertical: verticalSpace },
-        perCard: { horizontal: horizontalSpacePerCard, vertical: verticalSpacePerCard },
-        isHorizontalSmaller,
-        base: baseCardSize,
-        constrained: constrainedCardSize,
-        final: boundedSize,
-        constrainedBy: isHorizontalSmaller ? 'horizontal (top/bottom)' : 'vertical (left/right)',
-        strategy: 'Reduce card size to fit within PartyWrapper aspect ratio constraints'
+  const observersRef = useRef<Map<Element, ResizeObserver>>(new Map());
+
+  const measureAll = useCallback(() => {
+    const nextSizes: Partial<Record<Position, { width: number; height: number }>> = {};
+    (['top','right','bottom','left'] as Position[]).forEach((pos) => {
+      const el = elementsRef.current[pos];
+      if (el) {
+        nextSizes[pos] = { width: el.clientWidth, height: el.clientHeight };
+      }
+    });
+
+    // Update sizes only if changed to avoid loops
+    setSizes((prev) => {
+      const positions: Position[] = ['top','right','bottom','left'];
+      const isSame = positions.every((p) => {
+        const a = prev[p];
+        const b = nextSizes[p];
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        return a.width === b.width && a.height === b.height;
       });
-      
-      setCardSize(boundedSize);
-      setIsCalculating(false);
-    };
+      return isSame ? prev : nextSizes;
+    });
 
-    calculateOptimalCardSize();
-    window.addEventListener('resize', calculateOptimalCardSize);
-    
-    return () => window.removeEventListener('resize', calculateOptimalCardSize);
+    // Compute global minimum target so all sides match the same smaller dimension
+    const topH = nextSizes.top?.height ?? null;
+    const bottomH = nextSizes.bottom?.height ?? null;
+    const leftW = nextSizes.left?.width ?? null;
+    const rightW = nextSizes.right?.width ?? null;
+
+    const pairMinH = topH !== null && bottomH !== null ? Math.min(topH, bottomH) : null;
+    const pairMinW = leftW !== null && rightW !== null ? Math.min(leftW, rightW) : null;
+    const candidates = [pairMinH, pairMinW].filter((v): v is number => v !== null);
+    const globalMin = candidates.length > 0 ? Math.min(...candidates) : null;
+
+    let topScale = 1, bottomScale = 1, leftScale = 1, rightScale = 1;
+    if (globalMin !== null) {
+      if (topH !== null) topScale = topH > 0 ? globalMin / topH : 1;
+      if (bottomH !== null) bottomScale = bottomH > 0 ? globalMin / bottomH : 1;
+      if (leftW !== null) leftScale = leftW > 0 ? globalMin / leftW : 1;
+      if (rightW !== null) rightScale = rightW > 0 ? globalMin / rightW : 1;
+    }
+
+    // Round to 3 decimals to reduce churn
+    const round = (n: number) => Math.max(0.01, Math.round(n * 1000) / 1000);
+    const nextScales: Record<Position, number> = { top: round(topScale), right: round(rightScale), bottom: round(bottomScale), left: round(leftScale) };
+    setScales((prev) => {
+      const same = ['top','right','bottom','left'].every((p) => prev[p as Position] === nextScales[p as Position]);
+      return same ? prev : nextScales;
+    });
   }, []);
 
+  const register = useCallback((position: Position, element: HTMLElement | null) => {
+    const current = elementsRef.current[position];
+    if (element === current) return;
+
+    // Cleanup previous observer if any
+    if (!element && current) {
+      const ro = observersRef.current.get(current);
+      if (ro) {
+        ro.unobserve(current);
+        ro.disconnect();
+        observersRef.current.delete(current);
+      }
+      delete elementsRef.current[position];
+      return;
+    }
+
+    if (element) {
+      elementsRef.current[position] = element;
+      if (!observersRef.current.has(element)) {
+        const ro = new ResizeObserver(() => {
+          measureAll();
+        });
+        ro.observe(element);
+        observersRef.current.set(element, ro);
+      }
+      // Measure immediately on registration
+      measureAll();
+    }
+  }, [measureAll]);
+
+  // Initial measure and window resize listener
+  useLayoutEffect(() => {
+    measureAll();
+    const onResize = () => measureAll();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Debug scales visibility
+  useLayoutEffect(() => {
+    // eslint-disable-next-line no-console
+    console.debug('[Sizing] scales', scales);
+  }, [scales]);
+
+  // Keep legacy cardSize for compatibility; not used for scaling logic
+  const cardSize = 80;
+
+  const value = useMemo(() => ({ cardSize, scales, register }), [cardSize, scales]);
+
   return (
-    <SizingContext.Provider value={{ cardSize, isCalculating }}>
+    <SizingContext.Provider value={value}>
       {children}
     </SizingContext.Provider>
   );

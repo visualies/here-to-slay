@@ -1,7 +1,8 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { useSizing } from "@/contexts/sizing-context";
 
 interface PartyWrapperProps {
   children?: ReactNode;
@@ -11,6 +12,17 @@ interface PartyWrapperProps {
 }
 
 export function PartyWrapper({ children, orientation, debugMode = false, position }: PartyWrapperProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { scales, register } = useSizing();
+  const scale = position ? scales[position] ?? 1 : 1;
+
+  // Register this wrapper for measurement. Done in layout effect to run before paint.
+  useLayoutEffect(() => {
+    if (position) {
+      register(position, containerRef.current);
+      return () => register(position, null);
+    }
+  }, [position, register]);
   // Calculate aspect ratio for 1 party leader + 6 cards with 5:7 ratio
   // Reduced from 37/7 to 4.5:1 for better proportions
   const cardAspectRatio = position === 'top' || position === 'bottom' ? 5 : 5;
@@ -22,7 +34,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Debug info */}
         {debugMode && (
           <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white">
-            {position} - PartyWrapper Cards
+            {position} - PartyWrapper Cards (scale: {scale.toFixed(3)})
           </div>
         )}
         
@@ -63,7 +75,7 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         {/* Debug info */}
         {debugMode && (
           <div className="absolute top-0 left-0 text-xs bg-black text-white px-1 rounded outline outline-1 outline-white">
-            {position} - PartyWrapper Cards (Vertical)
+            {position} - PartyWrapper Cards (Vertical, scale: {scale.toFixed(3)})
           </div>
         )}
         
@@ -108,8 +120,13 @@ export function PartyWrapper({ children, orientation, debugMode = false, positio
         "--w": orientation === "horizontal" ? cardAspectRatio : 1,
         "--h": orientation === "horizontal" ? 1 : cardAspectRatio
       } as React.CSSProperties}
+      ref={containerRef}
     >
-      <div className="w-full h-full">
+      <div
+        className="w-full h-full"
+        data-scale={scale.toFixed(3)}
+        style={{ transform: `scale(${scale})`, transformOrigin: "center", willChange: "transform" }}
+      >
         {/* Use appropriate render function based on position */}
         {position === 'top' || position === 'bottom' ? renderHorizontalCards() : renderVerticalCards()}
       </div>
