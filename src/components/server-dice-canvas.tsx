@@ -275,7 +275,8 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
         width: '100%',
         height: '100%',
         pointerEvents: diceEnabled ? 'auto' : 'none',
-        background: 'transparent'
+        background: 'transparent',
+        zIndex: 30
       }}
     >
       <CameraController />
