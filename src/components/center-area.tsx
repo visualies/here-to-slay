@@ -67,27 +67,36 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       <div className="flex items-center justify-center gap-8">
         <div className="flex flex-col items-center gap-2">
           <div className="text-sm text-gray-600 font-medium">Support Deck</div>
-          <div onClick={handleDrawCard} className="cursor-pointer">
-            <Stack>
-              {Array.from({ length: visualDeckCount }, (_, i) => (
-                <Card 
-                  key={`support-${deckSeed}-${i}`}
-                  card={{ 
-                    id: `support-${i}`, 
-                    name: `Support Deck`, 
-                    type: CardType.Hero, 
-                    class: HeroClass.Fighter, 
-                    requirement: 6,
-                    description: 'Support card',
-                    effect: []
-                  }} 
-                  isBack={true}
-                  stackIndex={i}
-                  randomness={1}
-                />
-              ))}
-            </Stack>
-          </div>
+          <CardOrigin 
+            id="center-support-deck"
+            aspectRatio="default" 
+            orientation="horizontal" 
+            debugMode={debugMode}
+            dimensions={discardDimensions || undefined}
+          >
+            <div onClick={handleDrawCard} className="cursor-pointer w-full h-full">
+              <Stack className="w-full h-full">
+                {Array.from({ length: visualDeckCount }, (_, i) => (
+                  <Card 
+                    key={`support-${deckSeed}-${i}`}
+                    card={{ 
+                      id: `support-${i}`, 
+                      name: `Support Deck`, 
+                      type: CardType.Hero, 
+                      class: HeroClass.Fighter, 
+                      requirement: 6,
+                      description: 'Support card',
+                      effect: []
+                    }} 
+                    isBack={true}
+                    stackIndex={i}
+                    randomness={1}
+                    size="fill"
+                  />
+                ))}
+              </Stack>
+            </div>
+          </CardOrigin>
         </div>
         
         <div className="flex flex-col items-center gap-2">
@@ -114,9 +123,23 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
             dimensions={discardDimensions || undefined}
           >
             <CardSlot size="auto" cardType="hero" label="">
-              {/* Discard pile content - can be replaced with actual discard cards later */}
-              <div className="w-full h-full bg-gray-100 border-2 border-dashed border-gray-300 rounded overflow-hidden flex items-center justify-center">
-                <div className="text-xs text-gray-700">DISCARD</div>
+              {/* Discard pile content matching CardSlot empty styling */}
+              <div 
+                className="w-full h-full rounded flex items-center justify-center relative"
+                style={{
+                  borderWidth: "3px", 
+                  borderColor: "#C5C3C1",
+                  borderRadius: "0.375rem",
+                  borderStyle: "dashed"
+                }}
+              >
+                {/* White overlay like CardSlot */}
+                <div className="absolute inset-0 rounded" style={{ backgroundColor: "#C5C3C1", opacity: "0.2" }} />
+                
+                {/* Content layer */}
+                <div className="relative z-10 flex items-center justify-center w-full h-full">
+                  <div className="text-xs text-gray-700 font-medium">DISCARD</div>
+                </div>
               </div>
             </CardSlot>
           </CardOrigin>
