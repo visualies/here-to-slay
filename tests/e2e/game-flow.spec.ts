@@ -68,13 +68,13 @@ test.describe('Here to Slay - Game Flow', () => {
       console.log(`✅ Player 1 has ${player1Cards} cards`);
       console.log(`✅ Player 2 has ${player2Cards} cards`);
 
-      // Verify each player has cards (this game appears to deal the full deck)
-      expect(player1Cards).toBeGreaterThan(0);
-      expect(player2Cards).toBeGreaterThan(0);
+      // Verify each player has exactly 5 hand cards
+      expect(player1Cards).toBe(5);
+      expect(player2Cards).toBe(5);
       
       // Log the actual card counts for debugging
-      console.log(`📊 Player 1 received ${player1Cards} cards`);
-      console.log(`📊 Player 2 received ${player2Cards} cards`);
+      console.log(`📊 Player 1 received ${player1Cards} hand cards`);
+      console.log(`📊 Player 2 received ${player2Cards} hand cards`);
 
       // Take final screenshots
       await helpers[0].takeScreenshot('04-final-player1');

@@ -52,11 +52,11 @@ export class GameTestHelper {
     // Wait for hand cards to appear - look for cards with the .card class
     await this.page.waitForSelector('.card', { timeout: 10000 });
     
-    // Verify cards are actually present
-    const cards = await this.page.locator('.card').count();
-    expect(cards).toBeGreaterThan(0);
+    // Count cards in the current player's hand using data-testid
+    const handCards = await this.page.locator('[data-testid="current-player-hand-container"] .card').count();
+    expect(handCards).toBeGreaterThan(0);
     
-    return cards;
+    return handCards;
   }
 
   async getRoomId(): Promise<string> {

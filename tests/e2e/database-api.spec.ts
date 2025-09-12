@@ -103,6 +103,38 @@ test.describe('Here to Slay - Database & API Tests', () => {
     console.log('✅ Room capacity limit enforced correctly');
   });
 
+  test('should handle multiple joins by same player', async () => {
+    // Create room
+    const roomData = await apiHelper.createRoom('Multiple Join Test');
+    const roomId = roomData.roomId;
+    
+    const playerId = apiHelper.generatePlayerId('multi-join-player');
+    const playerName = 'MultiJoinPlayer';
+    const playerColor = '#FF6B6B';
+    
+    // Join first time
+    await apiHelper.joinRoom(roomId, playerId, playerName, playerColor);
+    await apiHelper.verifyPlayerCount(roomId, 1);
+    
+    // Join second time with same player ID (should update existing player)
+    await apiHelper.joinRoom(roomId, playerId, playerName, playerColor);
+    await apiHelper.verifyPlayerCount(roomId, 1); // Should still be 1 player
+    
+    // Join third time with different color
+    const newColor = '#4ECDC4';
+    await apiHelper.joinRoom(roomId, playerId, playerName, newColor);
+    await apiHelper.verifyPlayerCount(roomId, 1); // Should still be 1 player
+    
+    // Verify the player data was updated (last join should have the new color)
+    const roomInfo = await apiHelper.getRoomInfo(roomId);
+    const player = roomInfo.players.find((p: any) => p.id === playerId);
+    expect(player).toBeDefined();
+    expect(player.color).toBe(newColor);
+    expect(player.name).toBe(playerName);
+    
+    console.log('✅ Multiple joins by same player handled correctly');
+  });
+
   test('should verify database persistence', async () => {
     // Create room
     const roomData = await apiHelper.createRoom('Persistence Test');

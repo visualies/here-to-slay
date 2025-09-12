@@ -129,7 +129,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       </div>
 
       {/* Bottom player hand cards (current player) */}
-      <div className="absolute bottom-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
+      <div className="absolute bottom-0 left-1/2 w-0 h-0 flex items-center justify-center z-30" data-testid="current-player-hand-container">
         <div>
           {getPlayerByPosition('bottom') && (
             <HandCards 
