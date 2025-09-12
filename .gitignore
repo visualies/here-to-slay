@@ -42,3 +42,8 @@ next-env.d.ts
 
 # database
 *.db
+
+# playwright testing
+/test-results/
+/playwright-report/
+/tests/e2e/screenshots/
