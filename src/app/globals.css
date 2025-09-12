@@ -123,17 +123,17 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Open Sans', var(--font-open-sans), var(--font-geist-sans), sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
   
   /* Headings use Patua One */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Patua One', var(--font-patua-one), var(--font-geist-sans), sans-serif;
+    font-family: 'Patua One', serif;
   }
   
   /* Body text uses Open Sans */
   p, span, div, button, input, textarea, select {
-    font-family: 'Open Sans', var(--font-open-sans), var(--font-geist-sans), sans-serif;
+    font-family: 'Open Sans', sans-serif;
   }
 }
 
