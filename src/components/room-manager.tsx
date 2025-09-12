@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { createRoom, joinRoom } from "../lib/multiplayer";
+import { getStoredPlayerData, storePlayerData, generatePersistentPlayerId, getAllPlayerRooms, clearRoomData } from "../lib/player-persistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSound } from "@/contexts/sound-context";
-import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play } from "lucide-react";
+import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2 } from "lucide-react";
 
 interface RoomManagerProps {
   onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
@@ -23,11 +24,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [createdRoomId, setCreatedRoomId] = useState('');
   const [turnDuration, setTurnDuration] = useState(30);
   const [selectedDeck, setSelectedDeck] = useState('standard');
+  const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: any }>>([]);
   const { playThemeMusic, stopThemeMusic } = useSound();
 
-  // Start background music when component mounts
+  // Start background music and load recent rooms when component mounts
   useEffect(() => {
     playThemeMusic();
+    
+    // Load recent rooms from localStorage
+    const rooms = getAllPlayerRooms();
+    setRecentRooms(rooms);
+    console.log(`🔒 Loaded ${rooms.length} recent rooms from localStorage`);
     
     return () => {
       // Stop theme music when leaving room manager
@@ -86,6 +93,34 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     setPlayerColor(generatePlayerColor(randomName));
   }, []);
 
+  // Helper function to format time since last active
+  const formatTimeSince = (timestamp: number): string => {
+    const now = Date.now();
+    const diff = now - timestamp;
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    
+    if (days > 0) return `${days}d ago`;
+    if (hours > 0) return `${hours}h ago`;
+    if (minutes > 0) return `${minutes}m ago`;
+    return 'Just now';
+  };
+
+  // Handle rejoining a recent room
+  const handleRejoinRoom = async (roomId: string) => {
+    await handleJoinExistingRoom(roomId);
+  };
+
+  // Handle removing a room from recent list
+  const handleRemoveRoom = (roomId: string) => {
+    clearRoomData(roomId);
+    const updatedRooms = recentRooms.filter(r => r.roomId !== roomId);
+    setRecentRooms(updatedRooms);
+    console.log(`🔒 Removed room ${roomId} from recent rooms`);
+  };
+
   const handleCreateRoom = async () => {
     if (!playerName.trim()) {
       setError('Please enter your name');
@@ -122,18 +157,41 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     setError('');
 
     try {
-      // Generate player color and ID
-      const playerColor = generatePlayerColor(playerName.trim());
-      const playerId = Math.random().toString(36).substr(2, 9);
+      // Check for stored player data for reconnection
+      const storedPlayer = getStoredPlayerData(targetRoomId);
+      
+      let playerId: string;
+      let finalPlayerName: string;
+      let playerColor: string;
+      
+      if (storedPlayer) {
+        // ALWAYS use stored session if it exists - never create new player
+        console.log(`🔄 Found existing session for room ${targetRoomId} - using stored player data`);
+        playerId = storedPlayer.playerId;
+        finalPlayerName = storedPlayer.playerName;
+        playerColor = storedPlayer.playerColor;
+        setPlayerName(finalPlayerName); // Update UI to show reconnected name
+        setPlayerColor(playerColor);
+        setError(`🔄 Using existing session: ${finalPlayerName} • Never creating new player`); // Show reconnection status
+      } else {
+        // Only create new player if NO stored session exists
+        console.log(`👋 No existing session found - creating new player: ${playerName.trim()}`);
+        playerId = generatePersistentPlayerId();
+        finalPlayerName = playerName.trim();
+        playerColor = generatePlayerColor(finalPlayerName);
+      }
       
       // First, try to join the room via API
-      await joinRoom(targetRoomId, playerId, playerName.trim(), playerColor);
+      await joinRoom(targetRoomId, playerId, finalPlayerName, playerColor);
+      
+      // Store player data for future reconnection
+      storePlayerData(targetRoomId, playerId, finalPlayerName, playerColor);
       
       // Stop the theme music before joining the game
       stopThemeMusic();
       
       // If successful, connect to the multiplayer game
-      onRoomJoined(targetRoomId, playerId, playerName.trim(), playerColor);
+      onRoomJoined(targetRoomId, playerId, finalPlayerName, playerColor);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
@@ -151,18 +209,23 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     setError('');
 
     try {
-      // Generate player color and ID
-      const playerColor = generatePlayerColor(playerName.trim());
-      const playerId = Math.random().toString(36).substr(2, 9);
+      // For created rooms, always use new player data (host)
+      console.log(`🏠 Starting game as host: ${playerName.trim()}`);
+      const playerId = generatePersistentPlayerId();
+      const finalPlayerName = playerName.trim();
+      const playerColor = generatePlayerColor(finalPlayerName);
       
       // Join the created room
-      await joinRoom(createdRoomId, playerId, playerName.trim(), playerColor);
+      await joinRoom(createdRoomId, playerId, finalPlayerName, playerColor);
+      
+      // Store player data for future reconnection
+      storePlayerData(createdRoomId, playerId, finalPlayerName, playerColor);
       
       // Stop the theme music before joining the game
       stopThemeMusic();
       
       // Connect to the multiplayer game
-      onRoomJoined(createdRoomId, playerId, playerName.trim(), playerColor);
+      onRoomJoined(createdRoomId, playerId, finalPlayerName, playerColor);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start game');
@@ -213,6 +276,52 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
             {error && (
               <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
                 {error}
+              </div>
+            )}
+
+            {/* Recent Rooms Section */}
+            {recentRooms.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-medium text-foreground flex items-center">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Recent Rooms ({recentRooms.length})
+                </h3>
+                <div className="max-h-32 overflow-y-auto space-y-2">
+                  {recentRooms.slice(0, 3).map(({ roomId, playerData }) => (
+                    <div key={roomId} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div
+                          className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
+                          style={{ backgroundColor: playerData.playerColor }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm">{roomId}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {playerData.playerName} • {formatTimeSince(playerData.lastActive)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          onClick={() => handleRejoinRoom(roomId)}
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                        >
+                          Rejoin
+                        </Button>
+                        <Button
+                          onClick={() => handleRemoveRoom(roomId)}
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

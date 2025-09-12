@@ -8,6 +8,7 @@ import { addPlayerToRoom, isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
 import { playCard, drawCard, advanceTurn, initializeGame, addPlayerToGame } from '../lib/game-actions';
+import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
 
 const RoomContext = createContext<Room | null>(null);
 
@@ -64,8 +65,34 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     console.log('Player Name:', playerName);
     console.log('Current players in map before adding:', playersMap.size);
     
-    // Add player to room
-    addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+    // Check if this is a reconnection attempt
+    const existingPlayers = Array.from(playersMap.values());
+    const storedPlayerData = getStoredPlayerData(roomId);
+    
+    if (storedPlayerData && storedPlayerData.playerId === playerId) {
+      console.log(`🔄 Player ${playerName} (${playerId}) is reconnecting with stored session`);
+      
+      // Check if player already exists in game state
+      const existingPlayer = playersMap.get(playerId);
+      if (existingPlayer) {
+        // Update existing player's presence and activity
+        playersMap.set(playerId, {
+          ...existingPlayer,
+          lastSeen: Date.now(),
+          name: playerName, // Update name in case it changed
+          color: playerColor, // Update color in case it changed
+        });
+        console.log(`🔄 Updated existing player slot for ${playerName}`);
+      } else {
+        // Player was not in game state - add them back with stored data
+        addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+        console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
+      }
+    } else {
+      console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
+      // Add as completely new player
+      addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+    }
     
     console.log('Players in map after adding:', playersMap.size);
     
@@ -99,10 +126,19 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     return cleanup;
   }, [roomId]);
   
-  // Heartbeat for player presence
+  // Heartbeat for player presence and localStorage updates
   useEffect(() => {
     const heartbeat = createHeartbeatInterval(playersRef.current, playerId);
-    return () => cleanupHeartbeat(heartbeat);
+    
+    // Also update localStorage every 30 seconds to keep session fresh
+    const storageUpdateInterval = setInterval(() => {
+      updateLastActive(roomId);
+    }, 30000);
+    
+    return () => {
+      cleanupHeartbeat(heartbeat);
+      clearInterval(storageUpdateInterval);
+    };
   }, [playerId]);
   
   // Derived state
