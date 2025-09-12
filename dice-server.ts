@@ -85,16 +85,21 @@ class DicePhysicsWorld {
     this.startPhysicsLoop()
     
     // Auto-spawn default dice
-    this.addDice('dice-0', [-1.6, 2, 1.5])
-    this.addDice('dice-1', [-2, 2, 1.5])
+    this.addDice('dice-0', [-1.6, 2, 1.5], [0, Math.PI / 6, 0])
+    this.addDice('dice-1', [-2, 2, 1.5], [0, -Math.PI / 4, 0])
     console.log(`[DEBUG] DicePhysicsWorld - Room ${roomId} initialized with 2 dice`)
   }
   
-  addDice(diceId: string, position: [number, number, number] = [0, 2, 0]) {
+  addDice(diceId: string, position: [number, number, number] = [0, 2, 0], rotation: [number, number, number] = [0, 0, 0]) {
     const shape = new CANNON.Box(new CANNON.Vec3(0.15, 0.15, 0.15))
     const body = new CANNON.Body({ mass: 1 })
     body.addShape(shape)
     body.position.set(position[0], position[1], position[2])
+    
+    // Apply rotation if provided (keeping dice flat by only rotating around Y axis)
+    if (rotation[1] !== 0) {
+      body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotation[1])
+    }
     
     // Use default material properties
     
