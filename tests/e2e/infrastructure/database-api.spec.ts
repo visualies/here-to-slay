@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { ApiTestHelper } from './utils/api-helpers';
+import { ApiTestHelper } from '../utils/api-helpers';
 
 test.describe('Here to Slay - Database & API Tests', () => {
   let apiHelper: ApiTestHelper;

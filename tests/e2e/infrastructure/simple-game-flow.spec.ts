@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { GameTestHelper } from './utils/test-helpers';
+import { GameTestHelper } from '../utils/test-helpers';
 
 test.describe('Here to Slay - Simple Game Flow', () => {
 
