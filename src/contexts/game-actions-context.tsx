@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
 import { useRoom } from './room-context';
-import { useDice } from '../hooks/use-dice';
+import { useDice } from '../contexts/dice-context';
 import { updatePlayerActionPoints } from '../lib/players';
 import { useStatus } from '../hooks/use-status';
 import type { Card } from '../types';

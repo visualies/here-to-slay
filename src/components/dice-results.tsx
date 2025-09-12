@@ -1,4 +1,4 @@
-import { useDice } from '../hooks/use-dice';
+import { useDice } from '../contexts/dice-context';
 import { useState, useEffect } from 'react';
 import { StatusBubble } from './ui/status-bubble';
 

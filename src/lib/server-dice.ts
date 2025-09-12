@@ -44,6 +44,8 @@ export class ServerDiceManager {
   private messageHandler: ((event: MessageEvent) => void) | null = null;
   private diceServerUrl: string = 'ws://localhost:1235';
   private diceApiUrl: string = '';
+  private isConnecting: boolean = false;
+  private reconnectTimeout: NodeJS.Timeout | null = null;
 
   constructor(roomId: string, onStatesUpdate: (states: ServerDiceStates) => void) {
     this.roomId = roomId;
@@ -56,7 +58,18 @@ export class ServerDiceManager {
 
   // Connect to dedicated dice physics server
   private connectToDiceServer() {
+    // Prevent multiple concurrent connections
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    
+    // If we already have an open connection, don't reconnect
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      return;
+    }
+    
     try {
+      this.isConnecting = true;
       const wsUrl = `${this.diceServerUrl}?room=${this.roomId}`;
       console.log(`[DEBUG] ServerDiceManager - Connecting to ${wsUrl}`);
       
@@ -82,25 +95,41 @@ export class ServerDiceManager {
       this.ws.addEventListener('message', this.messageHandler);
       
       this.ws.addEventListener('open', () => {
+        this.isConnecting = false;
         console.log(`[DEBUG] ServerDiceManager - Connected to dice server for room ${this.roomId}`);
       });
       
-      this.ws.addEventListener('close', () => {
-        console.log(`[DEBUG] ServerDiceManager - Connection closed for room ${this.roomId}`);
-        // Attempt to reconnect after 2 seconds
-        setTimeout(() => {
-          if (this.initialized) {
-            console.log(`[DEBUG] ServerDiceManager - Attempting to reconnect for room ${this.roomId}`);
-            this.connectToDiceServer();
+      this.ws.addEventListener('close', (event) => {
+        this.isConnecting = false;
+        console.log(`[DEBUG] ServerDiceManager - Connection closed for room ${this.roomId}, code: ${event.code}`);
+        
+        // Only reconnect if the manager is still initialized and it wasn't a normal close
+        if (this.initialized && event.code !== 1000) {
+          // Clear any existing reconnect timeout
+          if (this.reconnectTimeout) {
+            clearTimeout(this.reconnectTimeout);
           }
-        }, 2000);
+          
+          // Exponential backoff with max delay of 10 seconds
+          const delay = Math.min(2000 * Math.pow(1.5, Math.random()), 10000);
+          
+          this.reconnectTimeout = setTimeout(() => {
+            if (this.initialized && !this.isConnecting) {
+              console.log(`[DEBUG] ServerDiceManager - Attempting to reconnect for room ${this.roomId}`);
+              this.connectToDiceServer();
+            }
+          }, delay);
+        }
       });
       
       this.ws.addEventListener('error', (error) => {
-        console.error(`[DEBUG] ServerDiceManager - Dice server connection error:`, error);
+        this.isConnecting = false;
+        // WebSocket errors are often empty Event objects, so just log a simple message
+        console.warn(`[DEBUG] ServerDiceManager - WebSocket connection failed for room ${this.roomId} (dice server may be starting up)`);
       });
       
     } catch (error) {
+      this.isConnecting = false;
       console.error('[DEBUG] ServerDiceManager - Failed to connect to dice server:', error);
     }
   }
@@ -112,11 +141,24 @@ export class ServerDiceManager {
 
   // Clean up WebSocket connection
   cleanup() {
+    // Clear any pending reconnection timeout
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    
     if (this.ws && this.messageHandler) {
       this.ws.removeEventListener('message', this.messageHandler);
       this.messageHandler = null;
     }
+    
+    // Close the connection if it's open
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      this.ws.close(1000, 'Client cleanup');
+    }
+    
     this.ws = null;
+    this.isConnecting = false;
   }
 
   // Dice are automatically created by the server, no need for client-side addition

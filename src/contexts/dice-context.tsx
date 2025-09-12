@@ -1,6 +1,8 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from 'react';
+import { useRoom } from './room-context';
+import { ServerDiceManager, ServerDiceStates } from '../lib/server-dice';
 
 interface DiceState {
   isStable: boolean;
@@ -28,10 +30,22 @@ export interface DiceData {
   captureStatus: DiceCaptureStatus;
   requiredAmount: number;
   
+  // Server dice states
+  diceStates: ServerDiceStates;
+  isConnected: boolean;
+  lastUpdate: number;
+  
   enable: () => void;
   disable: () => void;
   updateStates: (states: Record<string, DiceState>) => void;
   captureDiceResult: (requiredAmount?: number) => Promise<DiceCaptureResponse>;
+  
+  // Server dice actions
+  throwDice: (diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
+  throwAllDice: (velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
+  moveDice: (diceId: string, position: [number, number, number], isKinematic?: boolean) => Promise<void>;
+  moveAllDice: (leadDiceId: string, leadPosition: [number, number, number], isKinematic?: boolean) => Promise<void>;
+  moveMultipleDice: (dicePositions: Record<string, [number, number, number]>, isKinematic?: boolean) => Promise<void>;
 }
 
 const defaultDiceData: DiceData = {
@@ -42,10 +56,18 @@ const defaultDiceData: DiceData = {
   isCapturing: false,
   captureStatus: 'complete',
   requiredAmount: 0,
+  diceStates: {},
+  isConnected: false,
+  lastUpdate: 0,
   enable: () => {},
   disable: () => {},
   updateStates: () => {},
-  captureDiceResult: async () => ({ status: 'complete', error: 'Not initialized', data: null })
+  captureDiceResult: async () => ({ status: 'complete', error: 'Not initialized', data: null }),
+  throwDice: async () => {},
+  throwAllDice: async () => {},
+  moveDice: async () => {},
+  moveAllDice: async () => {},
+  moveMultipleDice: async () => {}
 };
 
 export const DiceContext = createContext<DiceData>(defaultDiceData);
@@ -55,6 +77,7 @@ interface DiceProviderProps {
 }
 
 export function DiceProvider({ children }: DiceProviderProps) {
+  const { roomId } = useRoom();
   const [enabled, setEnabled] = useState(false);
   const [results, setResults] = useState<number[]>([]);
   const [diceStates, setDiceStates] = useState<Record<string, DiceState>>({});
@@ -63,6 +86,38 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [captureStatus, setCaptureStatus] = useState<DiceCaptureStatus>('complete');
   const [requiredAmount, setRequiredAmount] = useState<number>(0);
   const [stable, setStable] = useState(false);
+  
+  // Server dice management
+  const [serverDiceStates, setServerDiceStates] = useState<ServerDiceStates>({});
+  const [lastUpdate, setLastUpdate] = useState(0);
+  const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
+  
+  // Stable callback for dice state updates
+  const onServerStatesUpdate = useCallback((states: ServerDiceStates) => {
+    try {
+      setServerDiceStates(states);
+      setLastUpdate(Date.now());
+      setDiceStates(states);
+    } catch (error) {
+      console.error(`[DEBUG] DiceProvider - Error updating dice states:`, error);
+    }
+  }, []);
+
+  // Create dice manager for this room
+  useEffect(() => {
+    if (roomId && !serverDiceManagerRef.current) {
+      console.log(`[DEBUG] DiceProvider - Creating ServerDiceManager for room ${roomId}`);
+      serverDiceManagerRef.current = new ServerDiceManager(roomId, onServerStatesUpdate);
+    }
+
+    return () => {
+      if (serverDiceManagerRef.current) {
+        console.log(`[DEBUG] DiceProvider - Cleaning up ServerDiceManager for room ${roomId}`);
+        serverDiceManagerRef.current.cleanup();
+        serverDiceManagerRef.current = null;
+      }
+    };
+  }, [roomId, onServerStatesUpdate]);
   
   // Check if all dice are stable (immediate check)
   const allDiceStable = enabled && Object.keys(diceStates).length > 0 && 
@@ -135,6 +190,42 @@ export function DiceProvider({ children }: DiceProviderProps) {
   
   const updateStates = useCallback((states: Record<string, DiceState>) => {
     setDiceStates(states);
+  }, []);
+
+  // Server dice action methods
+  const throwDice = useCallback(async (diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) => {
+    if (!serverDiceManagerRef.current) {
+      throw new Error('Dice manager not available');
+    }
+    return serverDiceManagerRef.current.throwDice(diceId, velocity, angularVelocity);
+  }, []);
+
+  const throwAllDice = useCallback(async (velocity: [number, number, number], angularVelocity: [number, number, number]) => {
+    if (!serverDiceManagerRef.current) {
+      throw new Error('Dice manager not available');
+    }
+    return serverDiceManagerRef.current.throwAllDice(velocity, angularVelocity);
+  }, []);
+
+  const moveDice = useCallback(async (diceId: string, position: [number, number, number], isKinematic: boolean = true) => {
+    if (!serverDiceManagerRef.current) {
+      throw new Error('Dice manager not available');
+    }
+    return serverDiceManagerRef.current.moveDice(diceId, position, isKinematic);
+  }, []);
+
+  const moveAllDice = useCallback(async (leadDiceId: string, leadPosition: [number, number, number], isKinematic: boolean = true) => {
+    if (!serverDiceManagerRef.current) {
+      throw new Error('Dice manager not available');
+    }
+    return serverDiceManagerRef.current.moveAllDice(leadDiceId, leadPosition, isKinematic);
+  }, []);
+
+  const moveMultipleDice = useCallback(async (dicePositions: Record<string, [number, number, number]>, isKinematic: boolean = true) => {
+    if (!serverDiceManagerRef.current) {
+      throw new Error('Dice manager not available');
+    }
+    return serverDiceManagerRef.current.moveMultipleDice(dicePositions, isKinematic);
   }, []);
 
   // Capture dice result - ensures only one capture at a time
@@ -220,10 +311,18 @@ export function DiceProvider({ children }: DiceProviderProps) {
     isCapturing,
     captureStatus,
     requiredAmount,
+    diceStates: serverDiceStates,
+    isConnected: serverDiceManagerRef.current !== null,
+    lastUpdate,
     enable,
     disable,
     updateStates,
-    captureDiceResult
+    captureDiceResult,
+    throwDice,
+    throwAllDice,
+    moveDice,
+    moveAllDice,
+    moveMultipleDice
   };
   
   return (

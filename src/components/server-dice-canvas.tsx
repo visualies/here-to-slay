@@ -5,7 +5,7 @@ import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { ServerDice, calculateAllDicePositions } from "./server-dice";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
-import { useDice } from "../hooks/use-dice";
+import { useDice } from "../contexts/dice-context";
 
 // Ground plane with visible grid
 function GridGround() {

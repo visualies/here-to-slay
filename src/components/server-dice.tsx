@@ -7,7 +7,7 @@ import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
 import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
 import { playDiceSound } from "../lib/dice-sounds";
-import { useDice } from "../hooks/use-dice";
+import { useDice } from "../contexts/dice-context";
 
 interface ServerDiceProps {
   diceId: string;
