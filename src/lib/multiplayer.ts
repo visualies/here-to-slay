@@ -72,7 +72,7 @@ export class MultiplayerGame {
     this.dicePositions = this.doc.getMap('dicePositions');
     
     // Connect to WebSocket provider with room parameter
-    const wsUrl = `ws://localhost:1234?room=${roomId}`;
+    const wsUrl = `ws://localhost:1234`;
     
     // Test server connectivity first
     fetch('/api/rooms/test')
@@ -155,7 +155,6 @@ export class MultiplayerGame {
       color: playerColor,
       lastSeen: joinTime,
       joinTime: joinTime,
-      position: 'bottom', // Will be updated when game starts
       hand: [],
       deck: [],
       party: {

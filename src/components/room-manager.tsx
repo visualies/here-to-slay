@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSound } from "@/contexts/sound-context";
-import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2 } from "lucide-react";
+import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2, Loader2 } from "lucide-react";
 
 interface RoomManagerProps {
   onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
@@ -25,6 +25,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [turnDuration, setTurnDuration] = useState(30);
   const [selectedDeck, setSelectedDeck] = useState('standard');
   const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: any }>>([]);
+  const [rejoiningRooms, setRejoiningRooms] = useState<Set<string>>(new Set());
   const { playThemeMusic, stopThemeMusic } = useSound();
 
   // Start background music and load recent rooms when component mounts
@@ -110,7 +111,16 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
   // Handle rejoining a recent room
   const handleRejoinRoom = async (roomId: string) => {
-    await handleJoinExistingRoom(roomId);
+    setRejoiningRooms(prev => new Set(prev).add(roomId));
+    try {
+      await handleJoinExistingRoom(roomId);
+    } finally {
+      setRejoiningRooms(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(roomId);
+        return newSet;
+      });
+    }
   };
 
   // Handle removing a room from recent list
@@ -172,7 +182,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
         playerColor = storedPlayer.playerColor;
         setPlayerName(finalPlayerName); // Update UI to show reconnected name
         setPlayerColor(playerColor);
-        setError(`🔄 Using existing session: ${finalPlayerName} • Never creating new player`); // Show reconnection status
+        // Note: Using existing session - this is expected behavior, no need to show message
       } else {
         // Only create new player if NO stored session exists
         console.log(`👋 No existing session found - creating new player: ${playerName.trim()}`);
@@ -195,6 +205,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
+    } finally {
       setLoading(false);
     }
   };
@@ -229,6 +240,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start game');
+    } finally {
       setLoading(false);
     }
   };
@@ -306,9 +318,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                           onClick={() => handleRejoinRoom(roomId)}
                           size="sm"
                           variant="outline"
+                          disabled={rejoiningRooms.has(roomId)}
                           className="h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
                         >
-                          Rejoin
+                          {rejoiningRooms.has(roomId) ? (
+                            <>
+                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              Joining...
+                            </>
+                          ) : (
+                            'Rejoin'
+                          )}
                         </Button>
                         <Button
                           onClick={() => handleRemoveRoom(roomId)}
@@ -446,7 +466,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
               >
-                {loading ? 'Joining...' : 'Join'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Joining...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Join
+                  </>
+                )}
               </Button>
             </div>
 
@@ -572,8 +602,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
               >
-                <Play className="h-4 w-4 mr-2" />
-                {loading ? 'Starting...' : 'Start Game'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Start Game
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>

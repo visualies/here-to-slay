@@ -109,7 +109,7 @@ wss.on('connection', (ws, req) => {
     
     // Use official y-websocket-server setup - it handles document creation
     console.log(`[DEBUG] Setting up official y-websocket connection for room ${roomId}`)
-    // Don't pass docName to use roomId directly as the document key
+    // The y-websocket-server will extract the room ID from the URL path automatically
     setupWSConnection(ws, req)
     
     console.log(`[DEBUG] Current docs after setup: [${Array.from(docs.keys()).join(', ')}]`)

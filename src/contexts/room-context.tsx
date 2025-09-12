@@ -42,13 +42,14 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       providerRef.current.disconnect();
     }
     
-    // Create new Yjs doc and provider
+    // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const doc = new Y.Doc();
-    const gameState = doc.getMap('gameState');
-    const playersMap = doc.getMap('players') as Y.Map<Player>;
-    
     const wsUrl = `ws://localhost:1234`;
     const provider = new WebsocketProvider(wsUrl, roomId, doc);
+    
+    // Get shared maps after provider is connected
+    const gameState = doc.getMap('gameState');
+    const playersMap = doc.getMap('players') as Y.Map<Player>;
     
     // Store refs
     docRef.current = doc;
@@ -59,42 +60,56 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     // Set up player presence
     setupPlayerAwareness(provider, playerId, playerName, playerColor);
     
-    console.log('=== ADDING PLAYER TO ROOM ===');
-    console.log('Room ID:', roomId);
-    console.log('Player ID:', playerId);
-    console.log('Player Name:', playerName);
-    console.log('Current players in map before adding:', playersMap.size);
-    
-    // Check if this is a reconnection attempt
-    const existingPlayers = Array.from(playersMap.values());
-    const storedPlayerData = getStoredPlayerData(roomId);
-    
-    if (storedPlayerData && storedPlayerData.playerId === playerId) {
-      console.log(`🔄 Player ${playerName} (${playerId}) is reconnecting with stored session`);
+    // Wait for WebSocket connection before adding player
+    const addPlayerWhenConnected = () => {
+      console.log('=== ADDING PLAYER TO ROOM ===');
+      console.log('Room ID:', roomId);
+      console.log('Player ID:', playerId);
+      console.log('Player Name:', playerName);
+      console.log('Current players in map before adding:', playersMap.size);
       
-      // Check if player already exists in game state
-      const existingPlayer = playersMap.get(playerId);
-      if (existingPlayer) {
-        // Update existing player's presence and activity
-        playersMap.set(playerId, {
-          ...existingPlayer,
-          lastSeen: Date.now(),
-          name: playerName, // Update name in case it changed
-          color: playerColor, // Update color in case it changed
-        });
-        console.log(`🔄 Updated existing player slot for ${playerName}`);
+      // Check if this is a reconnection attempt
+      const existingPlayers = Array.from(playersMap.values());
+      const storedPlayerData = getStoredPlayerData(roomId);
+      
+      if (storedPlayerData && storedPlayerData.playerId === playerId) {
+        console.log(`🔄 Player ${playerName} (${playerId}) is reconnecting with stored session`);
+        
+        // Check if player already exists in game state
+        const existingPlayer = playersMap.get(playerId);
+        if (existingPlayer) {
+          // Update existing player's presence and activity
+          playersMap.set(playerId, {
+            ...existingPlayer,
+            lastSeen: Date.now(),
+            name: playerName, // Update name in case it changed
+            color: playerColor, // Update color in case it changed
+          });
+          console.log(`🔄 Updated existing player slot for ${playerName}`);
+        } else {
+          // Player was not in game state - add them back with stored data
+          addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+          console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
+        }
       } else {
-        // Player was not in game state - add them back with stored data
+        console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
+        // Add as completely new player
         addPlayerToRoom(playersMap, playerId, playerName, playerColor);
-        console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
       }
-    } else {
-      console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
-      // Add as completely new player
-      addPlayerToRoom(playersMap, playerId, playerName, playerColor);
-    }
+      
+      console.log('Players in map after adding:', playersMap.size);
+    };
     
-    console.log('Players in map after adding:', playersMap.size);
+    // Add player immediately if already connected, otherwise wait for connection
+    if (provider.wsconnected) {
+      addPlayerWhenConnected();
+    } else {
+      provider.on('status', (event: { status: string }) => {
+        if (event.status === 'connected') {
+          addPlayerWhenConnected();
+        }
+      });
+    }
     
     // Connection status
     provider.on('status', (event: { status: string }) => {
@@ -109,19 +124,46 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   
   // Subscribe to players and game state changes
   useEffect(() => {
-    if (!playersRef.current || !gameStateRef.current) return;
+    if (!playersRef.current || !gameStateRef.current || !providerRef.current) return;
     
-    const cleanup = createYjsObserver(
-      playersRef.current,
-      gameStateRef.current,
-      (newPlayers, gameState) => {
-        setPlayers(newPlayers);
-        setGamePhase(gameState.gamePhase);
-        setCurrentTurn(gameState.currentTurn);
-        setSupportStack(gameState.supportStack);
-        setMonsters(gameState.monsters || []);
-      }
-    );
+    // Wait for WebSocket connection before setting up observer
+    const setupObserver = () => {
+      if (!playersRef.current || !gameStateRef.current) return;
+      
+      console.log('Setting up Yjs observer for room:', roomId);
+      const cleanup = createYjsObserver(
+        playersRef.current,
+        gameStateRef.current,
+        (newPlayers, gameState) => {
+          console.log('Yjs observer triggered - players:', newPlayers.length, 'gamePhase:', gameState.gamePhase);
+          setPlayers(newPlayers);
+          setGamePhase(gameState.gamePhase);
+          setCurrentTurn(gameState.currentTurn);
+          setSupportStack(gameState.supportStack);
+          setMonsters(gameState.monsters || []);
+        }
+      );
+      
+      return cleanup;
+    };
+    
+    let cleanup: (() => void) | undefined;
+    
+    if (providerRef.current.wsconnected) {
+      cleanup = setupObserver();
+    } else {
+      const handleConnection = (event: { status: string }) => {
+        if (event.status === 'connected') {
+          cleanup = setupObserver();
+        }
+      };
+      providerRef.current.on('status', handleConnection);
+      
+      return () => {
+        providerRef.current?.off('status', handleConnection);
+        cleanup?.();
+      };
+    }
     
     return cleanup;
   }, [roomId]);
