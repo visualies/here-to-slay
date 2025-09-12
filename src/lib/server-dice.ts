@@ -75,6 +75,9 @@ export class ServerDiceManager {
       
       this.ws = new WebSocket(wsUrl);
       
+      // Add readyState logging
+      console.log(`[DEBUG] ServerDiceManager - WebSocket created, readyState: ${this.ws.readyState}`);
+      
       this.messageHandler = (event: MessageEvent) => {
         if (typeof event.data === 'string') {
           try {
@@ -124,8 +127,12 @@ export class ServerDiceManager {
       
       this.ws.addEventListener('error', (error) => {
         this.isConnecting = false;
-        // WebSocket errors are often empty Event objects, so just log a simple message
-        console.warn(`[DEBUG] ServerDiceManager - WebSocket connection failed for room ${this.roomId} (dice server may be starting up)`);
+        
+        // In development, React Strict Mode can cause WebSocket errors during double-invocation
+        // Only log errors if the manager is still initialized to avoid noise from cleanup
+        if (this.initialized) {
+          console.warn(`[DEBUG] ServerDiceManager - WebSocket connection failed for room ${this.roomId} (may be due to React Strict Mode in development)`);
+        }
       });
       
     } catch (error) {
@@ -141,6 +148,9 @@ export class ServerDiceManager {
 
   // Clean up WebSocket connection
   cleanup() {
+    // Mark as not initialized to prevent error logging during cleanup
+    this.initialized = false;
+    
     // Clear any pending reconnection timeout
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);

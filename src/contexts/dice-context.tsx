@@ -117,7 +117,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
         serverDiceManagerRef.current = null;
       }
     };
-  }, [roomId, onServerStatesUpdate]);
+  }, [roomId]); // Remove onServerStatesUpdate to prevent recreating manager
   
   // Check if all dice are stable (immediate check)
   const allDiceStable = enabled && Object.keys(diceStates).length > 0 && 
