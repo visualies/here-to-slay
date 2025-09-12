@@ -219,8 +219,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
                     key={player.id}
                     className="px-2 py-1 rounded text-xs"
                     style={{ backgroundColor: player.color + '20', color: player.color }}
+                    data-testid={`player-${player.id}`}
                   >
-                    {player.name}
+                    <span data-testid={`player-name-${player.id}`}>{player.name}</span>
                     {player.id === connectedPlayers.find(p => p.joinTime === Math.min(...connectedPlayers.map(cp => cp.joinTime)))?.id && " (Host)"}
                   </div>
                 ))}
@@ -232,6 +233,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
               <Button
                 onClick={() => initializeGame()}
                 className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 text-sm w-full"
+                data-testid="start-round-button"
               >
                 🎮 Start Round
               </Button>

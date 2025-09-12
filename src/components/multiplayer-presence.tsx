@@ -47,8 +47,9 @@ export function MultiplayerPresence({}: MultiplayerPresenceProps) {
             className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-white font-bold"
             style={{ backgroundColor: player.color }}
             title={player.name}
+            data-testid={`player-avatar-${player.id}`}
           >
-            {player.name.charAt(0).toUpperCase()}
+            <span data-testid={`player-initial-${player.id}`}>{player.name.charAt(0).toUpperCase()}</span>
           </div>
         ))}
       </div>

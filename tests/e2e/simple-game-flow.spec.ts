@@ -20,8 +20,8 @@ test.describe('Here to Slay - Simple Game Flow', () => {
     console.log(`✅ Room created: ${roomId}`);
     
     // Verify we're in the game area
-    await expect(page.locator('text=/Room:.*/')).toBeVisible();
-    await expect(page.locator('button:has-text("Leave Room")')).toBeVisible();
+    await expect(page.locator('[data-testid="room-id-badge"]')).toBeVisible();
+    await expect(page.locator('[data-testid="leave-room-button"]')).toBeVisible();
     
     // Take screenshot after room creation
     await page.screenshot({ path: 'tests/e2e/screenshots/01-room-created.png' });
@@ -29,12 +29,12 @@ test.describe('Here to Slay - Simple Game Flow', () => {
     // Step 2: Check if Start Round button exists (for host)
     console.log('🎮 Checking for Start Round button...');
     
-    const startRoundButton = page.locator('button').filter({ hasText: /Start Round|🎮 Start Round/i });
+    const startRoundButton = page.locator('[data-testid="start-round-button"]');
     const startRoundExists = await startRoundButton.count() > 0;
     
     if (startRoundExists) {
       console.log('✅ Start Round button found - attempting to start game...');
-      await startRoundButton.first().click();
+      await startRoundButton.click();
       
       // Wait for game to start and check for hand cards or game elements
       await page.waitForTimeout(2000); // Give game time to initialize
@@ -44,7 +44,7 @@ test.describe('Here to Slay - Simple Game Flow', () => {
         '[data-testid="hand-cards"]',
         '.hand-cards',
         '[class*="hand"]',
-        'text=/Hand|Cards/i',
+        // Removed text-based selector in favor of .card class
         '[data-testid="game-area"]',
         '.game-area'
       ];
@@ -73,7 +73,7 @@ test.describe('Here to Slay - Simple Game Flow', () => {
     }
     
     // Verify basic game UI elements exist
-    await expect(page.locator('text=/Room:.*/')).toBeVisible();
+    await expect(page.locator('[data-testid="room-id-badge"]')).toBeVisible();
     
     console.log('✅ Basic game flow test completed');
   });
@@ -84,14 +84,14 @@ test.describe('Here to Slay - Simple Game Flow', () => {
     await page.goto('/');
     
     // Fill in player name first
-    await page.fill('input[placeholder*="name"]', 'JoinTestPlayer');
+    await page.fill('[data-testid="create-player-name-input"]', 'JoinTestPlayer');
     
     // Click "Join Existing Room" button to switch to join mode
-    await page.click('button:has-text("Join Existing Room")');
+    await page.click('[data-testid="join-existing-room-button"]');
     
     // Verify join UI appears
-    await expect(page.locator('input[placeholder*="Room"]')).toBeVisible();
-    await expect(page.locator('button:has-text("Join"):not(:has-text("Existing"))')).toBeVisible();
+    await expect(page.locator('[data-testid="join-room-id-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="join-room-submit-button"]')).toBeVisible();
     
     console.log('✅ Join room UI verified');
   });
@@ -102,20 +102,20 @@ test.describe('Here to Slay - Simple Game Flow', () => {
     await page.goto('/');
     
     // Fill in player name
-    await page.fill('input[placeholder*="name"]', 'TestPlayer');
+    await page.fill('[data-testid="create-player-name-input"]', 'TestPlayer');
     
     // Switch to join mode
-    await page.click('button:has-text("Join Existing Room")');
+    await page.click('[data-testid="join-existing-room-button"]');
     
     // Try to join non-existent room
-    await page.fill('input[placeholder*="Room"]', 'INVALID');
-    await page.click('button:has-text("Join"):not(:has-text("Existing"))');
+    await page.fill('[data-testid="join-room-id-input"]', 'INVALID');
+    await page.click('[data-testid="join-room-submit-button"]');
     
     // Should either show error or stay on same page
     await page.waitForTimeout(2000);
     
     // Verify we're still in room manager (not in game)
-    const inGame = await page.locator('text=/Room:.*/', { timeout: 1000 }).isVisible().catch(() => false);
+    const inGame = await page.locator('[data-testid="room-id-badge"]', { timeout: 1000 }).isVisible().catch(() => false);
     expect(inGame).toBeFalsy();
     
     console.log('✅ Invalid room join handled correctly');

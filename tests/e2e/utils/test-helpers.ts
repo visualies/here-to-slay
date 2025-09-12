@@ -5,41 +5,39 @@ export class GameTestHelper {
 
   async createRoom(playerName: string = 'TestPlayer') {
     // Fill in player name
-    await this.page.fill('input[placeholder*="name"]', playerName);
+    await this.page.fill('[data-testid="create-player-name-input"]', playerName);
     
     // Click create room button
-    await this.page.click('button:has-text("Create Room")');
+    await this.page.click('[data-testid="create-room-button"]');
     
     // After creating room, we're likely in a settings mode, look for Start Game button
-    await this.page.waitForSelector('button:has-text("Start Game")', { timeout: 10000 });
+    await this.page.waitForSelector('[data-testid="start-game-button"]', { timeout: 10000 });
     
     // Click Start Game to actually join the room
-    await this.page.click('button:has-text("Start Game")');
+    await this.page.click('[data-testid="start-game-button"]');
     
-    // Wait for room to be joined - look for room badge or text
-    await this.page.waitForSelector('text=/Room:.*/', { timeout: 10000 });
+    // Wait for room to be joined - look for room badge
+    await this.page.waitForSelector('[data-testid="room-id-badge"]', { timeout: 10000 });
   }
 
   async joinRoom(roomId: string, playerName: string = 'TestPlayer2') {
     // Click "Join Existing Room" to switch to join mode
-    await this.page.click('button:has-text("Join Existing Room")');
+    await this.page.click('[data-testid="join-existing-room-button"]');
     
     // Fill in player name and room ID
-    await this.page.fill('input[placeholder*="name"]', playerName);
-    await this.page.fill('input[placeholder*="ABC123"]', roomId);
+    await this.page.fill('[data-testid="join-player-name-input"]', playerName);
+    await this.page.fill('[data-testid="join-room-id-input"]', roomId);
     
     // Click join button
-    await this.page.click('button:has-text("Join"):not(:has-text("Existing"))');
+    await this.page.click('[data-testid="join-room-submit-button"]');
     
     // Wait for successful join
-    await this.page.waitForSelector('text=/Room:.*/', { timeout: 10000 });
+    await this.page.waitForSelector('[data-testid="room-id-badge"]', { timeout: 10000 });
   }
 
   async startGame() {
-    // Look for "Start Round" button in the center area or right panel 
-    const startRoundButton = this.page.locator('button').filter({ 
-      hasText: /Start Round|🎮 Start Round/i 
-    }).first();
+    // Look for "Start Round" button using data-testid
+    const startRoundButton = this.page.locator('[data-testid="start-round-button"]');
     
     await expect(startRoundButton).toBeVisible({ timeout: 15000 });
     await startRoundButton.click();
@@ -62,23 +60,37 @@ export class GameTestHelper {
   }
 
   async getRoomId(): Promise<string> {
-    // Extract room ID from the badge or text
-    const roomElement = await this.page.locator('text=/Room:.*/').first();
+    // Extract room ID from the data-testid element
+    const roomElement = await this.page.locator('[data-testid="room-id-value"]');
     await expect(roomElement).toBeVisible();
     
-    const roomText = await roomElement.textContent();
-    const match = roomText?.match(/Room:\s*([A-Z0-9]+)/i);
+    const roomId = await roomElement.textContent();
     
-    if (!match) {
-      throw new Error(`Could not extract room ID from text: ${roomText}`);
+    if (!roomId) {
+      throw new Error(`Could not extract room ID from element`);
     }
     
-    return match[1];
+    return roomId.trim();
   }
 
   async verifyPlayerInGame(playerName: string) {
-    // Look for player name in the game interface
-    await expect(this.page.locator(`text=${playerName}`)).toBeVisible({ timeout: 5000 });
+    // Look for player name in the game interface using data-testid
+    // Check both the player list in game area and player avatars
+    const playerNameSelectors = [
+      `[data-testid*="player-name-"]:has-text("${playerName}")`,
+      `[data-testid*="player-initial-"]:has-text("${playerName.charAt(0).toUpperCase()}")`
+    ];
+    
+    let found = false;
+    for (const selector of playerNameSelectors) {
+      const elements = await this.page.locator(selector).count();
+      if (elements > 0) {
+        found = true;
+        break;
+      }
+    }
+    
+    expect(found).toBeTruthy();
   }
 
   async verifyGamePhase(phase: 'waiting' | 'playing') {

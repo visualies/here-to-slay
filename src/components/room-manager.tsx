@@ -319,6 +319,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your player name"
                 maxLength={20}
+                data-testid="create-player-name-input"
               />
             </div>
 
@@ -388,6 +389,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 disabled={loading}
                 className="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold"
                 size="lg"
+                data-testid="create-room-button"
               >
                 {loading ? 'Creating...' : 'Create Room'}
               </Button>
@@ -404,6 +406,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 variant="outline"
                 className="w-full border-amber-600 text-amber-700 hover:bg-amber-50"
                 size="lg"
+                data-testid="join-existing-room-button"
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Join Existing Room
@@ -474,6 +477,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 placeholder="e.g., ABC123"
                 className="text-center text-lg font-mono"
                 maxLength={6}
+                data-testid="join-room-id-input"
               />
             </div>
 
@@ -486,6 +490,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 placeholder="Enter your player name"
                 maxLength={20}
                 disabled={isReturningPlayer}
+                data-testid="join-player-name-input"
               />
             </div>
 
@@ -519,6 +524,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onClick={() => handleJoinExistingRoom()}
                 disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                data-testid="join-room-submit-button"
               >
                 {loading ? (
                   <>
@@ -655,6 +661,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onClick={handleStartGame}
                 disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                data-testid="start-game-button"
               >
                 {loading ? (
                   <>

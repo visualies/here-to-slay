@@ -54,14 +54,19 @@ export default function GameBoard() {
           <div className="w-full h-screen  relative">
           {/* Room Info and Leave Button */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
-            <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm">
-              Room: <span className="font-mono font-bold text-purple-600">{currentRoomId}</span>
+            <Badge 
+              variant="secondary" 
+              className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm"
+              data-testid="room-id-badge"
+            >
+              Room: <span className="font-mono font-bold text-purple-600" data-testid="room-id-value">{currentRoomId}</span>
             </Badge>
             <Button
               onClick={handleLeaveRoom}
               variant="destructive"
               size="sm"
               className="backdrop-blur-sm"
+              data-testid="leave-room-button"
             >
               🚪 Leave Room
             </Button>
