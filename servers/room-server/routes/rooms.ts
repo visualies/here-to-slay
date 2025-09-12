@@ -9,7 +9,8 @@ export function createRoomsRouter(db: RoomDatabase) {
     try {
       const body = await c.req.json()
       const name = body.name || 'Here to Slay Game'
-      const room = db.createRoom(name)
+      const maxPlayers = body.maxPlayers || 4
+      const room = db.createRoom(name, maxPlayers)
       return c.json(room)
     } catch (error) {
       console.error('Error creating room:', error)

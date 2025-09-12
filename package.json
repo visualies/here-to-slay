@@ -18,7 +18,9 @@
     "test:cards": "playwright test --grep \"should create room, start round, and assign hand cards to players\" --headed --project=chromium --reporter=list",
     "test:debug": "playwright test --headed --project=chromium --debug",
     "test:all": "playwright test --headed --reporter=list",
-    "test:headless": "playwright test --project=chromium --reporter=list"
+    "test:headless": "playwright test --project=chromium --reporter=list",
+    "test:api": "playwright test tests/e2e/database-api.spec.ts --headed --project=chromium --reporter=list",
+    "test:ui": "playwright test tests/e2e/game-flow.spec.ts tests/e2e/simple-game-flow.spec.ts --headed --project=chromium --reporter=list"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.2",
