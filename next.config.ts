@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/api/game/:path*',
-        destination: 'http://localhost:1234/api/:path*',
+        destination: 'http://localhost:1234/api/game/:path*',
       },
       // Proxy dice server API requests to port 1235
       {

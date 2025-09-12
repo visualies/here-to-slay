@@ -46,7 +46,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const gameState = doc.getMap('gameState');
     const playersMap = doc.getMap('players') as Y.Map<Player>;
     
-    const wsUrl = `ws://localhost:1234?room=${roomId}`;
+    const wsUrl = `ws://localhost:1234`;
     const provider = new WebsocketProvider(wsUrl, roomId, doc);
     
     // Store refs

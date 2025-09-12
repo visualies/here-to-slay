@@ -14,7 +14,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
   // Mount route modules
   app.route('/api', createRoomsRouter(db))
-  app.route('/api', createGameRouter(db, docs))
+  app.route('/api/game', createGameRouter(db, docs))
   app.route('/api', createHealthRouter())
 
   // Default route with API documentation

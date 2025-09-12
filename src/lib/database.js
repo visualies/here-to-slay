@@ -252,10 +252,27 @@ class RoomDatabase {
     `);
     
     try {
-      stmt.run(gameStateBuffer, roomId);
-      console.log(`💾 Saved game state for room ${roomId}`);
+      const result = stmt.run(gameStateBuffer, roomId);
+      
+      if (result.changes === 0) {
+        throw new Error(`Room ${roomId} not found - no rows updated`);
+      }
+      
+      // Verify the data was actually saved
+      const verifyStmt = this.db.prepare(`
+        SELECT length(game_state) as state_size FROM rooms WHERE id = ?
+      `);
+      const verification = verifyStmt.get(roomId);
+      
+      if (!verification || !verification.state_size) {
+        throw new Error(`Game state verification failed for room ${roomId} - data not saved`);
+      }
+      
+      console.log(`💾 Saved game state for room ${roomId} (${verification.state_size} bytes)`);
+      return { success: true, stateSize: verification.state_size };
     } catch (error) {
       console.error('Error saving game state:', error);
+      throw error; // Re-throw so the API can return proper error response
     }
   }
 

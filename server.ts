@@ -7,8 +7,8 @@
 
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
-import * as Y from 'yjs'
 import { serve } from '@hono/node-server'
+import { setupWSConnection, docs } from '@y/websocket-server/utils'
 import RoomDatabase from './src/lib/database.js'
 import { createApp } from './server/app.js'
 
@@ -23,9 +23,9 @@ setInterval(() => {
   db.cleanup()
 }, 5 * 60 * 1000)
 
-// Track Yjs documents and WebSocket connections
-const docs = new Map<string, Y.Doc>()
+// Track WebSocket connections (docs handled by y-websocket-server)
 const roomConnections = new Map<string, Set<WebSocket>>()
+// docs is imported from @y/websocket-server
 
 // Create Hono app
 const app = createApp(db, docs)
@@ -86,34 +86,17 @@ server.on('request', async (req, res) => {
 // Create WebSocket server  
 const wss = new WebSocketServer({ server })
 
-function getYDoc(roomId: string) {
-  if (!docs.has(roomId)) {
-    const ydoc = new Y.Doc()
-    
-    // Try to restore saved game state
-    const savedState = db.getGameState(roomId)
-    if (savedState) {
-      try {
-        const uint8Array = new Uint8Array(savedState)
-        Y.applyUpdate(ydoc, uint8Array)
-        console.log(`🔄 Restored game state for room ${roomId}`)
-      } catch (error) {
-        console.error(`Error restoring game state for room ${roomId}:`, error)
-      }
-    }
-    
-    docs.set(roomId, ydoc)
-  }
-  return docs.get(roomId)
-}
+// y-websocket-server handles document creation automatically
+// We can still access docs via the imported docs Map
 
 
 wss.on('connection', (ws, req) => {
   try {
     const urlObj = new URL(req.url || '', `http://${req.headers.host}`)
-    const roomId = urlObj.searchParams.get('room') || 'default'
+    const roomId = urlObj.pathname.slice(1) || 'default' // Remove leading slash from /ROOMID
     
     console.log(`[DEBUG] GameServer - WebSocket connection for room ${roomId}`)
+    console.log(`[DEBUG] Current docs before connection: [${Array.from(docs.keys()).join(', ')}]`)
     
     // Track room connections
     if (!roomConnections.has(roomId)) {
@@ -124,35 +107,24 @@ wss.on('connection', (ws, req) => {
     // Update room activity
     db.updateRoomActivity(roomId)
     
-    // Get or create Y.Doc for this room
-    const ydoc = getYDoc(roomId)
+    // Use official y-websocket-server setup - it handles document creation
+    console.log(`[DEBUG] Setting up official y-websocket connection for room ${roomId}`)
+    // Don't pass docName to use roomId directly as the document key
+    setupWSConnection(ws, req)
     
-    // Handle WebSocket messages (Yjs sync only)
-    const messageHandler = (message: any) => {
-      try {
-        // Relay all messages to other connections (Yjs handles its own protocol)
-        if (roomConnections.has(roomId)) {
-          roomConnections.get(roomId)?.forEach((client: any) => {
-            if (client !== ws && client.readyState === WebSocket.OPEN) {
-              client.send(message)
-            }
-          })
-        }
-      } catch (error) {
-        console.error('Error handling message:', error)
-      }
-    }
+    console.log(`[DEBUG] Current docs after setup: [${Array.from(docs.keys()).join(', ')}]`)
+    console.log(`[DEBUG] Total docs in memory: ${docs.size}`)
     
-    ws.on('message', messageHandler)
+    // y-websocket-server handles all message processing automatically
+    console.log(`[DEBUG] Official y-websocket connection ready for room ${roomId}`)
     
     ws.on('close', () => {
       if (roomConnections.has(roomId)) {
         roomConnections.get(roomId).delete(ws)
         if (roomConnections.get(roomId).size === 0) {
           roomConnections.delete(roomId)
-          // Clean up Y.Doc if no connections
-          docs.delete(roomId)
-          console.log(`[DEBUG] GameServer - Cleaned up room ${roomId}`)
+          // y-websocket-server manages Y.Doc cleanup automatically
+          console.log(`[DEBUG] GameServer - Cleaned up room connections for ${roomId}`)
         }
       }
     })

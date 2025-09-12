@@ -14,11 +14,25 @@ export async function saveGameState(roomId: string): Promise<void> {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to save game state');
+      let errorMessage = 'Failed to save game state';
+      try {
+        const error = await response.json();
+        errorMessage = error.error || errorMessage;
+      } catch (parseError) {
+        // If response isn't valid JSON, use the status text
+        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      }
+      throw new Error(errorMessage);
     }
 
-    console.log(`💾 Game state saved for room ${roomId}`);
+    // Parse success response
+    try {
+      const result = await response.json();
+      console.log(`💾 Game state saved for room ${roomId}`, result);
+    } catch (parseError) {
+      // Even if we can't parse the success response, the save likely worked
+      console.log(`💾 Game state saved for room ${roomId} (response not parseable as JSON)`);
+    }
   } catch (error) {
     console.error('Error saving game state:', error);
     // Don't throw - game state saving should be non-blocking
