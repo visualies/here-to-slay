@@ -142,8 +142,8 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       return;
     }
     
-    advanceTurn(playersRef.current, gameStateRef.current, players, currentTurn);
-  }, [players, currentTurn]);
+    advanceTurn(playersRef.current, gameStateRef.current, players, currentTurn, roomId);
+  }, [players, currentTurn, roomId]);
 
   const handlePlayCard = useCallback((cardId: string) => {
       if (!playersRef.current) return;

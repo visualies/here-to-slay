@@ -13,6 +13,7 @@ import {
 } from './players';
 import { createSupportStack } from '../game/deck';
 import { getAllMonsters } from '../game/monsters';
+import { saveGameState } from './game-state-persistence';
 
 export function playCard(
   playersMap: Y.Map<Player>,
@@ -83,7 +84,8 @@ export function advanceTurn(
   playersMap: Y.Map<Player>,
   gameStateMap: Y.Map<unknown>,
   players: Player[],
-  currentTurn: string
+  currentTurn: string,
+  roomId?: string
 ): void {
   console.log('=== ADVANCE TURN DEBUG ===');
   console.log('currentTurn:', currentTurn);
@@ -124,6 +126,12 @@ export function advanceTurn(
     updatePlayerActionPoints(playersMap, nextPlayer.id, 3);
     gameStateMap.set('currentTurn', nextPlayer.id);
     console.log('Turn advanced to:', nextPlayer.name);
+    
+    // Save game state at the end of each turn
+    if (roomId) {
+      console.log('💾 Saving game state at end of turn');
+      saveGameState(roomId);
+    }
   } else {
     console.error('No next player found!');
   }

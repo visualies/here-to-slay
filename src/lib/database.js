@@ -17,7 +17,8 @@ class RoomDatabase {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
         player_count INTEGER DEFAULT 0,
-        max_players INTEGER DEFAULT 6
+        max_players INTEGER DEFAULT 6,
+        game_state BLOB
       )
     `);
 
@@ -241,6 +242,36 @@ class RoomDatabase {
       LIMIT 50
     `);
     return stmt.all();
+  }
+
+  // Save game state for a room
+  saveGameState(roomId, gameStateBuffer) {
+    const stmt = this.db.prepare(`
+      UPDATE rooms SET game_state = ?, last_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `);
+    
+    try {
+      stmt.run(gameStateBuffer, roomId);
+      console.log(`💾 Saved game state for room ${roomId}`);
+    } catch (error) {
+      console.error('Error saving game state:', error);
+    }
+  }
+
+  // Get saved game state for a room
+  getGameState(roomId) {
+    const stmt = this.db.prepare(`
+      SELECT game_state FROM rooms WHERE id = ?
+    `);
+    
+    try {
+      const result = stmt.get(roomId);
+      return result?.game_state || null;
+    } catch (error) {
+      console.error('Error loading game state:', error);
+      return null;
+    }
   }
 
   // Close database connection

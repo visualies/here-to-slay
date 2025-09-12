@@ -7,10 +7,10 @@
 
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
-import url from 'url'
 import * as Y from 'yjs'
-import { WebsocketProvider } from 'y-websocket'
+import { serve } from '@hono/node-server'
 import RoomDatabase from './src/lib/database.js'
+import { createApp } from './server/app.js'
 
 const host: string = process.env.HOST || 'localhost'
 const port: number = parseInt(process.env.PORT || '1234', 10)
@@ -23,125 +23,86 @@ setInterval(() => {
   db.cleanup()
 }, 5 * 60 * 1000)
 
-const server = http.createServer((request, response) => {
-  const parsedUrl = url.parse(request.url || '', true)
-  const pathname = parsedUrl.pathname
-  
-  // Enable CORS for all origins and methods
-  response.setHeader('Access-Control-Allow-Origin', '*')
-  response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization')
-  response.setHeader('Access-Control-Max-Age', '86400')
-  
-  // Handle preflight OPTIONS requests
-  if (request.method === 'OPTIONS') {
-    response.writeHead(200)
-    response.end()
-    return
-  }
+// Track Yjs documents and WebSocket connections
+const docs = new Map<string, Y.Doc>()
+const roomConnections = new Map<string, Set<WebSocket>>()
 
-  // API Routes
-  if (pathname === '/api/create-room' && request.method === 'POST') {
-    let body = ''
-    request.on('data', chunk => body += chunk.toString())
-    request.on('end', () => {
-      try {
-        const data = body ? JSON.parse(body) : {}
-        const name = data.name || 'Here to Slay Game'
-        const room = db.createRoom(name)
-        response.writeHead(200, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify(room))
-      } catch (error) {
-        console.error('Error creating room:', error)
-        response.writeHead(500, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
+// Create Hono app
+const app = createApp(db, docs)
+
+// Create HTTP server that can handle both Hono requests and WebSocket upgrades
+const server = http.createServer()
+
+// Handle HTTP requests with Hono
+server.on('request', async (req, res) => {
+  try {
+    // Create a proper Request object for Hono
+    const url = `http://${req.headers.host}${req.url}`
+    const method = req.method || 'GET'
+    
+    // Get request body if it exists
+    let body: string | undefined
+    if (method !== 'GET' && method !== 'HEAD') {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) {
+        chunks.push(chunk)
       }
+      body = Buffer.concat(chunks).toString()
+    }
+    
+    // Create Request object
+    const request = new Request(url, {
+      method,
+      headers: req.headers as HeadersInit,
+      body: body
     })
-    request.on('error', (error) => {
-      console.error('Request error:', error)
-      response.writeHead(400, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: 'Invalid request' }))
-    })
-    return
-  }
-
-  if (pathname === '/api/join-room' && request.method === 'POST') {
-    let body = ''
-    request.on('data', chunk => body += chunk.toString())
-    request.on('end', () => {
-      try {
-        const { roomId, playerId, playerName, playerColor } = JSON.parse(body)
-        const result = db.joinRoom(roomId, playerId, playerName, playerColor)
-        response.writeHead(200, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify(result))
-      } catch (error) {
-        response.writeHead(400, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
+    
+    const response = await app.fetch(request)
+    
+    res.writeHead(response.status, Object.fromEntries(response.headers))
+    
+    if (response.body) {
+      const reader = response.body.getReader()
+      const pump = async (): Promise<void> => {
+        const { done, value } = await reader.read()
+        if (done) {
+          res.end()
+          return
+        }
+        res.write(value)
+        return pump()
       }
-    })
-    return
-  }
-
-  if (pathname === '/api/room-info' && request.method === 'GET') {
-    const roomId = parsedUrl.query.id
-    if (!roomId) {
-      response.writeHead(400, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: 'Room ID required' }))
-      return
+      await pump()
+    } else {
+      res.end()
     }
-
-    try {
-      const roomInfo = db.getRoomStats(roomId)
-      if (!roomInfo) {
-        response.writeHead(404, { 'Content-Type': 'application/json' })
-        response.end(JSON.stringify({ error: 'Room not found' }))
-        return
-      }
-      response.writeHead(200, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify(roomInfo))
-    } catch (error) {
-      response.writeHead(500, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
-    }
-    return
+  } catch (err) {
+    console.error('Error handling request:', err)
+    res.writeHead(500)
+    res.end('Internal Server Error')
   }
-
-  if (pathname === '/api/active-rooms' && request.method === 'GET') {
-    try {
-      const rooms = db.getActiveRooms()
-      response.writeHead(200, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify(rooms))
-    } catch (error) {
-      response.writeHead(500, { 'Content-Type': 'application/json' })
-      response.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
-    }
-    return
-  }
-
-  // Test endpoint
-  if (pathname === '/api/test' && request.method === 'GET') {
-    response.writeHead(200, { 'Content-Type': 'application/json' })
-    response.end(JSON.stringify({ status: 'ok', timestamp: Date.now() }))
-    return
-  }
-
-
-  // Default response
-  response.writeHead(200, { 'Content-Type': 'text/plain' })
-  response.end('Here-to-Slay Room-based WebSocket Server\n\nAPI Endpoints:\n- POST /api/create-room\n- POST /api/join-room\n- GET /api/room-info?id=ROOMID\n- GET /api/active-rooms\n')
 })
 
+// Create WebSocket server  
 const wss = new WebSocketServer({ server })
-
-// Track connections by room
-const roomConnections = new Map()
-
-// Simple WebSocket message relay for Yjs sync
-const docs = new Map()
 
 function getYDoc(roomId: string) {
   if (!docs.has(roomId)) {
-    docs.set(roomId, new Y.Doc())
+    const ydoc = new Y.Doc()
+    
+    // Try to restore saved game state
+    const savedState = db.getGameState(roomId)
+    if (savedState) {
+      try {
+        const uint8Array = new Uint8Array(savedState)
+        Y.applyUpdate(ydoc, uint8Array)
+        console.log(`🔄 Restored game state for room ${roomId}`)
+      } catch (error) {
+        console.error(`Error restoring game state for room ${roomId}:`, error)
+      }
+    }
+    
+    docs.set(roomId, ydoc)
   }
   return docs.get(roomId)
 }

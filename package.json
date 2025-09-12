@@ -13,6 +13,7 @@
     "dice-server": "tsx dice-server.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.2",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-three/cannon": "^6.6.0",
     "@react-three/drei": "^10.7.4",
@@ -24,6 +25,7 @@
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "hono": "^4.9.7",
     "http-proxy-middleware": "^3.0.5",
     "lucide-react": "^0.542.0",
     "next": "15.5.2",
