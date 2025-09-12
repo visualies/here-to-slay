@@ -90,7 +90,7 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
       style={{ 
         backgroundImage,
         transform: hoverTransform ? `${transform} ${hoverTransform}` : transform,
-        outlineColor: '#c5c3c0',
+        outlineColor: 'var(--outline)',
         ...(preview && {
           '--hover-rotation': `${hoverRotation}deg`
         })
@@ -114,12 +114,12 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
               {card.type}
             </div>
             {card.class && (
-              <div className="text-xs text-gray-600 mt-0.5">
+              <div className="text-xs text-foreground mt-0.5">
                 {card.class}
               </div>
             )}
           </div>
-          <div className="text-xs text-center text-gray-700">
+          <div className="text-xs text-center text-foreground">
             {card.requirement && (
               <div className="font-semibold">{card.requirement}</div>
             )}

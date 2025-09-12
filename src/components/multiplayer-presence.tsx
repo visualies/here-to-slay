@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePlayerPresence } from "../hooks/use-game-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface MultiplayerPresenceProps {}
 
@@ -25,6 +26,9 @@ export function MultiplayerPresence({}: MultiplayerPresenceProps) {
 
   return (
     <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+      {/* Theme Toggle */}
+      <ThemeToggle />
+
       {/* Connection Status */}
       <Badge variant={isConnected ? 'default' : 'destructive'} className="flex items-center gap-2">
         <div

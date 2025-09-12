@@ -69,7 +69,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       <div className="flex items-center justify-center gap-[8%]">
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-gray-600 font-medium">Support Deck</div>
+          <div className="text-sm text-foreground font-medium">Support Deck</div>
           <CardOrigin 
             id="center-support-deck"
             aspectRatio="default" 
@@ -103,7 +103,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-gray-600 font-medium">Monsters</div>
+          <div className="text-sm text-foreground font-medium">Monsters</div>
           <div className="flex justify-center gap-[5%]">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
@@ -128,7 +128,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-gray-600 font-medium">Discard</div>
+          <div className="text-sm text-foreground font-medium">Discard</div>
           <CardOrigin 
             id="center-discard"
             aspectRatio="default" 
@@ -141,8 +141,8 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               <div 
                 className="w-full h-full rounded flex items-center justify-center relative"
                 style={{
-                  borderWidth: "3px", 
-                  borderColor: "#C5C3C1",
+                  borderWidth: "2px", 
+                  borderColor: "var(--outline)",
                   borderRadius: "0.375rem",
                   borderStyle: "dashed"
                 }}
@@ -152,7 +152,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
                 
                 {/* Content layer */}
                 <div className="relative z-10 flex items-center justify-center w-full h-full">
-                  <div className="text-xs text-gray-700 font-medium">DISCARD</div>
+                  <div className="text-xs text-foreground font-medium">DISCARD</div>
                 </div>
               </div>
             </CardSlot>
@@ -162,7 +162,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {/* Cache positioned absolutely to escape layout constraints */}
       <div className={`absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10 ${debugMode ? 'outline outline-2 outline-red-300 p-2' : ''}`}>
-        <div className="text-sm text-gray-600 font-medium">Cache</div>
+        <div className="text-sm text-foreground font-medium">Cache</div>
         <div className="flex items-center justify-center">
           <Stack>
             {cacheCards.map((card, index) => (
@@ -192,15 +192,15 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         
         {status === 'waiting-for-turn' && (
           <StatusArea header={`Waiting for ${currentTurnPlayerName}'s turn`}>
-            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-              <Clock className="w-4 h-4 text-gray-500" />
+            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
+              <Clock className="w-4 h-4 text-muted-foreground" />
             </div>
           </StatusArea>
         )}
         
         {status === 'your-turn' && (
           <StatusArea header={`Your turn - ${currentPlayer?.actionPoints || 0} action points`}>
-            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed border-green-400 rounded-lg flex items-center justify-center">
+            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
               <User className="w-4 h-4 text-green-500" />
             </div>
           </StatusArea>

@@ -19,7 +19,7 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
   return (
     <div className={cn("relative", isAutoSize ? "w-full h-full" : "", className)}>
       {label && (
-        <div className="absolute -top-6 left-0 text-xs text-gray-600 font-medium whitespace-nowrap">
+        <div className="absolute -top-6 left-0 text-xs text-foreground font-medium whitespace-nowrap">
           {label}
         </div>
       )}
@@ -41,8 +41,8 @@ export function CardSlot({ className, children, label, size = "default", cardTyp
             backgroundRepeat: "no-repeat"
           } : {}),
           ...(!hideOutline && !children ? {
-            borderWidth: "3px", 
-            borderColor: "#C5C3C1",
+            borderWidth: "2px", 
+            borderColor: "var(--outline)",
             borderRadius: "0.375rem",
             borderStyle: "dashed"
           } : {})

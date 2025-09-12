@@ -122,7 +122,8 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
             return (
               <div
                 key={index}
-                className={`w-12 h-12 ${colors.bg} border-2 border-dashed ${colors.border} rounded-lg flex items-center justify-center`}
+                className={`w-12 h-12 ${colors.bg} border-2 border-dashed rounded-lg flex items-center justify-center`}
+                style={{ borderColor: "var(--outline)" }}
               >
                 <div className={`text-lg font-bold ${colors.text}`}>{result}</div>
               </div>
@@ -145,14 +146,14 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
       ) : (
         <>
           {/* Show placeholder dice when no results */}
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
             <div className="text-lg font-bold text-gray-600">?</div>
           </div>
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
             <div className="text-lg font-bold text-gray-600">?</div>
           </div>
           <div className="text-gray-500 mx-1">=</div>
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
+          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
             <div className="text-lg font-bold text-gray-600">?</div>
           </div>
         </>

@@ -158,7 +158,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
       <div 
         className="absolute inset-0 opacity-20"
         style={{
-          backgroundImage: `radial-gradient(circle, #666 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, var(--outline) 1px, transparent 1px)`,
           backgroundSize: '20px 20px'
         }}
       />
@@ -236,7 +236,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
                 🎮 Start Round
               </Button>
             ) : (
-              <div className="text-sm text-gray-600 text-center">
+              <div className="text-sm text-muted-foreground text-center">
                 Waiting for host to start...
               </div>
             )}

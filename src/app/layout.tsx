@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Patua_One, Open_Sans } from "next/font/google";
 import "./globals.css";
 import { BlurProvider } from "../contexts/blur-context";
 import { SizingProvider } from "../contexts/sizing-context";
 import { CardOriginSizingProvider } from "../contexts/card-origin-sizing-context";
+import { SoundProvider } from "../contexts/sound-context";
 import { BlurOverlay } from "../components/blur-overlay";
+import { ThemeProvider } from "next-themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,6 +17,18 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const patuaOne = Patua_One({
+  variable: "--font-patua-one",
+  subsets: ["latin"],
+  weight: "400",
+});
+
+const openSans = Open_Sans({
+  variable: "--font-open-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,18 +42,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${patuaOne.variable} ${openSans.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <BlurProvider>
-          <SizingProvider>
-            <CardOriginSizingProvider>
-              {children}
-              <BlurOverlay />
-            </CardOriginSizingProvider>
-          </SizingProvider>
-        </BlurProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SoundProvider>
+            <BlurProvider>
+              <SizingProvider>
+                <CardOriginSizingProvider>
+                  {children}
+                  <BlurOverlay />
+                </CardOriginSizingProvider>
+              </SizingProvider>
+            </BlurProvider>
+          </SoundProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
