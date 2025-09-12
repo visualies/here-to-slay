@@ -39,11 +39,7 @@ test.describe('Here to Slay - Game Flow', () => {
       console.log('🎮 Step 2: Player 2 joining room...');
       await helpers[1].joinRoom(roomId, 'Player2');
       await helpers[1].takeScreenshot('02-player2-joined');
-      
-      // Verify both players are in the room
-      await helpers[0].verifyPlayerInGame('Player1');
-      await helpers[1].verifyPlayerInGame('Player2');
-      console.log('✅ Both players in room');
+      console.log('✅ Player 2 joined room');
 
       // Step 3: Start the game/round
       console.log('🎮 Step 3: Starting game...');
@@ -57,8 +53,14 @@ test.describe('Here to Slay - Game Flow', () => {
       await helpers[0].takeScreenshot('03-game-started');
       console.log('✅ Game started');
 
-      // Step 4: Verify both players have hand cards
-      console.log('🎮 Step 4: Verifying hand cards...');
+      // Step 4: Verify both players are in the game (after game starts)
+      console.log('🎮 Step 4: Verifying players are in game...');
+      await helpers[0].verifyPlayerInGame('Player1');
+      await helpers[1].verifyPlayerInGame('Player2');
+      console.log('✅ Both players in game');
+
+      // Step 5: Verify both players have hand cards
+      console.log('🎮 Step 5: Verifying hand cards...');
       
       const [player1Cards, player2Cards] = await Promise.all([
         helpers[0].waitForHandCards('Player1'),
@@ -80,7 +82,7 @@ test.describe('Here to Slay - Game Flow', () => {
       await helpers[0].takeScreenshot('04-final-player1');
       await helpers[1].takeScreenshot('04-final-player2');
 
-      // Step 5: Verify game phase is playing
+      // Step 6: Verify game phase is playing
       await Promise.all([
         helpers[0].verifyGamePhase('playing'),
         helpers[1].verifyGamePhase('playing')
