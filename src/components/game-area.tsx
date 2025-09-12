@@ -101,7 +101,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
   };
 
   return (
-    <div className="w-full h-screen bg-background relative overflow-hidden p-[3%]">
+    <div className="w-full h-screen bg-background relative overflow-hidden px-[4.5vw] py-[4.5vh]">
       {/* Top player hand cards */}
       <div className="absolute top-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
         <div>
