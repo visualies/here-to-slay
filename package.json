@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"tsx server.ts\" \"tsx dice-server.ts\" \"next dev\"",
+    "dev": "concurrently \"tsx servers/room-server/server.ts\" \"tsx servers/dice-server/dice-server.ts\" \"next dev\"",
     "dev:client-only": "next dev",
     "prebuild": "npm ci",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "server": "tsx server.ts",
-    "dice-server": "tsx dice-server.ts"
+    "server": "tsx servers/room-server/server.ts",
+    "dice-server": "tsx servers/dice-server/dice-server.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.2",

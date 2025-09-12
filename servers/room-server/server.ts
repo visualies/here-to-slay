@@ -10,8 +10,8 @@ import http from 'http'
 import { serve } from '@hono/node-server'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
 import * as Y from 'yjs'
-import RoomDatabase from './src/lib/database.js'
-import { createApp } from './server/app.js'
+import RoomDatabase from '../../src/lib/database.js'
+import { createApp } from './app.js'
 
 const host: string = process.env.HOST || 'localhost'
 const port: number = parseInt(process.env.PORT || '1234', 10)

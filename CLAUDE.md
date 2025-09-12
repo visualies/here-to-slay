@@ -24,14 +24,14 @@ This is a **multiplayer card game** called "Here to Slay" built with a **multi-s
 
 ### Server Architecture (Dual-Server Setup)
 
-**1. Room/Game Server (`server.ts` - Port 1234)**
+**1. Room/Game Server (`servers/room-server/` - Port 1234)**
 - Room creation and management with SQLite database
 - Player joining/presence tracking  
 - Yjs document synchronization for game state
 - HTTP API endpoints for room operations
 - WebSocket connections for real-time multiplayer sync
 
-**2. Dice Physics Server (`dice-server.ts` - Port 1235)**  
+**2. Dice Physics Server (`servers/dice-server/` - Port 1235)**  
 - Dedicated 3D physics simulation using CANNON-ES
 - Server-authoritative dice throwing and collision detection
 - Real-time physics state broadcasting (60fps)
@@ -93,6 +93,8 @@ This is a **multiplayer card game** called "Here to Slay" built with a **multi-s
 - `src/contexts/` - React context providers for state
 - `src/hooks/` - Custom React hooks
 - `src/game/` - Game logic, types, and card data
+- `servers/room-server/` - Yjs websocket server and room management
+- `servers/dice-server/` - Dedicated 3D dice physics server
 
 ### Development Notes
 

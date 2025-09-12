@@ -3,7 +3,7 @@ import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createHealthRouter } from './routes/health.js'
 import { corsMiddleware } from './middleware/cors.js'
-import type RoomDatabase from '../src/lib/database.js'
+import type RoomDatabase from '../../src/lib/database.js'
 import type * as Y from 'yjs'
 
 export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
