@@ -19,31 +19,34 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
   // Start background music and ensure video loops properly
   useEffect(() => {
-    const audio = new Audio('/soundtrack.mp3');
-    audio.loop = true;
-    audio.volume = 0.09; // Set to 9% volume (reduced by 70%)
-    
-    // Store reference to prevent garbage collection
-    (window as any).gameAudio = audio;
-    
-    // Try to play audio, but handle if autoplay is blocked
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.then(() => {
-        console.log('Audio started successfully');
-      }).catch((error) => {
-        // Autoplay was blocked, audio will need user interaction to start
-        console.log('Autoplay blocked - audio will start on first user interaction', error);
-        
-        // Add click listener to start audio on first user interaction
-        const startAudio = () => {
-          audio.play().then(() => {
-            console.log('Audio started after user interaction');
-            document.removeEventListener('click', startAudio);
-          }).catch(console.error);
-        };
-        document.addEventListener('click', startAudio);
-      });
+    // Only start audio if it's not already playing
+    if (!(window as any).gameAudio) {
+      const audio = new Audio('/soundtrack.mp3');
+      audio.loop = true;
+      audio.volume = 0.09; // Set to 9% volume (reduced by 70%)
+      
+      // Store reference to prevent garbage collection
+      (window as any).gameAudio = audio;
+      
+      // Try to play audio, but handle if autoplay is blocked
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log('Audio started successfully');
+        }).catch((error) => {
+          // Autoplay was blocked, audio will need user interaction to start
+          console.log('Autoplay blocked - audio will start on first user interaction', error);
+          
+          // Add click listener to start audio on first user interaction
+          const startAudio = () => {
+            audio.play().then(() => {
+              console.log('Audio started after user interaction');
+              document.removeEventListener('click', startAudio);
+            }).catch(console.error);
+          };
+          document.addEventListener('click', startAudio);
+        });
+      }
     }
 
 
@@ -117,6 +120,13 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       
       // First, try to join the room via API
       await joinRoom(targetRoomId, playerId, playerName.trim(), playerColor);
+      
+      // Stop the theme music before joining the game
+      if ((window as any).gameAudio) {
+        (window as any).gameAudio.pause();
+        (window as any).gameAudio.currentTime = 0;
+        (window as any).gameAudio = null;
+      }
       
       // If successful, connect to the multiplayer game
       onRoomJoined(targetRoomId, playerId, playerName.trim(), playerColor);
