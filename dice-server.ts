@@ -85,8 +85,8 @@ class DicePhysicsWorld {
     this.startPhysicsLoop()
     
     // Auto-spawn default dice
-    this.addDice('dice-0', [-0.6, 2, 0])
-    this.addDice('dice-1', [0.6, 2, 0])
+    this.addDice('dice-0', [-1.6, 2, 1.5])
+    this.addDice('dice-1', [-2, 2, 1.5])
     console.log(`[DEBUG] DicePhysicsWorld - Room ${roomId} initialized with 2 dice`)
   }
   
