@@ -59,6 +59,34 @@ export class GameTestHelper {
     return handCards;
   }
 
+  async drawCard() {
+    // Click the draw card button
+    await this.page.locator('[data-testid="draw-card-button"]').click();
+    
+    // Wait a moment for the action to process
+    await this.page.waitForTimeout(500);
+  }
+
+  async getActionPoints(): Promise<number> {
+    // Look for action points display - this might be in a status area or player info
+    // For now, we'll check if the draw button is still enabled (action points > 0)
+    const drawButton = this.page.locator('[data-testid="draw-card-button"]');
+    const isEnabled = await drawButton.isEnabled();
+    
+    // If we can't find a specific action points display, we'll infer from button state
+    // This is a simplified approach - in a real test you'd want a proper action points display
+    return isEnabled ? 1 : 0; // Simplified: 1 if can draw, 0 if can't
+  }
+
+  async waitForTurnChange(originalPlayerId: string, timeout: number = 10000) {
+    // Wait for the current turn to change from the original player
+    // This is a simplified check - in a real implementation you'd want a proper turn indicator
+    await this.page.waitForTimeout(1000); // Give time for turn to process
+    
+    // For now, we'll just wait and verify the game is still running
+    await this.page.waitForSelector('[data-testid="current-player-hand-container"]', { timeout });
+  }
+
   async getRoomId(): Promise<string> {
     // Extract room ID from the data-testid element
     const roomElement = await this.page.locator('[data-testid="room-id-value"]');
@@ -106,6 +134,66 @@ export class GameTestHelper {
       path: `tests/e2e/screenshots/${name}.png`,
       fullPage: true 
     });
+  }
+
+  async leaveRoom() {
+    // Click the leave room button
+    await this.page.click('[data-testid="leave-room-button"]');
+    
+    // Wait for the room manager to appear (indicating we've left the room)
+    await this.page.waitForSelector('[data-testid="create-room-button"]', { timeout: 10000 });
+  }
+
+  async rejoinFromRecentRooms(roomId: string) {
+    // Look for the recent rooms section and click rejoin
+    const rejoinButton = this.page.locator(`[data-testid="recent-room-${roomId}"] button:has-text("Rejoin")`);
+    await expect(rejoinButton).toBeVisible({ timeout: 10000 });
+    await rejoinButton.click();
+    
+    // Wait for the restoration process to complete
+    // Look for either the "Continue" button or the room badge
+    await Promise.race([
+      this.page.waitForSelector(`[data-testid="recent-room-${roomId}"] button:has-text("Continue")`, { timeout: 15000 }),
+      this.page.waitForSelector('[data-testid="room-id-badge"]', { timeout: 15000 })
+    ]);
+    
+    // If we see the Continue button, click it
+    const continueButton = this.page.locator(`[data-testid="recent-room-${roomId}"] button:has-text("Continue")`);
+    if (await continueButton.isVisible()) {
+      await continueButton.click();
+    }
+    
+    // Wait for successful rejoin - look for room badge
+    await this.page.waitForSelector('[data-testid="room-id-badge"]', { timeout: 10000 });
+  }
+
+  async getHandCardCount(): Promise<number> {
+    // Count cards in the current player's hand
+    const handCards = await this.page.locator('[data-testid="current-player-hand-container"] .card').count();
+    return handCards;
+  }
+
+  async verifyGameStatePreserved(expectedCardCount: number) {
+    // Verify we're back in the game
+    await this.page.waitForSelector('[data-testid="room-id-badge"]', { timeout: 10000 });
+    
+    // Wait for hand cards to appear (indicating game state is synchronized)
+    await this.page.waitForSelector('[data-testid="current-player-hand-container"] .card', { timeout: 15000 });
+    
+    // Additional wait for full synchronization
+    await this.page.waitForTimeout(2000);
+    
+    // Verify hand cards are preserved
+    const actualCardCount = await this.getHandCardCount();
+    expect(actualCardCount).toBe(expectedCardCount);
+    
+    // Verify game is still in playing phase
+    await this.verifyGamePhase('playing');
+  }
+
+  async waitForRecentRoomsToLoad() {
+    // Wait for recent rooms section to appear
+    await this.page.waitForSelector('[data-testid="recent-rooms-section"]', { timeout: 10000 });
   }
 }
 

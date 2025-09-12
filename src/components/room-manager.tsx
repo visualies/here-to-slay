@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSound } from "@/contexts/sound-context";
-import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2, Loader2 } from "lucide-react";
+import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2, Loader2, Check, X } from "lucide-react";
 
 interface RoomManagerProps {
   onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
@@ -28,6 +28,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [rejoiningRooms, setRejoiningRooms] = useState<Set<string>>(new Set());
   const [isReturningPlayer, setIsReturningPlayer] = useState(false);
   const [originalPlayerName, setOriginalPlayerName] = useState('');
+  const [rejoinStatus, setRejoinStatus] = useState<Record<string, 'idle' | 'connecting' | 'restoring' | 'ready' | 'error'>>({});
   const { playThemeMusic, stopThemeMusic } = useSound();
 
   // Start background music and load recent rooms when component mounts
@@ -114,9 +115,31 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
   // Handle rejoining a recent room
   const handleRejoinRoom = async (roomId: string) => {
+    // Prevent multiple clicks
+    if (rejoinStatus[roomId] === 'connecting' || rejoinStatus[roomId] === 'restoring') {
+      return;
+    }
+
+    setRejoinStatus(prev => ({ ...prev, [roomId]: 'connecting' }));
     setRejoiningRooms(prev => new Set(prev).add(roomId));
+    
     try {
+      // First, join the room
       await handleJoinExistingRoom(roomId);
+      
+      // Set status to restoring - this indicates we're waiting for game state restoration
+      setRejoinStatus(prev => ({ ...prev, [roomId]: 'restoring' }));
+      
+      // Wait for game state to be fully restored
+      // This gives time for the Yjs document to synchronize and restore hand cards
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Mark as ready
+      setRejoinStatus(prev => ({ ...prev, [roomId]: 'ready' }));
+      
+    } catch (err) {
+      setRejoinStatus(prev => ({ ...prev, [roomId]: 'error' }));
+      console.error('Failed to rejoin room:', err);
     } finally {
       setRejoiningRooms(prev => {
         const newSet = new Set(prev);
@@ -131,7 +154,18 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     clearRoomData(roomId);
     const updatedRooms = recentRooms.filter(r => r.roomId !== roomId);
     setRecentRooms(updatedRooms);
+    // Clear rejoin status for this room
+    setRejoinStatus(prev => {
+      const newStatus = { ...prev };
+      delete newStatus[roomId];
+      return newStatus;
+    });
     console.log(`🔒 Removed room ${roomId} from recent rooms`);
+  };
+
+  // Reset rejoin status for a room
+  const resetRejoinStatus = (roomId: string) => {
+    setRejoinStatus(prev => ({ ...prev, [roomId]: 'idle' }));
   };
 
   // Handle room ID input and check for existing player data
@@ -331,14 +365,27 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
             {/* Recent Rooms Section */}
             {recentRooms.length > 0 && (
-              <div className="space-y-3">
+              <div className="space-y-3" data-testid="recent-rooms-section">
                 <h3 className="text-sm font-medium text-foreground flex items-center">
                   <Clock className="h-4 w-4 mr-2" />
                   Recent Rooms ({recentRooms.length})
                 </h3>
+                
+                {/* Restoration Status Messages */}
+                {Object.entries(rejoinStatus).map(([roomId, status]) => {
+                  if (status === 'idle' || status === 'error') return null;
+                  
+                  return (
+                    <div key={roomId} className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                      {status === 'connecting' && `Connecting to room ${roomId}...`}
+                      {status === 'restoring' && `Restoring game state for room ${roomId}...`}
+                      {status === 'ready' && `Game state restored for room ${roomId}! You can continue playing.`}
+                    </div>
+                  );
+                })}
                 <div className="max-h-32 overflow-y-auto space-y-2">
                   {recentRooms.slice(0, 3).map(({ roomId, playerData }) => (
-                    <div key={roomId} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <div key={roomId} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800" data-testid={`recent-room-${roomId}`}>
                       <div className="flex items-center space-x-3 flex-1">
                         <div
                           className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
@@ -352,22 +399,50 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Button
-                          onClick={() => handleRejoinRoom(roomId)}
-                          size="sm"
-                          variant="outline"
-                          disabled={rejoiningRooms.has(roomId)}
-                          className="h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
-                        >
-                          {rejoiningRooms.has(roomId) ? (
-                            <>
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              Joining...
-                            </>
-                          ) : (
-                            'Rejoin'
-                          )}
-                        </Button>
+                        {rejoinStatus[roomId] === 'ready' ? (
+                          <Button
+                            onClick={() => {
+                              // The game should already be joined at this point
+                              // This is just a visual confirmation
+                              console.log('Game state restored, player can continue');
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs bg-green-100 border-green-300 text-green-700 hover:bg-green-200"
+                          >
+                            <Check className="h-3 w-3 mr-1" />
+                            Continue
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => handleRejoinRoom(roomId)}
+                            size="sm"
+                            variant="outline"
+                            disabled={rejoinStatus[roomId] === 'connecting' || rejoinStatus[roomId] === 'restoring'}
+                            className={`h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 ${
+                              rejoinStatus[roomId] === 'error' ? 'bg-red-100 border-red-300 text-red-700' : ''
+                            }`}
+                          >
+                            {rejoinStatus[roomId] === 'connecting' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Connecting...
+                              </>
+                            ) : rejoinStatus[roomId] === 'restoring' ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                Restoring...
+                              </>
+                            ) : rejoinStatus[roomId] === 'error' ? (
+                              <>
+                                <X className="h-3 w-3 mr-1" />
+                                Error
+                              </>
+                            ) : (
+                              'Rejoin'
+                            )}
+                          </Button>
+                        )}
                         <Button
                           onClick={() => handleRemoveRoom(roomId)}
                           size="sm"

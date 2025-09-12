@@ -156,4 +156,143 @@ test.describe('Here to Slay - Game Flow', () => {
     
     console.log('✅ Single player game handling completed');
   });
+
+  test('should create room, start round, and draw 3 cards', async ({ page }) => {
+    console.log('🎮 Starting draw cards test...');
+    
+    // Navigate to the page
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    const helper = new GameTestHelper(page);
+
+    // Step 1: Create room with Player 1
+    console.log('🎮 Step 1: Creating room...');
+    await helper.createRoom('Player1');
+    const roomId = await helper.getRoomId();
+    console.log(`✅ Room created: ${roomId}`);
+
+    // Step 2: Start the game/round
+    console.log('🎮 Step 2: Starting game...');
+    await helper.startGame();
+    await page.waitForTimeout(2000);
+    await helper.takeScreenshot('02-game-started');
+    console.log('✅ Game started');
+
+    // Step 3: Verify initial hand cards
+    console.log('🎮 Step 3: Verifying initial hand cards...');
+    const initialHandCards = await helper.waitForHandCards('Player1');
+    expect(initialHandCards).toBe(5);
+    console.log(`✅ Player 1 has ${initialHandCards} initial hand cards`);
+
+    // Step 4: Draw 3 cards
+    console.log('🎮 Step 4: Drawing 3 cards...');
+    
+    // Draw first card
+    await helper.drawCard();
+    const handAfterFirstDraw = await helper.waitForHandCards('Player1');
+    expect(handAfterFirstDraw).toBe(6); // 5 initial + 1 drawn
+    console.log(`✅ After 1st draw: ${handAfterFirstDraw} cards`);
+
+    // Draw second card
+    await helper.drawCard();
+    const handAfterSecondDraw = await helper.waitForHandCards('Player1');
+    expect(handAfterSecondDraw).toBe(7); // 5 initial + 2 drawn
+    console.log(`✅ After 2nd draw: ${handAfterSecondDraw} cards`);
+
+    // Draw third card
+    await helper.drawCard();
+    const handAfterThirdDraw = await helper.waitForHandCards('Player1');
+    expect(handAfterThirdDraw).toBe(8); // 5 initial + 3 drawn
+    console.log(`✅ After 3rd draw: ${handAfterThirdDraw} cards`);
+
+    // Step 5: Take final screenshots
+    console.log('🎮 Step 5: Taking final screenshots...');
+    await helper.takeScreenshot('03-after-drawing-3-cards');
+
+    console.log('🎉 Draw cards test completed successfully!');
+  });
+
+  test('should preserve game state when player leaves and rejoins via recent rooms', async ({ page }) => {
+    console.log('🎮 Starting leave and rejoin test...');
+    
+    // Navigate to the page
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
+    
+    const helper = new GameTestHelper(page);
+
+    // Step 1: Create room and start game
+    console.log('🎮 Step 1: Creating room and starting game...');
+    await helper.createRoom('TestPlayer');
+    const roomId = await helper.getRoomId();
+    console.log(`✅ Room created: ${roomId}`);
+
+    await helper.startGame();
+    await page.waitForTimeout(2000);
+    await helper.takeScreenshot('01-game-started');
+    console.log('✅ Game started');
+
+    // Step 2: Verify initial hand cards
+    console.log('🎮 Step 2: Verifying initial hand cards...');
+    const initialHandCards = await helper.waitForHandCards('TestPlayer');
+    expect(initialHandCards).toBe(5);
+    console.log(`✅ Player has ${initialHandCards} initial hand cards`);
+
+    // Step 3: Draw 3 cards
+    console.log('🎮 Step 3: Drawing 3 cards...');
+    
+    // Draw first card
+    await helper.drawCard();
+    const handAfterFirstDraw = await helper.getHandCardCount();
+    expect(handAfterFirstDraw).toBe(6); // 5 initial + 1 drawn
+    console.log(`✅ After 1st draw: ${handAfterFirstDraw} cards`);
+
+    // Draw second card
+    await helper.drawCard();
+    const handAfterSecondDraw = await helper.getHandCardCount();
+    expect(handAfterSecondDraw).toBe(7); // 5 initial + 2 drawn
+    console.log(`✅ After 2nd draw: ${handAfterSecondDraw} cards`);
+
+    // Draw third card
+    await helper.drawCard();
+    const handAfterThirdDraw = await helper.getHandCardCount();
+    expect(handAfterThirdDraw).toBe(8); // 5 initial + 3 drawn
+    console.log(`✅ After 3rd draw: ${handAfterThirdDraw} cards`);
+
+    await helper.takeScreenshot('02-after-drawing-3-cards');
+    console.log('✅ Successfully drew 3 cards');
+
+    // Step 4: Leave the room
+    console.log('🎮 Step 4: Leaving the room...');
+    await helper.leaveRoom();
+    await helper.takeScreenshot('03-left-room');
+    console.log('✅ Successfully left the room');
+
+    // Step 5: Wait for recent rooms to load and rejoin
+    console.log('🎮 Step 5: Rejoining via recent rooms...');
+    await helper.waitForRecentRoomsToLoad();
+    await helper.takeScreenshot('04-recent-rooms-loaded');
+    
+    await helper.rejoinFromRecentRooms(roomId);
+    await helper.takeScreenshot('05-rejoined-room');
+    console.log('✅ Successfully rejoined the room');
+
+    // Step 6: Verify game state is preserved
+    console.log('🎮 Step 6: Verifying game state preservation...');
+    await helper.verifyGameStatePreserved(8); // Should still have 8 cards
+    await helper.takeScreenshot('06-game-state-verified');
+    console.log('✅ Game state successfully preserved');
+
+    // Additional verification: Check that we're back in the same room
+    const rejoinedRoomId = await helper.getRoomId();
+    expect(rejoinedRoomId).toBe(roomId);
+    console.log(`✅ Rejoined same room: ${rejoinedRoomId}`);
+
+    // Verify player is still in the game
+    await helper.verifyPlayerInGame('TestPlayer');
+    console.log('✅ Player still in game');
+
+    console.log('🎉 Leave and rejoin test completed successfully!');
+  });
 });

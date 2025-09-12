@@ -16,6 +16,7 @@
     "test:e2e:debug": "playwright test --debug",
     "test": "playwright test --headed --project=chromium --reporter=list",
     "test:cards": "playwright test --grep \"should create room, start round, and assign hand cards to players\" --headed --project=chromium --reporter=list",
+    "test:draw": "playwright test --grep \"should create room, start round, and draw 3 cards\" --headed --project=chromium --reporter=list",
     "test:debug": "playwright test --headed --project=chromium --debug",
     "test:all": "playwright test --headed --reporter=list",
     "test:headless": "playwright test --project=chromium --reporter=list",

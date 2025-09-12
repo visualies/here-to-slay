@@ -75,29 +75,32 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       if (storedPlayerData && storedPlayerData.playerId === playerId) {
         console.log(`🔄 Player ${playerName} (${playerId}) is reconnecting with stored session`);
         
-        // Check if player already exists in game state
-        const existingPlayer = playersMap.get(playerId);
-        if (existingPlayer) {
-          // Update existing player's presence and activity
-          playersMap.set(playerId, {
-            ...existingPlayer,
-            lastSeen: Date.now(),
-            name: playerName, // Update name in case it changed
-            color: playerColor, // Update color in case it changed
-          });
-          console.log(`🔄 Updated existing player slot for ${playerName}`);
-        } else {
-          // Player was not in game state - add them back with stored data
-          addPlayerToRoom(playersMap, playerId, playerName, playerColor);
-          console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
-        }
+        // For reconnecting players, wait a bit for Yjs document to synchronize
+        // This ensures the player's hand cards are restored from the document
+        setTimeout(() => {
+          const existingPlayer = playersMap.get(playerId);
+          if (existingPlayer) {
+            // Update existing player's presence and activity
+            playersMap.set(playerId, {
+              ...existingPlayer,
+              lastSeen: Date.now(),
+              name: playerName, // Update name in case it changed
+              color: playerColor, // Update color in case it changed
+            });
+            console.log(`🔄 Updated existing player slot for ${playerName}`);
+          } else {
+            // Player was not in game state - add them back with stored data
+            addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+            console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
+          }
+          console.log('Players in map after adding:', playersMap.size);
+        }, 1000); // Wait 1 second for Yjs document to synchronize
       } else {
         console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
         // Add as completely new player
         addPlayerToRoom(playersMap, playerId, playerName, playerColor);
+        console.log('Players in map after adding:', playersMap.size);
       }
-      
-      console.log('Players in map after adding:', playersMap.size);
     };
     
     // Add player immediately if already connected, otherwise wait for connection

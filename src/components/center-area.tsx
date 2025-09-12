@@ -77,7 +77,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
             debugMode={debugMode}
             dimensions={discardDimensions || undefined}
           >
-            <div onClick={handleDrawCard} className="cursor-pointer w-full h-full">
+            <div onClick={handleDrawCard} className="cursor-pointer w-full h-full" data-testid="draw-card-button">
               <Stack className="w-full h-full">
                 {Array.from({ length: visualDeckCount }, (_, i) => (
                   <Card 
