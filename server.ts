@@ -9,6 +9,7 @@ import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import { serve } from '@hono/node-server'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
+import * as Y from 'yjs'
 import RoomDatabase from './src/lib/database.js'
 import { createApp } from './server/app.js'
 
@@ -26,6 +27,29 @@ setInterval(() => {
 // Track WebSocket connections (docs handled by y-websocket-server)
 const roomConnections = new Map<string, Set<WebSocket>>()
 // docs is imported from @y/websocket-server
+
+// Helper function to restore game state for a room if it exists in database
+function restoreGameStateIfExists(roomId: string) {
+  if (!docs.has(roomId)) {
+    console.log(`[DEBUG] No document found for room ${roomId}, cannot restore state`)
+    return
+  }
+  
+  const ydoc = docs.get(roomId)!
+  const savedState = db.getGameState(roomId)
+  
+  if (savedState && savedState.length > 0) {
+    try {
+      const uint8Array = new Uint8Array(savedState)
+      Y.applyUpdate(ydoc, uint8Array)
+      console.log(`🔄 Restored game state for room ${roomId} during WebSocket connection`)
+    } catch (error) {
+      console.error(`❌ Error restoring game state for room ${roomId}:`, error)
+    }
+  } else {
+    console.log(`[DEBUG] No saved game state found for room ${roomId}`)
+  }
+}
 
 // Create Hono app
 const app = createApp(db, docs)
@@ -114,6 +138,12 @@ wss.on('connection', (ws, req) => {
     
     console.log(`[DEBUG] Current docs after setup: [${Array.from(docs.keys()).join(', ')}]`)
     console.log(`[DEBUG] Total docs in memory: ${docs.size}`)
+    
+    // After document creation, try to restore saved game state
+    // We need to wait a bit for y-websocket-server to create the document
+    setTimeout(() => {
+      restoreGameStateIfExists(roomId)
+    }, 100)
     
     // y-websocket-server handles all message processing automatically
     console.log(`[DEBUG] Official y-websocket connection ready for room ${roomId}`)
