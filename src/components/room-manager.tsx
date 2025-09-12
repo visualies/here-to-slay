@@ -26,6 +26,8 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [selectedDeck, setSelectedDeck] = useState('standard');
   const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: any }>>([]);
   const [rejoiningRooms, setRejoiningRooms] = useState<Set<string>>(new Set());
+  const [isReturningPlayer, setIsReturningPlayer] = useState(false);
+  const [originalPlayerName, setOriginalPlayerName] = useState('');
   const { playThemeMusic, stopThemeMusic } = useSound();
 
   // Start background music and load recent rooms when component mounts
@@ -91,6 +93,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     
     const randomName = heroNames[Math.floor(Math.random() * heroNames.length)];
     setPlayerName(randomName);
+    setOriginalPlayerName(randomName);
     setPlayerColor(generatePlayerColor(randomName));
   }, []);
 
@@ -129,6 +132,40 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     const updatedRooms = recentRooms.filter(r => r.roomId !== roomId);
     setRecentRooms(updatedRooms);
     console.log(`🔒 Removed room ${roomId} from recent rooms`);
+  };
+
+  // Handle room ID input and check for existing player data
+  const handleRoomIdChange = (roomId: string) => {
+    const formattedRoomId = roomId.toUpperCase();
+    setJoinRoomId(formattedRoomId);
+    
+    if (formattedRoomId.length >= 3) { // Check once they've typed at least 3 characters
+      const existingPlayerData = getStoredPlayerData(formattedRoomId);
+      
+      if (existingPlayerData) {
+        // Player has been in this room before - lock in their previous identity
+        setIsReturningPlayer(true);
+        setOriginalPlayerName(playerName); // Store their current name so we can restore it if they change room ID
+        setPlayerName(existingPlayerData.playerName);
+        setPlayerColor(existingPlayerData.playerColor);
+        setError(''); // Clear any previous errors
+        console.log(`🔄 Detected returning player for room ${formattedRoomId}: ${existingPlayerData.playerName}`);
+      } else {
+        // Reset to original state if switching to a new room
+        if (isReturningPlayer) {
+          setIsReturningPlayer(false);
+          setPlayerName(originalPlayerName);
+          setPlayerColor(generatePlayerColor(originalPlayerName));
+        }
+      }
+    } else {
+      // Room ID is too short, reset returning player state
+      if (isReturningPlayer) {
+        setIsReturningPlayer(false);
+        setPlayerName(originalPlayerName);
+        setPlayerColor(generatePlayerColor(originalPlayerName));
+      }
+    }
   };
 
   const handleCreateRoom = async () => {
@@ -356,7 +393,13 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               </Button>
 
               <Button
-                onClick={() => setMode('join')}
+                onClick={() => {
+                  setMode('join');
+                  // Reset state when entering join mode
+                  setJoinRoomId('');
+                  setIsReturningPlayer(false);
+                  setError('');
+                }}
                 disabled={loading}
                 variant="outline"
                 className="w-full border-amber-600 text-amber-700 hover:bg-amber-50"
@@ -427,7 +470,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               <Input
                 type="text"
                 value={joinRoomId}
-                onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
+                onChange={(e) => handleRoomIdChange(e.target.value)}
                 placeholder="e.g., ABC123"
                 className="text-center text-lg font-mono"
                 maxLength={6}
@@ -439,9 +482,10 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               <Input
                 type="text"
                 value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
+                onChange={(e) => !isReturningPlayer && setPlayerName(e.target.value)}
                 placeholder="Enter your player name"
                 maxLength={20}
+                disabled={isReturningPlayer}
               />
             </div>
 
@@ -453,7 +497,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
             <div className="flex gap-3">
               <Button
-                onClick={() => setMode('menu')}
+                onClick={() => {
+                  setMode('menu');
+                  // Reset returning player state when going back
+                  if (isReturningPlayer) {
+                    setIsReturningPlayer(false);
+                    setPlayerName(originalPlayerName || '');
+                    setPlayerColor(generatePlayerColor(originalPlayerName || ''));
+                  }
+                  setJoinRoomId('');
+                  setError('');
+                }}
                 disabled={loading}
                 variant="outline"
                 className="flex-1 border-amber-600 text-amber-700 hover:bg-amber-50"
