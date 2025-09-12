@@ -9,7 +9,7 @@ import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import * as CANNON from 'cannon-es'
 
-const host: string = process.env.HOST || 'localhost'
+const host: string = process.env.HOST || '192.168.178.61'
 const port: number = parseInt(process.env.DICE_PORT || '1235', 10)
 
 // Server-side dice physics system
@@ -386,7 +386,7 @@ const server = http.createServer((request: http.IncomingMessage, response: http.
 
   // Default response
   response.writeHead(200, { 'Content-Type': 'text/plain' })
-  response.end('Dice Physics Server\n\nWebSocket: ws://localhost:1235\nAPI: /api/dice/move, /api/dice/throw, /api/dice/state')
+  response.end('Dice Physics Server\n\nWebSocket: ws://192.168.178.61:1235\nAPI: /api/dice/move, /api/dice/throw, /api/dice/state')
 })
 
 // WebSocket server for real-time dice state updates

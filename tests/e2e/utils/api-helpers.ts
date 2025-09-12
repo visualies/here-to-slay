@@ -3,7 +3,7 @@ import { expect } from '@playwright/test';
 export class ApiTestHelper {
   private baseUrl: string;
 
-  constructor(baseUrl: string = 'http://localhost:1234/api') {
+  constructor(baseUrl: string = 'http://192.168.178.61:1234/api') {
     this.baseUrl = baseUrl;
   }
 

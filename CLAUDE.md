@@ -99,8 +99,8 @@ This is a **multiplayer card game** called "Here to Slay" built with a **multi-s
 ### Development Notes
 
 **Server Communication:**
-- Room server: `ws://localhost:1234` and `http://localhost:1234/api/*`
-- Dice server: `ws://localhost:1235` and `http://localhost:1235/api/dice/*`
+- Room server: `ws://192.168.178.61:1234` and `http://192.168.178.61:1234/api/*`
+- Dice server: `ws://192.168.178.61:1235` and `http://192.168.178.61:1235/api/dice/*`
 - Both servers auto-create rooms on demand
 
 **Code Conventions:**

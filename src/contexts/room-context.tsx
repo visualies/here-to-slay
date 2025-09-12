@@ -44,7 +44,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const doc = new Y.Doc();
-    const wsUrl = `ws://localhost:1234`;
+    const wsUrl = `ws://192.168.178.61:1234`;
     const provider = new WebsocketProvider(wsUrl, roomId, doc);
     
     // Get shared maps after provider is connected

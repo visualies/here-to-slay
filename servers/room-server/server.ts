@@ -13,7 +13,7 @@ import * as Y from 'yjs'
 import RoomDatabase from '../../src/lib/database.js'
 import { createApp } from './app.js'
 
-const host: string = process.env.HOST || 'localhost'
+const host: string = process.env.HOST || '192.168.178.61'
 const port: number = parseInt(process.env.PORT || '1234', 10)
 
 // Initialize database
@@ -126,7 +126,7 @@ wss.on('connection', (ws, req) => {
     if (!roomConnections.has(roomId)) {
       roomConnections.set(roomId, new Set())
     }
-    roomConnections.get(roomId).add(ws)
+    roomConnections.get(roomId)?.add(ws)
     
     // Update room activity
     db.updateRoomActivity(roomId)
@@ -150,8 +150,8 @@ wss.on('connection', (ws, req) => {
     
     ws.on('close', () => {
       if (roomConnections.has(roomId)) {
-        roomConnections.get(roomId).delete(ws)
-        if (roomConnections.get(roomId).size === 0) {
+        roomConnections.get(roomId)?.delete(ws)
+        if (roomConnections.get(roomId)?.size === 0) {
           roomConnections.delete(roomId)
           // y-websocket-server manages Y.Doc cleanup automatically
           console.log(`[DEBUG] GameServer - Cleaned up room connections for ${roomId}`)

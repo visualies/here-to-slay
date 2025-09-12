@@ -42,7 +42,7 @@ export class ServerDiceManager {
   private initialized: boolean = false;
   private ws: WebSocket | null = null;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
-  private diceServerUrl: string = 'ws://localhost:1235';
+  private diceServerUrl: string = 'ws://192.168.178.61:1235';
   private diceApiUrl: string = '';
   private isConnecting: boolean = false;
   private reconnectTimeout: NodeJS.Timeout | null = null;

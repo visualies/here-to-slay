@@ -77,13 +77,13 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: [
     {
-      command: 'tsx servers/room-server/server.ts',
-      port: 1234,
+      command: 'HOST=192.168.178.61 npx tsx servers/room-server/server.ts',
+      url: 'http://192.168.178.61:1234/api/test',
       reuseExistingServer: !process.env.CI,
     },
     {
-      command: 'tsx servers/dice-server/dice-server.ts', 
-      port: 1235,
+      command: 'HOST=192.168.178.61 npx tsx servers/dice-server/dice-server.ts', 
+      url: 'http://192.168.178.61:1235/api/test',
       reuseExistingServer: !process.env.CI,
     },
     {
