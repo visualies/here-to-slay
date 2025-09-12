@@ -21,15 +21,15 @@ export class GameTestHelper {
   }
 
   async joinRoom(roomId: string, playerName: string = 'TestPlayer2') {
-    // Click "Join Room" to switch to join mode
-    await this.page.click('button:has-text("Join Room")');
+    // Click "Join Existing Room" to switch to join mode
+    await this.page.click('button:has-text("Join Existing Room")');
     
     // Fill in player name and room ID
     await this.page.fill('input[placeholder*="name"]', playerName);
-    await this.page.fill('input[placeholder*="Room ID"]', roomId);
+    await this.page.fill('input[placeholder*="ABC123"]', roomId);
     
     // Click join button
-    await this.page.click('button:has-text("Join"):not(:has-text("Room"))');
+    await this.page.click('button:has-text("Join"):not(:has-text("Existing"))');
     
     // Wait for successful join
     await this.page.waitForSelector('text=/Room:.*/', { timeout: 10000 });
@@ -45,18 +45,17 @@ export class GameTestHelper {
     await startRoundButton.click();
     
     // Wait for the game to start - look for hand cards or game elements
-    await this.page.waitForSelector('[data-testid="hand-cards"], .hand-cards, [class*="hand"]', { 
+    await this.page.waitForSelector('.card', { 
       timeout: 15000 
     });
   }
 
   async waitForHandCards(playerName?: string) {
-    // Wait for hand cards to appear - they might be in different selectors
-    const handSelector = '[data-testid="hand-cards"], .hand-cards, [class*="hand"]';
-    await this.page.waitForSelector(handSelector, { timeout: 10000 });
+    // Wait for hand cards to appear - look for cards with the .card class
+    await this.page.waitForSelector('.card', { timeout: 10000 });
     
     // Verify cards are actually present
-    const cards = await this.page.locator(handSelector + ' [class*="card"], [data-testid="card"]').count();
+    const cards = await this.page.locator('.card').count();
     expect(cards).toBeGreaterThan(0);
     
     return cards;
@@ -85,8 +84,8 @@ export class GameTestHelper {
   async verifyGamePhase(phase: 'waiting' | 'playing') {
     // This might need adjustment based on how game phase is displayed
     if (phase === 'playing') {
-      // In playing phase, we should see game elements
-      await expect(this.page.locator('[data-testid="game-area"], .game-area')).toBeVisible({ timeout: 5000 });
+      // In playing phase, we should see game elements - look for cards or game board
+      await expect(this.page.locator('.card').first()).toBeVisible({ timeout: 5000 });
     }
   }
 
