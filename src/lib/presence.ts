@@ -1,6 +1,5 @@
 import { WebsocketProvider } from 'y-websocket';
 import type { Player } from '../types';
-import { updatePlayerPresence } from './players';
 import * as Y from 'yjs';
 
 export function setupPlayerAwareness(
@@ -33,12 +32,17 @@ export function updateCursor(
 export function createHeartbeatInterval(
   playersMap: Y.Map<Player> | null,
   playerId: string,
-  intervalMs: number = 5000
+  intervalMs: number = 5000,
+  serverUpdateFn: () => Promise<void>
 ): NodeJS.Timeout | null {
   if (!playersMap) return null;
-  
-  return setInterval(() => {
-    updatePlayerPresence(playersMap, playerId);
+
+  return setInterval(async () => {
+    try {
+      await serverUpdateFn();
+    } catch (error) {
+      console.warn('Failed to update presence via server:', error);
+    }
   }, intervalMs);
 }
 

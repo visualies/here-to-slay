@@ -10,6 +10,7 @@ import { createYjsObserver } from '../lib/game-state';
 import { gameServerAPI } from '../lib/game-server-api';
 import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
 import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
+import { createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 
 const RoomContext = createContext<Room | null>(null);
 
@@ -27,6 +28,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const providerRef = useRef<WebsocketProvider | null>(null);
   const gameStateRef = useRef<Y.Map<unknown> | null>(null);
   const playersRef = useRef<Y.Map<Player> | null>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   
   // React state
   const [players, setPlayers] = useState<Player[]>([]);
@@ -64,6 +66,16 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     // Set up player presence for cursor tracking
     setupPlayerAwareness(provider, playerId, playerName, playerColor);
 
+    // Set up heartbeat to keep player "active"
+    const updatePresence = async () => {
+      try {
+        await gameServerAPI.updatePlayerPresence(roomId, playerId, playerName, playerColor);
+      } catch (error) {
+        console.warn('Failed to update player presence:', error);
+      }
+    };
+    heartbeatRef.current = createHeartbeatInterval(playersMap, playerId, 15000, updatePresence);
+
     console.log(`🔌 Connected to room ${roomId} as ${playerName} (${playerId})`);
     console.log('Client is now read-only - all game state managed by server');
 
@@ -74,6 +86,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
 
     // Cleanup function
     return () => {
+      cleanupHeartbeat(heartbeatRef.current);
       provider.disconnect();
     };
   }, [roomId, playerId, playerName, playerColor]);

@@ -1,20 +1,47 @@
 "use client";
 
-import type { Card as GameCard } from "../types";
+import { useState, useEffect } from "react";
+import type { Card as GameCard, Player } from "../types";
 import { Card } from "./card";
 import { useGameActions } from "../hooks/use-game-actions";
-import { useGameState } from "../hooks/use-game-state";
+import { useRoom } from "../contexts/room-context";
 
 interface HandCardsProps {
-  cards: GameCard[];
+  playerId: string;
   isOwn?: boolean;
   position: 'top' | 'right' | 'bottom' | 'left';
   className?: string;
 }
 
-export function HandCards({ cards, isOwn = false, position, className = '' }: HandCardsProps) {
+export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playHeroToParty } = useGameActions();
-  const { currentPlayer, currentTurn } = useGameState();
+  const { playersRef, currentTurn } = useRoom();
+  const [cards, setCards] = useState<GameCard[]>([]);
+  const [player, setPlayer] = useState<Player | null>(null);
+
+  // Direct Yjs subscription for this specific player
+  useEffect(() => {
+    if (!playersRef) return;
+
+    const updateCards = () => {
+      const playerData = playersRef.get(playerId);
+      if (playerData) {
+        console.log(`HandCards: Player ${playerId} hand updated:`, playerData.hand);
+        setCards(playerData.hand || []);
+        setPlayer(playerData);
+      }
+    };
+
+    // Initial load
+    updateCards();
+
+    // Subscribe to changes
+    playersRef.observe(updateCards);
+
+    return () => {
+      playersRef.unobserve(updateCards);
+    };
+  }, [playersRef, playerId]);
   const cardCount = cards.length;
 
   // Position-specific styles
@@ -54,9 +81,9 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} ${currentPlayer?.id === currentTurn && currentPlayer?.actionPoints > 0 && card.type === 'Hero' ? 'hover:scale-200 hover:translate-y-[-8.5rem] cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition-transform hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} ${player?.id === currentTurn && (player?.actionPoints ?? 0) > 0 && card.type === 'Hero' ? 'hover:scale-200 hover:translate-y-[-8.5rem] cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition-transform hover:z-10 relative`}
             onClick={async () => {
-              const canPlay = currentPlayer?.id === currentTurn && (currentPlayer?.actionPoints ?? 0) > 0 && card.type === 'Hero';
+              const canPlay = player?.id === currentTurn && (player?.actionPoints ?? 0) > 0 && card.type === 'Hero';
               if (!canPlay) return;
               await playHeroToParty(card.id);
             }}
@@ -80,7 +107,7 @@ export function HandCards({ cards, isOwn = false, position, className = '' }: Ha
                     card={{
                       id: 'back',
                       name: 'Hidden',
-                      type: 'Hero' as any,
+                      type: 'Hero' as const,
                       description: '',
                       requirement: '',
                       effect: []

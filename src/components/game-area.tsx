@@ -108,9 +108,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
       <div className="absolute top-0 left-1/2 w-0 h-0 flex items-center justify-center z-30">
         <div>
           {getPlayerByPosition('top') && (
-            <HandCards 
-              cards={getPlayerByPosition('top')!.hand} 
-              isOwn={false} 
+            <HandCards
+              playerId={getPlayerByPosition('top')!.id}
+              isOwn={false}
               position="top"
             />
           )}
@@ -121,9 +121,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
       <div className="absolute right-0 top-1/2 w-0 h-0 flex items-center justify-center z-30">
         <div>
           {getPlayerByPosition('right') && (
-            <HandCards 
-              cards={getPlayerByPosition('right')!.hand} 
-              isOwn={false} 
+            <HandCards
+              playerId={getPlayerByPosition('right')!.id}
+              isOwn={false}
               position="right"
             />
           )}
@@ -134,9 +134,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
       <div className="absolute bottom-0 left-1/2 w-0 h-0 flex items-center justify-center z-30" data-testid="current-player-hand-container">
         <div>
           {getPlayerByPosition('bottom') && (
-            <HandCards 
-              cards={getPlayerByPosition('bottom')!.hand} 
-              isOwn={true} 
+            <HandCards
+              playerId={getPlayerByPosition('bottom')!.id}
+              isOwn={true}
               position="bottom"
             />
           )}
@@ -147,9 +147,9 @@ export function GameArea({ diceResults }: GameAreaProps) {
       <div className="absolute left-0 top-1/2 w-0 h-0 flex items-center justify-center z-30">
         <div>
           {getPlayerByPosition('left') && (
-            <HandCards 
-              cards={getPlayerByPosition('left')!.hand} 
-              isOwn={false} 
+            <HandCards
+              playerId={getPlayerByPosition('left')!.id}
+              isOwn={false}
               position="left"
             />
           )}
