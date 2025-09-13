@@ -128,12 +128,19 @@ wss.on('connection', (ws, req) => {
     
     // Update room activity
     db.updateRoomActivity(roomId)
-    
+
+    // Check for a read-only flag in the URL, e.g., ws://localhost:1234/ROOMID?readOnly=true
+    const readOnly = urlObj.searchParams.get('readOnly') === 'true'
+
     // Use official y-websocket-server setup - it handles document creation
     console.log(`[DEBUG] Setting up official y-websocket connection for room ${roomId}`)
     // The y-websocket-server will extract the room ID from the URL path automatically
-    setupWSConnection(ws, req)
-    
+    setupWSConnection(ws, req, {
+      // With this flag, the server will not apply any document updates
+      // that are received from this client.
+      readOnly: true,
+    })
+
     console.log(`[DEBUG] Current docs after setup: [${Array.from(docs.keys()).join(', ')}]`)
     console.log(`[DEBUG] Total docs in memory: ${docs.size}`)
     

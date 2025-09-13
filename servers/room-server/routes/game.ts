@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type RoomDatabase from '../../src/lib/database.js'
 import * as Y from 'yjs'
+import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../../../src/lib/game-actions.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import {
@@ -87,10 +88,14 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
   // Helper function to get or create Yjs document (same as server.ts)
   function getYDoc(roomId: string) {
-    if (!docs.has(roomId)) {
-      const ydoc = new Y.Doc()
-      
-      // Try to restore saved game state
+    const docExists = docs.has(roomId)
+    // This will create a WSSharedDoc if it doesn't exist.
+    // It's important to use this function from the library to ensure the correct
+    // document type is used, which includes connection management properties.
+    const ydoc = getYDocShared(roomId)
+
+    // If the document was just created, try to restore its state from the database.
+    if (!docExists) {
       const savedState = db.getGameState(roomId)
       if (savedState) {
         try {
@@ -101,10 +106,8 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
           console.error(`Error restoring game state for room ${roomId}:`, error)
         }
       }
-      
-      docs.set(roomId, ydoc)
     }
-    return docs.get(roomId)
+    return ydoc
   }
 
   // Debug endpoint to see all documents

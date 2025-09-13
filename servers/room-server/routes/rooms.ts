@@ -1,8 +1,23 @@
 import { Hono } from 'hono'
 import type RoomDatabase from '../../src/lib/database.js'
+import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
+import * as Y from 'yjs'
 
-export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('yjs').Y.Doc>) {
+export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const router = new Hono()
+
+  // Helper to get or create a Yjs doc and load state from DB if it's new
+  const getDoc = (roomId: string): Y.Doc => {
+    const docExists = docs.has(roomId)
+    // This will create a WSSharedDoc if it doesn't exist.
+    const ydoc = getYDocShared(roomId)
+
+    if (!docExists) {
+      // Try to load existing state from database
+      db.loadRoomState(roomId, ydoc)
+    }
+    return ydoc
+  }
 
   // Create a new room
   router.post('/create-room', async (c) => {
@@ -18,25 +33,22 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
       const roomId = room.roomId
 
       // Initialize Yjs document with room data
-      if (docs) {
-        const ydoc = new (await import('yjs')).Doc()
-        docs.set(roomId, ydoc)
+      const ydoc = getDoc(roomId)
 
-        // Set room metadata in Yjs document
-        const roomMap = ydoc.getMap('room')
-        roomMap.set('id', roomId)
-        roomMap.set('name', name)
-        roomMap.set('maxPlayers', maxPlayers)
-        roomMap.set('turnDuration', turnDuration)
-        roomMap.set('selectedDeck', selectedDeck)
-        roomMap.set('createdAt', new Date().toISOString())
+      // Set room metadata in Yjs document
+      const roomMap = ydoc.getMap('room')
+      roomMap.set('id', roomId)
+      roomMap.set('name', name)
+      roomMap.set('maxPlayers', maxPlayers)
+      roomMap.set('turnDuration', turnDuration)
+      roomMap.set('selectedDeck', selectedDeck)
+      roomMap.set('createdAt', new Date().toISOString())
 
-        // Initialize empty collections
-        ydoc.getMap('players')
-        ydoc.getMap('gameState')
+      // Initialize empty collections
+      ydoc.getMap('players')
+      ydoc.getMap('gameState')
 
-        console.log(`🏠 Created room: ${roomId} - "${name}" (${turnDuration}s turns, ${selectedDeck} deck)`)
-      }
+      console.log(`🏠 Created room: ${roomId} - "${name}" (${turnDuration}s turns, ${selectedDeck} deck)`)
 
       return c.json({ roomId, name, maxPlayers, turnDuration, selectedDeck })
     } catch (error) {
@@ -54,30 +66,18 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
       const { roomId, playerId, playerName, playerColor } = await c.req.json()
 
       // Get or create Yjs document for this room
-      let ydoc
-      if (!docs || !docs.has(roomId)) {
-        ydoc = new (await import('yjs')).Doc()
-        if (docs) {
-          docs.set(roomId, ydoc)
-        }
+      const ydoc = getDoc(roomId)
 
-        // Try to load existing state from database
-        db.loadRoomState(roomId, ydoc)
-
-        // Initialize room metadata if still missing
-        const roomMap = ydoc.getMap('room')
-        if (!roomMap.get('id')) {
-          roomMap.set('id', roomId)
-          roomMap.set('name', 'Here to Slay Game')
-          roomMap.set('maxPlayers', 4)
-          roomMap.set('createdAt', new Date().toISOString())
-        }
-      } else {
-        ydoc = docs.get(roomId)!
+      // Initialize room metadata if still missing
+      const roomMap = ydoc.getMap('room')
+      if (!roomMap.get('id')) {
+        roomMap.set('id', roomId)
+        roomMap.set('name', 'Here to Slay Game')
+        roomMap.set('maxPlayers', 4)
+        roomMap.set('createdAt', new Date().toISOString())
       }
 
       const playersMap = ydoc.getMap('players')
-      const roomMap = ydoc.getMap('room')
 
       // Check if room is full
       const maxPlayers = roomMap.get('maxPlayers') || 4
@@ -128,18 +128,7 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
       }
 
       // Get or load Yjs document
-      let ydoc
-      if (docs && docs.has(roomId)) {
-        ydoc = docs.get(roomId)!
-      } else {
-        // Load from database if not in memory
-        ydoc = new (await import('yjs')).Doc()
-        const loaded = db.loadRoomState(roomId, ydoc)
-
-        if (loaded && docs) {
-          docs.set(roomId, ydoc) // Keep in memory for future requests
-        }
-      }
+      const ydoc = getDoc(roomId)
 
       const roomMap = ydoc.getMap('room')
       const playersMap = ydoc.getMap('players')
@@ -185,7 +174,7 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
 
       // Enhance with data from Yjs documents
       const enhancedRooms = rooms.map(room => {
-        if (docs && docs.has(room.id)) {
+        if (docs.has(room.id)) {
           const ydoc = docs.get(room.id)!
           const roomMap = ydoc.getMap('room')
           const playersMap = ydoc.getMap('players')
@@ -225,9 +214,8 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
       const { roomId, playerId } = await c.req.json()
 
       // Get Yjs document if it exists
-      let ydoc
-      if (docs && docs.has(roomId)) {
-        ydoc = docs.get(roomId)!
+      if (docs.has(roomId)) {
+        const ydoc = getDoc(roomId)
         const playersMap = ydoc.getMap('players')
 
         // Remove player from Yjs document
