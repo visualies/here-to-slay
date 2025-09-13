@@ -86,17 +86,19 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     }
   }
 
-  // Helper function to get or create Yjs document (same as server.ts)
+  // Helper function to get or create Yjs document with proper registration and database restoration
   function getYDoc(roomId: string) {
     const docExists = docs.has(roomId)
-    // This will create a WSSharedDoc if it doesn't exist.
-    // It's important to use this function from the library to ensure the correct
-    // document type is used, which includes connection management properties.
     const ydoc = getYDocShared(roomId)
+
+    // Ensure document is registered in the docs Map for debug endpoints
+    if (!docs.has(roomId)) {
+      docs.set(roomId, ydoc)
+    }
 
     // If the document was just created, try to restore its state from the database.
     if (!docExists) {
-      const savedState = db.getGameState(roomId)
+      const savedState = db.getRoomById(roomId)?.state
       if (savedState) {
         try {
           const uint8Array = new Uint8Array(savedState)
@@ -357,7 +359,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const state = Y.encodeStateAsUpdate(ydoc)
       console.log(`💾 Saving game state for room ${roomId}, state size: ${state.length} bytes`)
       
-      const result = db.saveGameState(roomId, Buffer.from(state))
+      const result = db.saveRoomState(roomId, ydoc)
       console.log(`💾 Game state saved for room ${roomId}`)
       
       return c.json({ 

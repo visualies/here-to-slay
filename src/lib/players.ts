@@ -37,6 +37,20 @@ export function updatePlayerPresence(playersMap: Y.Map<Player>, playerId: string
   }
 }
 
+export function addCardToPlayerHand(
+  playersMap: Y.Map<Player>,
+  playerId: string,
+  card: Card
+): void {
+  const player = playersMap.get(playerId);
+  if (player) {
+    playersMap.set(playerId, {
+      ...player,
+      hand: [...player.hand, card]
+    });
+  }
+}
+
 export function dealCardsToPlayer(
   playersMap: Y.Map<Player>,
   playerId: string,
@@ -71,7 +85,11 @@ export function assignPartyLeaderToPlayer(
   
   const updatedPlayer: Player = {
     ...player,
-    party: { ...(player.party || { heroes: [] }), leader }
+    party: {
+      heroes: [],
+      ...(player.party || {}),
+      leader
+    }
   };
 
   playersMap.set(playerId, updatedPlayer);

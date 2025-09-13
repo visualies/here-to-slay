@@ -9,8 +9,12 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   // Helper to get or create a Yjs doc and load state from DB if it's new
   const getDoc = (roomId: string): Y.Doc => {
     const docExists = docs.has(roomId)
-    // This will create a WSSharedDoc if it doesn't exist.
     const ydoc = getYDocShared(roomId)
+
+    // Ensure document is registered in the docs Map for debug endpoints
+    if (!docs.has(roomId)) {
+      docs.set(roomId, ydoc)
+    }
 
     if (!docExists) {
       // Try to load existing state from database
