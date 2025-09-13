@@ -7,7 +7,9 @@ import type { Player, Card, Room, GameActions } from '../types';
 import { addPlayerToRoom, isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
-import { playCard, drawCard, advanceTurn, initializeGame, addPlayerToGame } from '../lib/game-actions';
+import { playCard, advanceTurn, initializeGame, addPlayerToGame } from '../lib/game-actions';
+import { executeAction } from '../lib/actions-api';
+import type { DrawCardAction, PlayCardAction } from '../types/actions';
 import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
 
 const RoomContext = createContext<Room | null>(null);
@@ -226,17 +228,38 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     advanceTurn(playersRef.current, gameStateRef.current, players, currentTurn, roomId);
   }, [players, currentTurn, roomId]);
 
-  const handlePlayCard = useCallback((cardId: string) => {
-      if (!playersRef.current) return;
-      
-      playCard(playersRef.current, players, playerId, cardId, handleAdvanceTurn);
-  }, [playersRef.current, players, playerId, handleAdvanceTurn]);
+  const handlePlayCard = useCallback(async (cardId: string) => {
+      const action: PlayCardAction = {
+        type: 'play_card',
+        playerId,
+        roomId,
+        cardId
+      };
 
-  const handleDrawCard = useCallback(() => {
-      if (!playersRef.current || !gameStateRef.current) return;
+      const result = await executeAction(action);
       
-      drawCard(playersRef.current, gameStateRef.current, playerId, handleAdvanceTurn);
-  }, [playersRef.current, gameStateRef.current, playerId, handleAdvanceTurn]);
+      if (result.status === 'failed') {
+        console.error('Play card action failed:', result.message);
+        // Optionally show error to user
+      }
+      // If successful, the Yjs sync will update the UI automatically
+  }, [playerId, roomId]);
+
+  const handleDrawCard = useCallback(async () => {
+      const action: DrawCardAction = {
+        type: 'draw_card',
+        playerId,
+        roomId
+      };
+
+      const result = await executeAction(action);
+      
+      if (result.status === 'failed') {
+        console.error('Draw card action failed:', result.message);
+        // Optionally show error to user
+      }
+      // If successful, the Yjs sync will update the UI automatically
+  }, [playerId, roomId]);
 
   const gameActions: GameActions = {
       playCard: handlePlayCard,
