@@ -156,29 +156,6 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     })
   })
 
-  // Test endpoint to manually create a document
-  router.post('/create-test-doc', async (c) => {
-    const { roomId } = await c.req.json()
-    if (!roomId) {
-      return c.json({ error: 'Room ID required' }, 400)
-    }
-    
-    const ydoc = getYDoc(roomId)
-    const gameState = ydoc!.getMap('gameState')
-    const players = ydoc!.getMap('players')
-    
-    // Add some test data
-    gameState.set('gamePhase', 'playing')
-    gameState.set('currentTurn', 'test-player')
-    
-    console.log(`Created/updated test document for room ${roomId}`)
-    
-    return c.json({ 
-      success: true, 
-      roomId, 
-      stateSize: Y.encodeStateAsUpdate(ydoc!).length 
-    })
-  })
 
   // Update player presence/rejoin
   router.post('/update-player-presence', async (c) => {
