@@ -1,26 +1,17 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useCallback } from 'react';
 import { useRoom } from './room-context';
-import { useDice } from '../contexts/dice-context';
-import { updatePlayerActionPoints } from '../lib/players';
 import { useStatus } from '../hooks/use-status';
+import { gameServerAPI } from '../lib/game-server-api';
+import { useDice } from './dice-context';
 import type { Card } from '../types';
 
-interface HeroUsageState {
-  [heroId: string]: boolean; // true if hero ability was used this turn
-}
-
 interface GameActionsContextValue {
-  // Hero usage tracking
-  heroUsageThisTurn: HeroUsageState;
-  canUseHeroAbility: (hero: Card) => boolean;
-  
-  // Game actions
-  useHeroAbility: (hero: Card) => Promise<void>;
-  playCard: (cardId: string) => void;
-  drawCard: () => void;
-  advanceTurn: () => void;
+  drawCard: () => Promise<void>;
+  playHeroToParty: (cardId: string) => Promise<void>;
+  attackMonster: (monsterId: string) => Promise<void>;
+  discardHandRedraw: () => Promise<void>;
 }
 
 export const GameActionsContext = createContext<GameActionsContextValue | null>(null);
@@ -30,130 +21,70 @@ interface GameActionsProviderProps {
 }
 
 export function GameActionsProvider({ children }: GameActionsProviderProps) {
-  const { 
-    gameActions, 
-    currentPlayer, 
-    currentTurn,
-    playersRef,
-    gameStateRef
-  } = useRoom();
-  const { captureDiceResult } = useDice();
+  const room = useRoom();
   const { showMessage } = useStatus();
-  
-  // Track hero abilities used this turn
-  const [heroUsageThisTurn, setHeroUsageThisTurn] = useState<HeroUsageState>({});
-  
-  // Reset hero usage when turn advances
-  const resetHeroUsage = useCallback(() => {
-    setHeroUsageThisTurn({});
-  }, []);
-  
-  // Check if current player can use hero ability
-  const canUseHeroAbility = useCallback((hero: Card): boolean => {
-    if (!currentPlayer) return false;
-    if (heroUsageThisTurn[hero.id]) return false; // Already used this turn - this is the only disable condition
-    
-    // All heroes that haven't been used this turn should appear enabled (colorful)
-    return true;
-  }, [currentPlayer, heroUsageThisTurn]);
-  
-  // Use hero ability method
-  const useHeroAbility = useCallback(async (hero: Card): Promise<void> => {
-    if (!canUseHeroAbility(hero)) {
-      showMessage(`Cannot use hero ability for ${hero.name}`, 'error');
+  const { captureDiceResult } = useDice();
+
+  const handleApiResponse = useCallback((result: any, successMessage: string) => {
+    if (result.success) {
+      showMessage(successMessage, 'success');
+    } else {
+      showMessage(result.message || 'Action failed', 'error');
+    }
+  }, [showMessage]);
+
+  const drawCard = useCallback(async () => {
+    if (!room?.roomId || !room?.currentPlayer?.id) return;
+    const result = await gameServerAPI.drawCard(room.roomId, room.currentPlayer.id);
+    handleApiResponse(result, 'Card drawn!');
+  }, [room, handleApiResponse]);
+
+  const playHeroToParty = useCallback(async (cardId: string) => {
+    if (!room?.roomId || !room?.currentPlayer?.id) return;
+    const result = await gameServerAPI.playHeroToParty(room.roomId, room.currentPlayer.id, cardId);
+    handleApiResponse(result, 'Hero played!');
+  }, [room, handleApiResponse]);
+
+  const attackMonster = useCallback(async (monsterId: string) => {
+    if (!room?.roomId || !room?.currentPlayer?.id) return;
+
+    // First, capture the dice result from the client
+    const diceResponse = await captureDiceResult();
+    if (diceResponse.error || !diceResponse.data) {
+      showMessage(diceResponse.error || 'Dice roll failed or was cancelled.', 'error');
       return;
     }
-    
-    // Additional checks: can only actually use abilities on your turn and with your heroes
-    if (!currentPlayer || currentTurn !== currentPlayer.id) {
-      showMessage(`Can only use hero abilities on your turn`, 'error');
-      return;
-    }
-    
-    // Check if hero is in current player's party
-    const isMyHero = currentPlayer.party.leader?.id === hero.id || 
-                     currentPlayer.party.heroes.some(h => h?.id === hero.id);
-    if (!isMyHero) {
-      showMessage(`Can only use your own hero abilities`, 'error');
-      return;
-    }
-    
-    // Mark hero as used this turn
-    setHeroUsageThisTurn(prev => ({ ...prev, [hero.id]: true }));
-    
-    try {
-      // Wait for user to throw dice and capture results
-      console.log(`🎲 ${currentPlayer?.name}, throw the dice for ${hero.name}!`);
-      
-      // Pass the numeric requirement directly
-      console.log(`DEBUG: Hero ${hero.name}, requirement:`, hero.requirement);
-      const response = await captureDiceResult(hero.requirement);
-      
-      if (response.error) {
-        throw new Error(response.error);
-      }
-      
-      if (!response.data || response.data.length === 0) {
-        // Timeout occurred - consume action point and end turn gracefully
-        console.log(`Dice capture timeout for ${hero.name} - consuming action point`);
-        
-        // Consume an action point
-        if (currentPlayer && currentPlayer.actionPoints > 0 && playersRef?.current) {
-          updatePlayerActionPoints(playersRef.current, currentPlayer.id, currentPlayer.actionPoints - 1);
-          
-          // Check if turn should advance (no action points left)
-          if (currentPlayer.actionPoints - 1 === 0) {
-            console.log('No action points left after timeout, advancing turn...');
-            gameActions.advanceTurn();
-          }
-        }
-        
-        return; // End the action gracefully
-      }
-      
-      const results = response.data;
-      const sum = results.reduce((a, b) => a + b, 0);
-      
-      // Log the result
-      if (hero.requirement) {
-        const success = sum >= hero.requirement;
-        console.log(`Hero ${hero.name} ability: Rolled ${sum}, required ${hero.requirement}+, ${success ? 'SUCCESS' : 'FAILED'}`);
-      } else {
-        console.log(`Hero ${hero.name} ability activated with roll: ${sum}`);
-      }
-      
-    } catch (error) {
-      // Revert hero usage state on error
-      setHeroUsageThisTurn(prev => {
-        const updated = { ...prev };
-        delete updated[hero.id];
-        return updated;
-      });
-      throw error;
-    }
-  }, [canUseHeroAbility, captureDiceResult, currentPlayer, showMessage]);
-  
-  // Enhanced advanceTurn that resets hero usage
-  const handleAdvanceTurn = useCallback(() => {
-    resetHeroUsage();
-    gameActions.advanceTurn();
-  }, [resetHeroUsage, gameActions]);
-  
+    const diceResult = diceResponse.data.reduce((sum, val) => sum + val, 0);
+
+    // Then, send the dice result to the server for validation
+    const result = await gameServerAPI.attackMonster(room.roomId, room.currentPlayer.id, monsterId, diceResult);
+    handleApiResponse(result, `Attack on monster finished!`);
+  }, [room, captureDiceResult, handleApiResponse, showMessage]);
+
+  const discardHandRedraw = useCallback(async () => {
+    if (!room?.roomId || !room?.currentPlayer?.id) return;
+    const result = await gameServerAPI.discardHandRedraw(room.roomId, room.currentPlayer.id);
+    handleApiResponse(result, 'Hand discarded and redrawn!');
+  }, [room, handleApiResponse]);
+
   const contextValue: GameActionsContextValue = {
-    // Hero usage tracking
-    heroUsageThisTurn,
-    canUseHeroAbility,
-    
-    // Game actions
-    useHeroAbility,
-    playCard: gameActions.playCard,
-    drawCard: gameActions.drawCard,
-    advanceTurn: handleAdvanceTurn
+    drawCard,
+    playHeroToParty,
+    attackMonster,
+    discardHandRedraw
   };
-  
+
   return (
     <GameActionsContext.Provider value={contextValue}>
       {children}
     </GameActionsContext.Provider>
   );
 }
+
+export const useGameActions = () => {
+  const context = useContext(GameActionsContext);
+  if (!context) {
+    throw new Error('useGameActions must be used within a GameActionsProvider');
+  }
+  return context;
+};

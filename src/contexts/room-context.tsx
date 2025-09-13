@@ -3,9 +3,9 @@
 import { createContext, useContext, ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import type { Player, Card, Room, GameActions } from '../types';
+import type { Player, Card, Room } from '../types';
 import { isHost } from '../lib/players';
-import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
+import { setupPlayerAwareness, updateCursor } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
 import { gameServerAPI } from '../lib/game-server-api';
 import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
@@ -175,11 +175,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       }
     } catch (error) {
       console.error('❌ Failed to add player to game via API:', error);
-      // Fallback to direct mutation for now
-      if (playersRef.current) {
-        const { addPlayerToGame } = await import('../lib/game-actions');
-        addPlayerToGame(playersRef.current, players, playerIdToAdd);
-      }
     }
   }, [playerIsHost, roomId, players]);
   
@@ -187,47 +182,15 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     updateCursor(providerRef.current, x, y);
   }, []);
 
-  const handleAdvanceTurn = useCallback(() => {
-    // Turn advancement is now handled automatically by the server when action points reach 0
-    // This function is kept for backward compatibility but does nothing
-    console.log('advanceTurn: Turn advancement is now handled automatically by the server');
-  }, []);
-
-  const handlePlayCard = useCallback(async (cardId: string) => {
-    try {
-      const result = await gameServerAPI.playHeroToParty(roomId, playerId, cardId);
-      if (result.success) {
-        console.log('✅ Played card via API:', result.message);
-      } else {
-        console.error('❌ Failed to play card:', result.message);
-      }
-    } catch (error) {
-      console.error('❌ Failed to play card via API:', error);
-    }
-  }, [playerId, roomId]);
-
-  const handleDrawCard = useCallback(async () => {
-    try {
-      const result = await gameServerAPI.drawCard(roomId, playerId);
-      if (result.success) {
-        console.log('✅ Drew card via API:', result.message);
-      } else {
-        console.error('❌ Failed to draw card:', result.message);
-      }
-    } catch (error) {
-      console.error('❌ Failed to draw card via API:', error);
-    }
-  }, [playerId, roomId]);
-
-  const gameActions: GameActions = {
-      playCard: handlePlayCard,
-      drawCard: handleDrawCard,
-      advanceTurn: handleAdvanceTurn,
-  };
-
   const roomData: Room = {
     // Room info
     roomId,
+    
+    // Yjs refs for read-only access if needed
+    doc: docRef.current,
+    provider: providerRef.current,
+    playersRef: playersRef.current,
+    gameStateRef: gameStateRef.current,
     
     // Game state
     players,
@@ -245,7 +208,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     initializeGame: handleInitializeGame,
     addPlayerToGame: handleAddPlayerToGame,
     updateCursor: handleUpdateCursor,
-    gameActions,
     
     // Connection state
     isConnected
