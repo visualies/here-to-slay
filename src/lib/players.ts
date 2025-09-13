@@ -33,8 +33,7 @@ export function addPlayerToRoom(
       deck: [],
       party: {
         leader: null,
-        heroes: Array(6).fill(null),
-        duplicateHeroes: []
+        heroes: Array(6).fill(null)
       },
       actionPoints: 0
     };
