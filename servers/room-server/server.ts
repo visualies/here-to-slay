@@ -100,8 +100,12 @@ server.on('request', async (req, res) => {
     }
   } catch (err) {
     console.error('Error handling request:', err)
-    res.writeHead(500)
-    res.end('Internal Server Error')
+    res.writeHead(500, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ 
+      success: false, 
+      error: 'Internal Server Error',
+      message: err instanceof Error ? err.message : 'Unknown error'
+    }))
   }
 })
 

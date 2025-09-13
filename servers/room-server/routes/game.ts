@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type RoomDatabase from '../../src/lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
-import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../../../src/lib/game-actions.js'
+import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import {
   type ActionContext,

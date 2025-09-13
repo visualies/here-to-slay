@@ -1,4 +1,5 @@
-import { useGameActions, useGameState } from "../hooks/use-game-state";
+import { useGameActions } from "../hooks/use-game-actions";
+import { useGameState } from "../hooks/use-game-state";
 import { useStatus } from "../hooks/use-status";
 import { useDice } from "../contexts/dice-context";
 import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
@@ -21,8 +22,8 @@ interface CenterAreaProps {
 }
 
 export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaProps) {
-  const { drawCard, initializeGame, isHost } = useGameActions();
-  const { currentTurn, currentPlayer, players, supportStack, monsters } = useGameState();
+  const { drawCard } = useGameActions();
+  const { currentTurn, currentPlayer, players, supportStack, monsters, initializeGame, isHost } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
   const { getTargetDimensions, getUnscaledTargetDimensions } = useCardOriginSizing();
@@ -44,9 +45,9 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   }, [supportStack.length]);
   
   // Increment seed when a card is drawn to trigger re-render with new randomization
-  const handleDrawCard = () => {
+  const handleDrawCard = async () => {
     setDeckSeed(prev => prev + 1);
-    drawCard();
+    await drawCard();
   };
   
   // Get the current turn player's name

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePlayerPresence } from "../hooks/use-game-state";
+import { usePlayerPresence } from "../hooks/use-player-presence";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";

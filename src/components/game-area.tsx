@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useGameState, useGameActions, usePlayerPresence } from "../hooks/use-game-state";
+import { useGameState } from "../hooks/use-game-state";
+import { useGameActions } from "../hooks/use-game-actions";
+import { usePlayerPresence } from "../hooks/use-player-presence";
 import { usePlayerPosition } from "../hooks/use-player-position";
 import { useDice } from "../contexts/dice-context";
 import { HandCards } from "./hand-cards";
@@ -16,8 +18,7 @@ interface GameAreaProps {
 }
 
 export function GameArea({ diceResults }: GameAreaProps) {
-  const { players, gamePhase, currentTurn, currentPlayer, otherPlayers } = useGameState();
-  const { initializeGame, addPlayerToGame, isHost } = useGameActions();
+  const { players, gamePhase, currentTurn, currentPlayer, otherPlayers, initializeGame, isHost } = useGameState();
   const { connectedPlayers, connectedPlayersCount } = usePlayerPresence();
   const { getPlayerPosition } = usePlayerPosition();
   const { 
@@ -87,10 +88,11 @@ export function GameArea({ diceResults }: GameAreaProps) {
       
       playersToAdd.forEach(player => {
         console.log('Adding player to existing game:', player.name);
-        addPlayerToGame(player.id);
+        // This action is now handled by the room context, which has access to the necessary API calls
+        // addPlayerToGame(player.id);
       });
     }
-  }, [isHost, gamePhase, players, connectedPlayers, addPlayerToGame]);
+  }, [isHost, gamePhase, players, connectedPlayers]);
 
 
   // Always show the game board - no separate waiting room
