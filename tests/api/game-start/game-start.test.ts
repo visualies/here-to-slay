@@ -32,7 +32,7 @@ test.describe('API: Game Start', () => {
       // In tests, we need to manually add players to the Yjs document first
     })
 
-    test('should start game and verify initial state for one player', async ({ request }) => {
+    test('should start game and verify initial state for one player', async ({ request }, testInfo) => {
       // Player should already be in Yjs document from join-room call in beforeEach
 
       // 1. Start the game
@@ -106,9 +106,32 @@ test.describe('API: Game Start', () => {
       expect(player.actionPoints).toBe(3) // First player starts with 3 action points
       expect(roomData.gameState.supportStack).toBeDefined()
       expect(roomData.gameState.supportStack.length).toBeGreaterThan(0)
+
+      // Snapshot of final game state for inspection
+      const gameSnapshot = {
+        roomId: roomData.id,
+        phase: roomData.gameState.phase,
+        currentTurn: roomData.gameState.currentTurn,
+        monsters: roomData.gameState.monsters.map(m => m.name),
+        players: Object.keys(roomData.players).map(id => ({
+          id,
+          name: roomData.players[id].name,
+          handSize: roomData.players[id].hand.length,
+          partyLeader: roomData.players[id].party.leader.name,
+          heroCount: roomData.players[id].party.heroes.length,
+          actionPoints: roomData.players[id].actionPoints
+        })),
+        supportStackSize: roomData.gameState.supportStack.length
+      }
+
+      // Attach game state snapshot to test report
+      await testInfo.attach('1-player-game-state.json', {
+        body: JSON.stringify(gameSnapshot, null, 2),
+        contentType: 'application/json'
+      })
     })
 
-    test('should start game and verify initial state for two players', async ({ request }) => {
+    test('should start game and verify initial state for two players', async ({ request }, testInfo) => {
       // Add a second player
       const playerId2 = 'test-player-2'
       const joinResponse2 = await request.post('/api/join-room', {
@@ -162,9 +185,32 @@ test.describe('API: Game Start', () => {
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
       expect([playerId, playerId2]).toContain(roomData.gameState.currentTurn)
+
+      // Snapshot of final game state for inspection
+      const gameSnapshot = {
+        roomId: roomData.id,
+        phase: roomData.gameState.phase,
+        currentTurn: roomData.gameState.currentTurn,
+        monsters: roomData.gameState.monsters.map(m => m.name),
+        players: Object.keys(roomData.players).map(id => ({
+          id,
+          name: roomData.players[id].name,
+          handSize: roomData.players[id].hand.length,
+          partyLeader: roomData.players[id].party.leader.name,
+          heroCount: roomData.players[id].party.heroes.length,
+          actionPoints: roomData.players[id].actionPoints
+        })),
+        supportStackSize: roomData.gameState.supportStack.length
+      }
+
+      // Attach game state snapshot to test report
+      await testInfo.attach('2-player-game-state.json', {
+        body: JSON.stringify(gameSnapshot, null, 2),
+        contentType: 'application/json'
+      })
     })
 
-    test('should start game and verify initial state for three players', async ({ request }) => {
+    test('should start game and verify initial state for three players', async ({ request }, testInfo) => {
       // Add second and third players
       const playerId2 = 'test-player-2'
       const playerId3 = 'test-player-3'
@@ -235,9 +281,32 @@ test.describe('API: Game Start', () => {
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
       expect([playerId, playerId2, playerId3]).toContain(roomData.gameState.currentTurn)
+
+      // Snapshot of final game state for inspection
+      const gameSnapshot = {
+        roomId: roomData.id,
+        phase: roomData.gameState.phase,
+        currentTurn: roomData.gameState.currentTurn,
+        monsters: roomData.gameState.monsters.map(m => m.name),
+        players: Object.keys(roomData.players).map(id => ({
+          id,
+          name: roomData.players[id].name,
+          handSize: roomData.players[id].hand.length,
+          partyLeader: roomData.players[id].party.leader.name,
+          heroCount: roomData.players[id].party.heroes.length,
+          actionPoints: roomData.players[id].actionPoints
+        })),
+        supportStackSize: roomData.gameState.supportStack.length
+      }
+
+      // Attach game state snapshot to test report
+      await testInfo.attach('3-player-game-state.json', {
+        body: JSON.stringify(gameSnapshot, null, 2),
+        contentType: 'application/json'
+      })
     })
 
-    test('should start game and verify initial state for four players', async ({ request }) => {
+    test('should start game and verify initial state for four players', async ({ request }, testInfo) => {
       // Add second, third, and fourth players
       const playerId2 = 'test-player-2'
       const playerId3 = 'test-player-3'
@@ -325,6 +394,29 @@ test.describe('API: Game Start', () => {
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
       expect([playerId, playerId2, playerId3, playerId4]).toContain(roomData.gameState.currentTurn)
+
+      // Snapshot of final game state for inspection
+      const gameSnapshot = {
+        roomId: roomData.id,
+        phase: roomData.gameState.phase,
+        currentTurn: roomData.gameState.currentTurn,
+        monsters: roomData.gameState.monsters.map(m => m.name),
+        players: Object.keys(roomData.players).map(id => ({
+          id,
+          name: roomData.players[id].name,
+          handSize: roomData.players[id].hand.length,
+          partyLeader: roomData.players[id].party.leader.name,
+          heroCount: roomData.players[id].party.heroes.length,
+          actionPoints: roomData.players[id].actionPoints
+        })),
+        supportStackSize: roomData.gameState.supportStack.length
+      }
+
+      // Attach game state snapshot to test report
+      await testInfo.attach('4-player-game-state.json', {
+        body: JSON.stringify(gameSnapshot, null, 2),
+        contentType: 'application/json'
+      })
     })
 
     test('should not allow starting game twice', async ({ request }) => {
