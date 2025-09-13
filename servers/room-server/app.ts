@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createGameActionsRouter } from './routes/game-actions.js'
+import { createActionChainsRouter } from './routes/action-chains.js'
 import { createHealthRouter } from './routes/health.js'
 import { corsMiddleware } from './middleware/cors.js'
 import type RoomDatabase from '../../src/lib/database.js'
@@ -17,6 +18,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   app.route('/api', createRoomsRouter(db))
   app.route('/api/game', createGameRouter(db, docs))
   app.route('/api/game', createGameActionsRouter(db, docs))
+  app.route('/api/action-chains', createActionChainsRouter(db, docs))
   app.route('/api', createHealthRouter())
 
   // Default route with API documentation
@@ -33,6 +35,9 @@ API Endpoints:
 - POST /api/game/play-hero-to-party
 - POST /api/game/attack-monster
 - POST /api/game/discard-hand-redraw
+- POST /api/action-chains/start-chain
+- POST /api/action-chains/continue-chain
+- GET /api/action-chains/pending-chains
 - GET /api/test`)
   })
 
