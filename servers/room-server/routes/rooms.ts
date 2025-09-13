@@ -26,6 +26,14 @@ export function createRoomsRouter(db: RoomDatabase) {
     try {
       const { roomId, playerId, playerName, playerColor } = await c.req.json()
       const result = db.joinRoom(roomId, playerId, playerName, playerColor)
+
+      // Also add player to Yjs document if it exists
+      if (result.success) {
+        // Import docs from the game router scope - we'll need to pass it
+        // For now, let the WebSocket connection handle this
+        console.log(`Player ${playerName} joined room ${roomId} - Yjs sync will happen via WebSocket`)
+      }
+
       return c.json(result)
     } catch (error) {
       return c.json(

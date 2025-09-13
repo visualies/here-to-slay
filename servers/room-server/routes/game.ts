@@ -196,6 +196,49 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     }
   })
 
+  // Add player to existing game
+  router.post('/add-player-to-game', async (c) => {
+    try {
+      const { roomId, playerId } = await c.req.json()
+
+      if (!roomId || !playerId) {
+        return c.json({ error: 'roomId and playerId required' }, 400)
+      }
+
+      // Check if room exists
+      const room = db.getRoomById(roomId)
+      if (!room) {
+        return c.json({ error: 'Room not found' }, 404)
+      }
+
+      // Get Yjs document
+      const ydoc = getYDoc(roomId)
+      if (!ydoc) {
+        return c.json({ error: 'Failed to get room document' }, 500)
+      }
+
+      const playersMap = ydoc.getMap('players')
+      const allPlayers = Array.from(playersMap.values())
+
+      // Use the existing function
+      const { addPlayerToGame } = await import('../../../src/lib/game-actions.js')
+      addPlayerToGame(playersMap, allPlayers, playerId)
+
+      console.log(`🎮 Added player ${playerId} to existing game in room ${roomId}`)
+
+      return c.json({
+        success: true,
+        message: 'Player added to game'
+      })
+    } catch (error) {
+      console.error('Error adding player to game:', error)
+      return c.json(
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        500
+      )
+    }
+  })
+
   // Start/Initialize a game
   router.post('/start', async (c) => {
     try {

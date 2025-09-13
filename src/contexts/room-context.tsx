@@ -4,11 +4,12 @@ import { createContext, useContext, ReactNode, useState, useEffect, useCallback,
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import type { Player, Card, Room, GameActions } from '../types';
-import { addPlayerToRoom, isHost } from '../lib/players';
+import { isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
 import { gameServerAPI } from '../lib/game-server-api';
 import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
+import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
 
 const RoomContext = createContext<Room | null>(null);
 
@@ -22,7 +23,7 @@ interface RoomProviderProps {
 
 export function RoomProvider({ roomId, playerId, playerName, playerColor, children }: RoomProviderProps) {
   // Yjs setup
-  const docRef = useRef<Y.Doc | null>(null);
+  const docRef = useRef<ReadOnlyYDoc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const gameStateRef = useRef<Y.Map<unknown> | null>(null);
   const playersRef = useRef<Y.Map<Player> | null>(null);
@@ -43,14 +44,17 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     }
     
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
-    const doc = new Y.Doc();
+    const originalDoc = new Y.Doc();
     const wsUrl = `ws://192.168.178.61:1234`;
-    const provider = new WebsocketProvider(wsUrl, roomId, doc);
-    
+    const provider = new WebsocketProvider(wsUrl, roomId, originalDoc);
+
+    // Wrap document with read-only protection
+    const doc = wrapDocument(originalDoc);
+
     // Get shared maps after provider is connected
     const gameState = doc.getMap('gameState');
     const playersMap = doc.getMap('players') as Y.Map<Player>;
-    
+
     // Store refs
     docRef.current = doc;
     providerRef.current = provider;
@@ -95,17 +99,15 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
               });
             }
           } else {
-            // Player was not in game state - add them back with stored data
-            addPlayerToRoom(playersMap, playerId, playerName, playerColor);
-            console.log(`🔄 Re-added player ${playerName} to game state from stored session`);
+            // Player was not in game state - this should be handled by the server
+            console.log(`⚠️ Player ${playerName} not found in game state - server should handle this via WebSocket sync`);
           }
           console.log('Players in map after adding:', playersMap.size);
         }, 1000); // Wait 1 second for Yjs document to synchronize
       } else {
         console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
-        // Add as completely new player
-        addPlayerToRoom(playersMap, playerId, playerName, playerColor);
-        console.log('Players in map after adding:', playersMap.size);
+        // New player joining - server will add them via WebSocket sync after join-room API call
+        console.log('New player will be added to game state by server via WebSocket sync');
       }
     };
     
@@ -225,13 +227,22 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
       return;
     }
 
-    // For now, still use direct mutation as there's no API endpoint for this yet
-    // TODO: Create API endpoint for adding players to existing games
-    if (playersRef.current) {
-      const { addPlayerToGame } = await import('../lib/game-actions');
-      addPlayerToGame(playersRef.current, players, playerIdToAdd);
+    try {
+      const result = await gameServerAPI.addPlayerToGame(roomId, playerIdToAdd);
+      if (result.success) {
+        console.log('✅ Added player to game via API:', result.message);
+      } else {
+        console.error('❌ Failed to add player to game:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Failed to add player to game via API:', error);
+      // Fallback to direct mutation for now
+      if (playersRef.current) {
+        const { addPlayerToGame } = await import('../lib/game-actions');
+        addPlayerToGame(playersRef.current, players, playerIdToAdd);
+      }
     }
-  }, [playerIsHost, players]);
+  }, [playerIsHost, roomId, players]);
   
   const handleUpdateCursor = useCallback((x: number, y: number) => {
     updateCursor(providerRef.current, x, y);

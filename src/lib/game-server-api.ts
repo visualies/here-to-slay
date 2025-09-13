@@ -55,6 +55,10 @@ class GameServerAPI {
     return this.request('/update-player-presence', { roomId, playerId, playerName, playerColor });
   }
 
+  async addPlayerToGame(roomId: string, playerId: string): Promise<ApiResponse> {
+    return this.request('/add-player-to-game', { roomId, playerId });
+  }
+
   // Game actions
   async drawCard(roomId: string, playerId: string): Promise<ApiResponse> {
     return this.request('/draw-card', { roomId, playerId });
