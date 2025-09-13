@@ -7,9 +7,7 @@ import type { Player, Card, Room, GameActions } from '../types';
 import { addPlayerToRoom, isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor, createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
-import { playCard, advanceTurn, initializeGame, addPlayerToGame } from '../lib/game-actions';
-import { executeAction } from '../lib/actions-api';
-import type { DrawCardAction, PlayCardAction } from '../types/actions';
+import { gameServerAPI } from '../lib/game-server-api';
 import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
 
 const RoomContext = createContext<Room | null>(null);
@@ -79,17 +77,23 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
         
         // For reconnecting players, wait a bit for Yjs document to synchronize
         // This ensures the player's hand cards are restored from the document
-        setTimeout(() => {
+        setTimeout(async () => {
           const existingPlayer = playersMap.get(playerId);
           if (existingPlayer) {
-            // Update existing player's presence and activity
-            playersMap.set(playerId, {
-              ...existingPlayer,
-              lastSeen: Date.now(),
-              name: playerName, // Update name in case it changed
-              color: playerColor, // Update color in case it changed
-            });
-            console.log(`🔄 Updated existing player slot for ${playerName}`);
+            // Update existing player's presence via API
+            try {
+              await gameServerAPI.updatePlayerPresence(roomId, playerId, playerName, playerColor);
+              console.log(`🔄 Updated existing player presence for ${playerName} via API`);
+            } catch (error) {
+              console.error('Failed to update player presence via API:', error);
+              // Fallback to direct mutation for now
+              playersMap.set(playerId, {
+                ...existingPlayer,
+                lastSeen: Date.now(),
+                name: playerName,
+                color: playerColor,
+              });
+            }
           } else {
             // Player was not in game state - add them back with stored data
             addPlayerToRoom(playersMap, playerId, playerName, playerColor);
@@ -197,22 +201,36 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   const playerIsHost = isHost(players, playerId);
   
   // Actions
-  const handleInitializeGame = useCallback(() => {
-    if (!playerIsHost || !gameStateRef.current || !playersRef.current) {
-      console.log('initializeGame: Not host or missing refs', { playerIsHost, hasGameState: !!gameStateRef.current, hasPlayersMap: !!playersRef.current });
-      return;
-    }
-    
-    initializeGame(playersRef.current, gameStateRef.current, players);
-  }, [playerIsHost, players]);
-
-  const handleAddPlayerToGame = useCallback((playerIdToAdd: string) => {
-    if (!playerIsHost || !playersRef.current) {
-      console.log('addPlayerToGame: Not host or no players map');
+  const handleInitializeGame = useCallback(async () => {
+    if (!playerIsHost) {
+      console.log('initializeGame: Not host');
       return;
     }
 
-    addPlayerToGame(playersRef.current, players, playerIdToAdd);
+    try {
+      const result = await gameServerAPI.startGame(roomId);
+      if (result.success) {
+        console.log('✅ Game started via API:', result.message);
+      } else {
+        console.error('❌ Failed to start game:', result.message);
+      }
+    } catch (error) {
+      console.error('❌ Failed to start game via API:', error);
+    }
+  }, [playerIsHost, roomId]);
+
+  const handleAddPlayerToGame = useCallback(async (playerIdToAdd: string) => {
+    if (!playerIsHost) {
+      console.log('addPlayerToGame: Not host');
+      return;
+    }
+
+    // For now, still use direct mutation as there's no API endpoint for this yet
+    // TODO: Create API endpoint for adding players to existing games
+    if (playersRef.current) {
+      const { addPlayerToGame } = await import('../lib/game-actions');
+      addPlayerToGame(playersRef.current, players, playerIdToAdd);
+    }
   }, [playerIsHost, players]);
   
   const handleUpdateCursor = useCallback((x: number, y: number) => {
@@ -220,45 +238,35 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
   }, []);
 
   const handleAdvanceTurn = useCallback(() => {
-    if (!gameStateRef.current || !playersRef.current) {
-      console.log('advanceTurn: No gameState or playersMap, returning');
-      return;
-    }
-    
-    advanceTurn(playersRef.current, gameStateRef.current, players, currentTurn, roomId);
-  }, [players, currentTurn, roomId]);
+    // Turn advancement is now handled automatically by the server when action points reach 0
+    // This function is kept for backward compatibility but does nothing
+    console.log('advanceTurn: Turn advancement is now handled automatically by the server');
+  }, []);
 
   const handlePlayCard = useCallback(async (cardId: string) => {
-      const action: PlayCardAction = {
-        type: 'play_card',
-        playerId,
-        roomId,
-        cardId
-      };
-
-      const result = await executeAction(action);
-      
-      if (result.status === 'failed') {
-        console.error('Play card action failed:', result.message);
-        // Optionally show error to user
+    try {
+      const result = await gameServerAPI.playHeroToParty(roomId, playerId, cardId);
+      if (result.success) {
+        console.log('✅ Played card via API:', result.message);
+      } else {
+        console.error('❌ Failed to play card:', result.message);
       }
-      // If successful, the Yjs sync will update the UI automatically
+    } catch (error) {
+      console.error('❌ Failed to play card via API:', error);
+    }
   }, [playerId, roomId]);
 
   const handleDrawCard = useCallback(async () => {
-      const action: DrawCardAction = {
-        type: 'draw_card',
-        playerId,
-        roomId
-      };
-
-      const result = await executeAction(action);
-      
-      if (result.status === 'failed') {
-        console.error('Draw card action failed:', result.message);
-        // Optionally show error to user
+    try {
+      const result = await gameServerAPI.drawCard(roomId, playerId);
+      if (result.success) {
+        console.log('✅ Drew card via API:', result.message);
+      } else {
+        console.error('❌ Failed to draw card:', result.message);
       }
-      // If successful, the Yjs sync will update the UI automatically
+    } catch (error) {
+      console.error('❌ Failed to draw card via API:', error);
+    }
   }, [playerId, roomId]);
 
   const gameActions: GameActions = {
