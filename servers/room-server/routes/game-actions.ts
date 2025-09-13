@@ -1,13 +1,10 @@
 import { Hono } from 'hono'
 import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
-import { 
-  drawCard, 
-  playHeroToParty, 
-  attackMonster, 
-  discardAllAndRedraw,
+import {
   type ActionServiceContext,
-  type ActionResult
+  type ActionResult,
+  actionRegistry
 } from '../../../src/services/action-service.js'
 import { advanceTurn as advanceTurnFn } from '../../../src/lib/game-actions.js'
 
@@ -114,7 +111,8 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
         return c.json({ success: false, message: validation.error }, 400)
       }
 
-      const result = drawCard(validation.context!)
+      const drawCardAction = actionRegistry.get('drawCard')!
+      const result = drawCardAction.run(validation.context!)
       
       if (result.success) {
         handleTurnLogic(validation.context!, validation.player, true)
@@ -142,7 +140,8 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
         return c.json({ success: false, message: validation.error }, 400)
       }
 
-      const result = playHeroToParty(validation.context!, cardId)
+      const playHeroAction = actionRegistry.get('playHeroToParty')!
+      const result = playHeroAction.run(validation.context!, cardId)
       
       if (result.success) {
         handleTurnLogic(validation.context!, validation.player, true)
@@ -174,7 +173,8 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
         return c.json({ success: false, message: validation.error }, 400)
       }
 
-      const result = attackMonster(validation.context!, monsterId, diceResult)
+      const attackAction = actionRegistry.get('attackMonster')!
+      const result = attackAction.run(validation.context!, monsterId, diceResult)
       
       // Always deduct action point and handle turn logic for completed action
       if (result.success !== undefined) { // Action completed (success or failure)
@@ -199,7 +199,8 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
         return c.json({ success: false, message: validation.error }, 400)
       }
 
-      const result = discardAllAndRedraw(validation.context!)
+      const discardAction = actionRegistry.get('discardAllAndRedraw')!
+      const result = discardAction.run(validation.context!)
       
       if (result.success) {
         handleTurnLogic(validation.context!, validation.player, true)
