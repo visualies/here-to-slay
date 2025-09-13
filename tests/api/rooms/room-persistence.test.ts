@@ -35,10 +35,6 @@ test.describe('Room Persistence', () => {
 
     // Simulate players leaving by removing them from the Yjs document
     // (In real scenario, this would happen when WebSocket connections close)
-    const debugResponse = await request.get('/api/game/debug')
-    const debugData = await debugResponse.json()
-    const roomDoc = debugData.docs.find((doc: any) => doc.id === room.roomId)
-    expect(roomDoc).toBeDefined()
 
     // Verify Yjs document exists and has state
     await verifyYjsState(request, room.roomId)

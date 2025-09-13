@@ -60,18 +60,7 @@ test.describe('API: Game Start', () => {
         ]
       })
 
-      // 2. Get the game state from the debug endpoint
-      const debugResponse = await request.get('/api/game/debug')
-      expect(debugResponse.status()).toBe(200)
-
-      const debugData = await debugResponse.json()
-      expect(debugData.roomIds).toContain(roomId)
-
-      const roomDoc = debugData.docs.find((doc: any) => doc.id === roomId)
-      expect(roomDoc).toBeDefined()
-      expect(roomDoc.stateSize).toBeGreaterThan(0)
-
-      // 3. Verify initial game state was set up correctly via room endpoint
+      // 2. Verify initial game state was set up correctly via room endpoint
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
       expect(roomStateResponse.status()).toBe(200)
 

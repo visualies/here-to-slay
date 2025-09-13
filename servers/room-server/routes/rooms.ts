@@ -11,7 +11,6 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     const docExists = docs.has(roomId)
     const ydoc = getYDocShared(roomId)
 
-    // Ensure document is registered in the docs Map for debug endpoints
     if (!docs.has(roomId)) {
       docs.set(roomId, ydoc)
     }

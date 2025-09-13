@@ -69,7 +69,7 @@ npm run test:api -- --reporter=list
 - Game phase and turn management
 - Error handling for edge cases
 
-Tests cover the complete game start API including state verification via debug endpoints.
+Tests cover the complete game start API including state verification via the room endpoint.
 
 ## Testing Principles
 
@@ -96,10 +96,10 @@ expect(response.status()).toBe(200)
 const room = await request.get(`/api/room/${roomId}`)
 expect(room.json()).toMatchObject(expectedData)
 
-// 4. Verify Yjs document state
-const debugResponse = await request.get('/api/game/debug')
-const debugData = await debugResponse.json()
-expect(debugData.roomIds).toContain(roomId)
+// 4. Verify Yjs document state is accessible via room endpoint
+const roomStateResponse = await request.get(`/api/room/${roomId}`)
+const roomStateData = await roomStateResponse.json()
+expect(roomStateData.id).toBe(roomId)
 ```
 
 #### Required for:

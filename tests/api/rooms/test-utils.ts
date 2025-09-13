@@ -22,14 +22,11 @@ export async function getRoomInfo(request: APIRequestContext, roomId: string) {
 }
 
 export async function verifyYjsState(request: APIRequestContext, roomId: string) {
-  // Verify Yjs document state (document should exist automatically after room creation)
-  const debugResponse = await request.get('/api/game/debug')
-  expect(debugResponse.status()).toBe(200)
+  // Verify room state via the /room endpoint
+  const roomResponse = await request.get(`/api/room/${roomId}`)
+  expect(roomResponse.status()).toBe(200)
 
-  const debugData = await debugResponse.json()
-  expect(debugData.roomIds).toContain(roomId)
-
-  const roomDoc = debugData.docs.find((doc: any) => doc.id === roomId)
-  expect(roomDoc).toBeDefined()
-  expect(roomDoc.stateSize).toBeGreaterThanOrEqual(0)
+  const roomData = await roomResponse.json()
+  expect(roomData.id).toBe(roomId)
+  expect(roomData).toHaveProperty('name')
 }

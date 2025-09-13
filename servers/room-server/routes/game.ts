@@ -91,7 +91,6 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     const docExists = docs.has(roomId)
     const ydoc = getYDocShared(roomId)
 
-    // Ensure document is registered in the docs Map for debug endpoints
     if (!docs.has(roomId)) {
       docs.set(roomId, ydoc)
     }
@@ -112,54 +111,6 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     return ydoc
   }
 
-  // Debug endpoint to see all documents
-  router.get('/debug', async (c) => {
-    const roomIds = Array.from(docs.keys())
-    return c.json({
-      totalDocs: docs.size,
-      roomIds: roomIds,
-      docs: roomIds.map(id => ({
-        id,
-        hasDoc: docs.has(id),
-        stateSize: docs.get(id) ? Y.encodeStateAsUpdate(docs.get(id)!).length : 0
-      }))
-    })
-  })
-
-  // Debug endpoint to get game state for a specific room
-  router.get('/debug/:roomId', async (c) => {
-    const roomId = c.req.param('roomId')
-    if (!roomId) {
-      return c.json({ error: 'Room ID required' }, 400)
-    }
-
-    const ydoc = docs.get(roomId)
-    if (!ydoc) {
-      return c.json({ error: 'Room document not found' }, 404)
-    }
-
-    const playersMap = ydoc.getMap('players')
-    const gameStateMap = ydoc.getMap('gameState')
-
-    // Convert Yjs maps to plain objects for JSON serialization
-    const players = Array.from(playersMap.entries()).reduce((acc, [key, value]) => {
-      acc[key] = value
-      return acc
-    }, {} as Record<string, any>)
-
-    const gameState = Array.from(gameStateMap.entries()).reduce((acc, [key, value]) => {
-      acc[key] = value
-      return acc
-    }, {} as Record<string, any>)
-
-    return c.json({
-      roomId,
-      players,
-      gameState,
-      playersCount: playersMap.size,
-      gameStateKeys: Array.from(gameStateMap.keys())
-    })
-  })
 
 
   // Update player presence/rejoin
