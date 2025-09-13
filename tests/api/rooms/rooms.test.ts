@@ -3,7 +3,8 @@ import { test, expect } from '@playwright/test'
 test.describe('API: Rooms', () => {
 
   test.describe('POST /api/create-room', () => {
-    test('should create a room with default values', async ({ request }) => {
+    test('should create a room with default values and verify both database and Yjs state', async ({ request }) => {
+      // 1. Create the room
       const response = await request.post('/api/create-room', {
         data: {}
       })
@@ -15,6 +16,37 @@ test.describe('API: Rooms', () => {
         roomId: expect.stringMatching(/^[A-Z0-9]{6}$/),
         name: 'Here to Slay Game'
       })
+
+      const { roomId } = body
+
+      // 2. Verify database state
+      const roomInfo = await request.get(`/api/room-info?id=${roomId}`)
+      expect(roomInfo.status()).toBe(200)
+
+      const roomData = await roomInfo.json()
+      expect(roomData).toMatchObject({
+        id: roomId,
+        name: 'Here to Slay Game',
+        max_players: 4,
+        activePlayers: 0
+      })
+
+      // 3. Trigger Yjs document creation (on-demand)
+      const createDocResponse = await request.post('/api/game/create-test-doc', {
+        data: { roomId }
+      })
+      expect(createDocResponse.status()).toBe(200)
+
+      // 4. Verify Yjs document state
+      const debugResponse = await request.get('/api/game/debug')
+      expect(debugResponse.status()).toBe(200)
+
+      const debugData = await debugResponse.json()
+      expect(debugData.roomIds).toContain(roomId)
+
+      const roomDoc = debugData.docs.find((doc: any) => doc.id === roomId)
+      expect(roomDoc).toBeDefined()
+      expect(roomDoc.stateSize).toBeGreaterThanOrEqual(0)
     })
 
     test('should create a room with custom name and max players', async ({ request }) => {
@@ -48,6 +80,7 @@ test.describe('API: Rooms', () => {
 
       expect(uniqueIds.size).toBe(5)
     })
+
   })
 
   test.describe('POST /api/join-room', () => {
@@ -63,7 +96,7 @@ test.describe('API: Rooms', () => {
       roomId = body.roomId
     })
 
-    test('should allow a player to join an existing room', async ({ request }) => {
+    test('should allow a player to join an existing room and verify both database and Yjs state', async ({ request }) => {
       const playerData = {
         roomId,
         playerId: 'player1',
@@ -71,6 +104,7 @@ test.describe('API: Rooms', () => {
         playerColor: 'red'
       }
 
+      // 1. Player joins room
       const response = await request.post('/api/join-room', {
         data: playerData
       })
@@ -86,6 +120,33 @@ test.describe('API: Rooms', () => {
           max_players: 4
         })
       })
+
+      // 2. Verify database state
+      const roomInfo = await request.get(`/api/room-info?id=${roomId}`)
+      expect(roomInfo.status()).toBe(200)
+
+      const roomData = await roomInfo.json()
+      expect(roomData).toMatchObject({
+        id: roomId,
+        activePlayers: 1,
+        players: [
+          {
+            id: 'player1',
+            name: 'Alice',
+            color: 'red'
+          }
+        ]
+      })
+
+      // 3. Trigger Yjs document creation and verify state
+      const createDocResponse = await request.post('/api/game/create-test-doc', {
+        data: { roomId }
+      })
+      expect(createDocResponse.status()).toBe(200)
+
+      const debugResponse = await request.get('/api/game/debug')
+      const debugData = await debugResponse.json()
+      expect(debugData.roomIds).toContain(roomId)
     })
 
     test('should handle multiple players joining the same room', async ({ request }) => {
