@@ -277,8 +277,11 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
   // Save game state for a room
   router.post('/save', async (c) => {
+    console.log('--- SAVE ENDPOINT HIT ---');
     try {
-      const { roomId } = await c.req.json()
+      const body = await c.req.json()
+      console.log('--- SAVE ENDPOINT BODY ---', body);
+      const { roomId } = body
       if (!roomId) {
         return c.json({ error: 'Room ID required' }, 400)
       }
@@ -289,7 +292,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       console.log(`🔍 DEBUG: Looking for room: ${roomId}`)
       console.log(`🔍 DEBUG: Document exists: ${docs.has(roomId)}`)
 
-      const ydoc = docs.get(roomId)
+      const ydoc = getYDoc(roomId)
       if (!ydoc) {
         console.log(`⚠️ No Yjs document found for room ${roomId}`)
         console.log(`⚠️ This suggests WebSocket connection was never established or document was lost`)

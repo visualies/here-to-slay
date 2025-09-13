@@ -1,36 +1,36 @@
 /**
- * API client for communicating with the game server
- * All game mutations should go through these endpoints instead of direct Yjs manipulation
+ * @file Game Server API
+ * @description This file contains the GameServerAPI class, which is responsible for making API calls to the game server.
+ * It is used by the game logic to perform actions such as starting a game, drawing a card, playing a hero, etc.
+ * This file is used by the server-side game logic, not the client-side UI.
+ * It is a singleton class, so there is only one instance of it in the application.
  */
-
-const GAME_SERVER_URL = 'http://192.168.178.61:1234/api/game';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
-  error?: string;
   data?: T;
 }
 
-interface GameActionRequest {
-  playerId: string;
-  roomId: string;
-  cardId?: string;
-  monsterId?: string;
-  diceResult?: number;
-}
-
 class GameServerAPI {
-  private async request<T>(endpoint: string, data?: unknown): Promise<T> {
-    const url = `${GAME_SERVER_URL}${endpoint}`;
+  private baseURL: string;
+
+  constructor() {
+    // In a test environment, the server runs on port 8234
+    const port = process.env.NODE_ENV === 'test' ? 8234 : 1234;
+    this.baseURL = `http://localhost:${port}`;
+  }
+
+  private async request<T>(endpoint: string, method: string, data?: unknown): Promise<ApiResponse<T>> {
+    const url = `${this.baseURL}${endpoint}`;
 
     try {
       const response = await fetch(url, {
-        method: 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: data ? JSON.stringify(data) : undefined,
       });
 
       if (!response.ok) {
@@ -38,7 +38,7 @@ class GameServerAPI {
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
-      return await response.json();
+      return await response.json() as ApiResponse<T>;
     } catch (error) {
       console.error(`Game server API error (${endpoint}):`, error);
       throw error;
@@ -47,40 +47,39 @@ class GameServerAPI {
 
   // Game lifecycle
   async startGame(roomId: string): Promise<ApiResponse> {
-    return this.request('/start', { roomId });
+    return this.request(`/api/game/start`, 'POST', { roomId });
   }
 
   // Player management
-  async updatePlayerPresence(roomId: string, playerId: string, playerName: string, playerColor: string): Promise<ApiResponse> {
-    return this.request('/update-player-presence', { roomId, playerId, playerName, playerColor });
+  async updatePlayerPresence(roomId:string, playerId: string, playerName: string, playerColor: string): Promise<ApiResponse> {
+    return this.request(`/api/game/update-player-presence`, 'POST', { roomId, playerId, playerName, playerColor });
   }
 
   async addPlayerToGame(roomId: string, playerId: string): Promise<ApiResponse> {
-    return this.request('/add-player-to-game', { roomId, playerId });
+    return this.request(`/api/game/add-player-to-game`, 'POST', { roomId, playerId });
   }
 
   // Game actions
   async drawCard(roomId: string, playerId: string): Promise<ApiResponse> {
-    return this.request('/draw-card', { roomId, playerId });
+    return this.request(`/api/game/draw-card`, 'POST', { roomId, playerId });
   }
 
   async playHeroToParty(roomId: string, playerId: string, cardId: string): Promise<ApiResponse> {
-    return this.request('/play-hero-to-party', { roomId, playerId, cardId });
+    return this.request(`/api/game/play-hero-to-party`, 'POST', { roomId, playerId, cardId });
   }
 
   async attackMonster(roomId: string, playerId: string, monsterId: string, diceResult: number): Promise<ApiResponse> {
-    return this.request('/attack-monster', { roomId, playerId, monsterId, diceResult });
+    return this.request(`/api/game/attack-monster`, 'POST', { roomId, playerId, monsterId, diceResult });
   }
 
   async discardHandAndRedraw(roomId: string, playerId: string): Promise<ApiResponse> {
-    return this.request('/discard-hand-redraw', { roomId, playerId });
+    return this.request(`/api/game/discard-hand-redraw`, 'POST', { roomId, playerId });
   }
 
   // Utility
   async saveGameState(roomId: string): Promise<ApiResponse> {
-    return this.request('/save', { roomId });
+    return this.request('/api/game/save', 'POST', { roomId });
   }
 }
 
 export const gameServerAPI = new GameServerAPI();
-export type { ApiResponse, GameActionRequest };
