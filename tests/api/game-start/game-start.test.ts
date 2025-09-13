@@ -108,6 +108,225 @@ test.describe('API: Game Start', () => {
       expect(roomData.gameState.supportStack.length).toBeGreaterThan(0)
     })
 
+    test('should start game and verify initial state for two players', async ({ request }) => {
+      // Add a second player
+      const playerId2 = 'test-player-2'
+      const joinResponse2 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId2,
+          playerName: 'Test Player 2',
+          playerColor: 'blue'
+        }
+      })
+      expect(joinResponse2.status()).toBe(200)
+
+      // Start the game
+      const startResponse = await request.post('/api/game/start', {
+        data: { roomId }
+      })
+
+      expect(startResponse.status()).toBe(200)
+      const startBody = await startResponse.json()
+
+      expect(startBody).toMatchObject({
+        success: true,
+        message: 'Game started with 2 players',
+        phase: 'playing',
+        players: expect.arrayContaining([
+          { id: playerId, name: 'Test Player' },
+          { id: playerId2, name: 'Test Player 2' }
+        ])
+      })
+
+      // Verify game state via room endpoint
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      expect(roomStateResponse.status()).toBe(200)
+      const roomData = await roomStateResponse.json()
+
+      // Verify both players have correct initial state
+      const player1 = roomData.players[playerId]
+      const player2 = roomData.players[playerId2]
+
+      // Player 1 verification
+      expect(player1.hand).toHaveLength(5)
+      expect(player1.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player1.party.heroes)).toBe(true)
+
+      // Player 2 verification
+      expect(player2.hand).toHaveLength(5)
+      expect(player2.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player2.party.heroes)).toBe(true)
+
+      // Game state verification
+      expect(roomData.gameState.monsters).toHaveLength(3)
+      expect(roomData.gameState.phase).toBe('playing')
+      expect([playerId, playerId2]).toContain(roomData.gameState.currentTurn)
+    })
+
+    test('should start game and verify initial state for three players', async ({ request }) => {
+      // Add second and third players
+      const playerId2 = 'test-player-2'
+      const playerId3 = 'test-player-3'
+
+      const joinResponse2 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId2,
+          playerName: 'Test Player 2',
+          playerColor: 'blue'
+        }
+      })
+      expect(joinResponse2.status()).toBe(200)
+
+      const joinResponse3 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId3,
+          playerName: 'Test Player 3',
+          playerColor: 'green'
+        }
+      })
+      expect(joinResponse3.status()).toBe(200)
+
+      // Start the game
+      const startResponse = await request.post('/api/game/start', {
+        data: { roomId }
+      })
+
+      expect(startResponse.status()).toBe(200)
+      const startBody = await startResponse.json()
+
+      expect(startBody).toMatchObject({
+        success: true,
+        message: 'Game started with 3 players',
+        phase: 'playing',
+        players: expect.arrayContaining([
+          { id: playerId, name: 'Test Player' },
+          { id: playerId2, name: 'Test Player 2' },
+          { id: playerId3, name: 'Test Player 3' }
+        ])
+      })
+
+      // Verify game state via room endpoint
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      expect(roomStateResponse.status()).toBe(200)
+      const roomData = await roomStateResponse.json()
+
+      // Verify all three players have correct initial state
+      const player1 = roomData.players[playerId]
+      const player2 = roomData.players[playerId2]
+      const player3 = roomData.players[playerId3]
+
+      // All players should have 5 cards and a party leader
+      expect(player1.hand).toHaveLength(5)
+      expect(player1.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player1.party.heroes)).toBe(true)
+
+      expect(player2.hand).toHaveLength(5)
+      expect(player2.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player2.party.heroes)).toBe(true)
+
+      expect(player3.hand).toHaveLength(5)
+      expect(player3.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player3.party.heroes)).toBe(true)
+
+      // Game state verification
+      expect(roomData.gameState.monsters).toHaveLength(3)
+      expect(roomData.gameState.phase).toBe('playing')
+      expect([playerId, playerId2, playerId3]).toContain(roomData.gameState.currentTurn)
+    })
+
+    test('should start game and verify initial state for four players', async ({ request }) => {
+      // Add second, third, and fourth players
+      const playerId2 = 'test-player-2'
+      const playerId3 = 'test-player-3'
+      const playerId4 = 'test-player-4'
+
+      const joinResponse2 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId2,
+          playerName: 'Test Player 2',
+          playerColor: 'blue'
+        }
+      })
+      expect(joinResponse2.status()).toBe(200)
+
+      const joinResponse3 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId3,
+          playerName: 'Test Player 3',
+          playerColor: 'green'
+        }
+      })
+      expect(joinResponse3.status()).toBe(200)
+
+      const joinResponse4 = await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: playerId4,
+          playerName: 'Test Player 4',
+          playerColor: 'yellow'
+        }
+      })
+      expect(joinResponse4.status()).toBe(200)
+
+      // Start the game
+      const startResponse = await request.post('/api/game/start', {
+        data: { roomId }
+      })
+
+      expect(startResponse.status()).toBe(200)
+      const startBody = await startResponse.json()
+
+      expect(startBody).toMatchObject({
+        success: true,
+        message: 'Game started with 4 players',
+        phase: 'playing',
+        players: expect.arrayContaining([
+          { id: playerId, name: 'Test Player' },
+          { id: playerId2, name: 'Test Player 2' },
+          { id: playerId3, name: 'Test Player 3' },
+          { id: playerId4, name: 'Test Player 4' }
+        ])
+      })
+
+      // Verify game state via room endpoint
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      expect(roomStateResponse.status()).toBe(200)
+      const roomData = await roomStateResponse.json()
+
+      // Verify all four players have correct initial state
+      const player1 = roomData.players[playerId]
+      const player2 = roomData.players[playerId2]
+      const player3 = roomData.players[playerId3]
+      const player4 = roomData.players[playerId4]
+
+      // All players should have 5 cards and a party leader
+      expect(player1.hand).toHaveLength(5)
+      expect(player1.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player1.party.heroes)).toBe(true)
+
+      expect(player2.hand).toHaveLength(5)
+      expect(player2.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player2.party.heroes)).toBe(true)
+
+      expect(player3.hand).toHaveLength(5)
+      expect(player3.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player3.party.heroes)).toBe(true)
+
+      expect(player4.hand).toHaveLength(5)
+      expect(player4.party.leader.type).toBe('PartyLeader')
+      expect(Array.isArray(player4.party.heroes)).toBe(true)
+
+      // Game state verification
+      expect(roomData.gameState.monsters).toHaveLength(3)
+      expect(roomData.gameState.phase).toBe('playing')
+      expect([playerId, playerId2, playerId3, playerId4]).toContain(roomData.gameState.currentTurn)
+    })
+
     test('should not allow starting game twice', async ({ request }) => {
       // Start the game first time
       const firstStartResponse = await request.post('/api/game/start', {
