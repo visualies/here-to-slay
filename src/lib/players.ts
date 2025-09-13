@@ -44,10 +44,12 @@ export function addCardToPlayerHand(
 ): void {
   const player = playersMap.get(playerId);
   if (player) {
-    playersMap.set(playerId, {
+    const updatedPlayer = {
       ...player,
       hand: [...player.hand, card]
-    });
+    };
+
+    playersMap.set(playerId, updatedPlayer);
   }
 }
 

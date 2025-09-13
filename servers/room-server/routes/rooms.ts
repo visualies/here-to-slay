@@ -6,19 +6,22 @@ import * as Y from 'yjs'
 export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const router = new Hono()
 
-  // Helper to get or create a Yjs doc and load state from DB if it's new
+  // Helper to get existing Yjs doc from shared map, or create if needed
   const getDoc = (roomId: string): Y.Doc => {
-    const docExists = docs.has(roomId)
+    // First check if we already have the document in memory
+    if (docs.has(roomId)) {
+      console.log(`🔄 Using existing Yjs document for room ${roomId}`)
+      return docs.get(roomId)!
+    }
+
+    // Only create new document if not found in shared map
+    console.log(`🆕 Creating new Yjs document for room ${roomId}`)
     const ydoc = getYDocShared(roomId)
+    docs.set(roomId, ydoc)
 
-    if (!docs.has(roomId)) {
-      docs.set(roomId, ydoc)
-    }
+    // Try to load existing state from database only for truly new documents
+    db.loadRoomState(roomId, ydoc)
 
-    if (!docExists) {
-      // Try to load existing state from database
-      db.loadRoomState(roomId, ydoc)
-    }
     return ydoc
   }
 

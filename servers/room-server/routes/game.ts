@@ -71,8 +71,12 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     deductActionPoint = true
   ): void {
     if (deductActionPoint) {
-      const newActionPoints = Math.max(0, player.actionPoints - 1)
-      context.playersMap.set(context.playerId, { ...player, actionPoints: newActionPoints })
+      // Get the current player state from the map (might have been updated by actions)
+      const currentPlayer = context.playersMap.get(context.playerId) || player
+      const newActionPoints = Math.max(0, currentPlayer.actionPoints - 1)
+
+      // Use current player state, not the stale player parameter
+      context.playersMap.set(context.playerId, { ...currentPlayer, actionPoints: newActionPoints })
 
       console.log(`🔄 Player ${context.playerId} has ${newActionPoints} action points remaining`)
 
@@ -86,28 +90,31 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     }
   }
 
-  // Helper function to get or create Yjs document with proper registration and database restoration
+  // Helper function to get existing Yjs document from shared map, or create if needed
   function getYDoc(roomId: string) {
-    const docExists = docs.has(roomId)
-    const ydoc = getYDocShared(roomId)
-
-    if (!docs.has(roomId)) {
-      docs.set(roomId, ydoc)
+    // First check if we already have the document in memory
+    if (docs.has(roomId)) {
+      console.log(`🔄 Using existing Yjs document for room ${roomId}`)
+      return docs.get(roomId)!
     }
 
-    // If the document was just created, try to restore its state from the database.
-    if (!docExists) {
-      const savedState = db.getRoomById(roomId)?.state
-      if (savedState) {
-        try {
-          const uint8Array = new Uint8Array(savedState)
-          Y.applyUpdate(ydoc, uint8Array)
-          console.log(`🔄 Restored game state for room ${roomId}`)
-        } catch (error) {
-          console.error(`Error restoring game state for room ${roomId}:`, error)
-        }
+    // Only create new document if not found in shared map
+    console.log(`🆕 Creating new Yjs document for room ${roomId}`)
+    const ydoc = getYDocShared(roomId)
+    docs.set(roomId, ydoc)
+
+    // Try to restore state from database only for truly new documents
+    const savedState = db.getRoomById(roomId)?.state
+    if (savedState) {
+      try {
+        const uint8Array = new Uint8Array(savedState)
+        Y.applyUpdate(ydoc, uint8Array)
+        console.log(`🔄 Restored game state for room ${roomId}`)
+      } catch (error) {
+        console.error(`Error restoring game state for room ${roomId}:`, error)
       }
     }
+
     return ydoc
   }
 

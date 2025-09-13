@@ -5,12 +5,14 @@ import { GameArea } from "./game-area";
 import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
 import { RoomManager } from "./room-manager";
+import { DebugMenu } from "./debug-menu";
 import { RoomProvider } from "../contexts/room-context";
 import { GameActionsProvider } from "../contexts/game-actions-context";
 import { DiceProvider } from "../contexts/dice-context";
 import { StatusProvider } from "../contexts/status-context";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Bug } from "lucide-react";
 
 export default function GameBoard() {
   // Debug mode - set to true to show red border lines
@@ -19,6 +21,7 @@ export default function GameBoard() {
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<{id: string, name: string, color: string} | null>(null);
+  const [isDebugMenuOpen, setIsDebugMenuOpen] = useState<boolean>(false);
 
   const handleDiceResults = useCallback((results: number[]) => {
     setDiceResults(results);
@@ -52,15 +55,25 @@ export default function GameBoard() {
         <StatusProvider>
           <GameActionsProvider>
           <div className="w-full h-screen  relative">
-          {/* Room Info and Leave Button */}
+          {/* Room Info and Action Buttons */}
           <div className="absolute top-4 left-4 z-50 flex items-center gap-3">
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className="bg-white/90 backdrop-blur-sm px-4 py-2 text-sm"
               data-testid="room-id-badge"
             >
               Room: <span className="font-mono font-bold text-purple-600" data-testid="room-id-value">{currentRoomId}</span>
             </Badge>
+            <Button
+              onClick={() => setIsDebugMenuOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/90 backdrop-blur-sm border-gray-300 hover:bg-gray-100"
+              data-testid="debug-menu-button"
+              title="Open Debug Menu"
+            >
+              <Bug className="w-4 h-4" />
+            </Button>
             <Button
               onClick={handleLeaveRoom}
               variant="destructive"
@@ -79,9 +92,15 @@ export default function GameBoard() {
           <GameArea diceResults={diceResults} />
           
           {/* Server-controlled dice canvas - covers the entire game board */}
-          <ServerDiceCanvas 
+          <ServerDiceCanvas
             onDiceResults={handleDiceResults}
             roomId={currentRoomId}
+          />
+
+          {/* Debug Menu */}
+          <DebugMenu
+            isOpen={isDebugMenuOpen}
+            onClose={() => setIsDebugMenuOpen(false)}
           />
           </div>
           </GameActionsProvider>
