@@ -67,7 +67,7 @@ export function advanceTurn(
       playersMap.set(nextPlayer.id, { ...nextPlayerDoc, actionPoints: 3 });
     }
     gameStateMap.set('currentTurn', nextPlayer.id);
-    gameServerAPI.saveGame(roomId);
+    gameServerAPI.saveGameState(roomId);
   }
 }
 
