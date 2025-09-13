@@ -1,95 +1,35 @@
-import { defineConfig, devices } from '@playwright/test'
+import { defineConfig } from '@playwright/test'
 
-/**
- * @see https://playwright.dev/docs/test-configuration
- */
 export default defineConfig({
-  testDir: './tests/e2e',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  testDir: './tests',
+  timeout: 30000,
+  fullyParallel: false, // Disable for API tests that share database
   forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Limit parallel workers to 4 to improve performance on local machine */
-  workers: process.env.CI ? 1 : 6,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  workers: 1, // Use single worker for API tests
   reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  globalSetup: './tests/global-setup.ts',
+  globalTeardown: './tests/global-teardown.ts',
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
-
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-
-    /* Take screenshot on failure */
-    screenshot: 'only-on-failure',
-
-    /* Disable audio/video to prevent autoplay policy issues */
-    launchOptions: {
-      args: [
-        '--autoplay-policy=no-user-gesture-required',
-        '--disable-web-security',
-        '--disable-features=VizDisplayCompositor'
-      ]
-    }
+    baseURL: 'http://localhost:8234', // Test server port
+    extraHTTPHeaders: {
+      'Content-Type': 'application/json',
+    },
   },
-
-  /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
-  ],
-
-  /* Run your local dev server before starting the tests */
-  webServer: [
-    {
-      command: 'HOST=192.168.178.61 npx tsx servers/room-server/server.ts',
-      url: 'http://192.168.178.61:1234/api/test',
-      reuseExistingServer: !process.env.CI,
+      name: 'api',
+      testMatch: 'tests/api/**/*.test.ts',
+      use: {
+        baseURL: 'http://localhost:8234',
+      },
     },
     {
-      command: 'HOST=192.168.178.61 npx tsx servers/dice-server/dice-server.ts', 
-      url: 'http://192.168.178.61:1235/api/test',
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: 'npm run dev:client-only',
-      port: 3000,
-      reuseExistingServer: !process.env.CI,
+      name: 'ui',
+      testMatch: 'tests/ui/**/*.test.ts',
+      use: {
+        baseURL: 'http://localhost:3000',
+      },
     },
   ],
 })
