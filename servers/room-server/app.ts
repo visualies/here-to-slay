@@ -14,7 +14,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   app.use('*', corsMiddleware)
 
   // Mount route modules
-  app.route('/api', createRoomsRouter(db))
+  app.route('/api', createRoomsRouter(db, docs))
   app.route('/api/game', createGameRouter(db, docs))
   app.route('/api/action-chains', createActionChainsRouter(db, docs))
   app.route('/api', createHealthRouter())
@@ -26,7 +26,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 API Endpoints:
 - POST /api/create-room
 - POST /api/join-room
-- GET /api/room-info?id=ROOMID
+- GET /api/room/ROOMID
 - GET /api/active-rooms
 - POST /api/game/start
 - POST /api/game/update-player-presence

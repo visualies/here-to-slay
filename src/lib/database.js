@@ -9,38 +9,23 @@ class RoomDatabase {
   }
 
   initializeTables() {
-    // Create rooms table
+    // Create rooms table - stores Yjs document state for persistence
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS rooms (
         id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
-        player_count INTEGER DEFAULT 0,
-        max_players INTEGER DEFAULT 6,
-        game_state BLOB
-      )
-    `);
-
-    // Create players table
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS players (
-        id TEXT PRIMARY KEY,
-        room_id TEXT,
-        name TEXT NOT NULL,
-        color TEXT NOT NULL,
-        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-        is_active BOOLEAN DEFAULT 1,
-        FOREIGN KEY (room_id) REFERENCES rooms (id) ON DELETE CASCADE
+        state BLOB
       )
     `);
 
     // Create index for better performance
     this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_players_room_id ON players (room_id);
       CREATE INDEX IF NOT EXISTS idx_rooms_last_activity ON rooms (last_activity);
     `);
+
+    // Drop old players table if it exists (migration)
+    this.db.exec(`DROP TABLE IF EXISTS players;`);
   }
 
   // Generate a unique room ID
@@ -53,8 +38,8 @@ class RoomDatabase {
     return result;
   }
 
-  // Create a new room
-  createRoom(name = 'Here to Slay Game', maxPlayers = 4) {
+  // Create a new room - only stores minimal metadata
+  createRoom() {
     let roomId;
     let attempts = 0;
     const maxAttempts = 10;
@@ -70,20 +55,20 @@ class RoomDatabase {
     }
 
     const stmt = this.db.prepare(`
-      INSERT INTO rooms (id, name, max_players) VALUES (?, ?, ?)
+      INSERT INTO rooms (id) VALUES (?)
     `);
 
     try {
-      stmt.run(roomId, name, maxPlayers);
-      console.log(`🏠 Created room: ${roomId} - "${name}"`);
-      return { roomId, name };
+      stmt.run(roomId);
+      console.log(`🏠 Created room: ${roomId}`);
+      return { roomId };
     } catch (error) {
       console.error('Error creating room:', error);
       throw error;
     }
   }
 
-  // Get room by ID
+  // Get room by ID - minimal metadata only
   getRoomById(roomId) {
     const stmt = this.db.prepare(`
       SELECT * FROM rooms WHERE id = ?
@@ -91,205 +76,141 @@ class RoomDatabase {
     return stmt.get(roomId);
   }
 
-  // Join a room
-  joinRoom(roomId, playerId, playerName, playerColor) {
+  // Join a room (updates Yjs doc and persists)
+  joinRoom(roomId, playerId, playerName, playerColor, ydoc) {
     const room = this.getRoomById(roomId);
     if (!room) {
       throw new Error('Room not found');
     }
 
-    // Check if room is full
-    const currentPlayers = this.getRoomPlayers(roomId).length;
-    if (currentPlayers >= room.max_players) {
-      throw new Error('Room is full');
+    // Update room activity
+    this.updateRoomActivity(roomId);
+
+    // Save updated Yjs state if provided
+    if (ydoc) {
+      this.saveRoomState(roomId, ydoc);
     }
 
-    // Add or update player
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO players (id, room_id, name, color, last_seen, is_active)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 1)
-    `);
-
-    try {
-      stmt.run(playerId, roomId, playerName, playerColor);
-      
-      // Update room activity and player count
-      this.updateRoomActivity(roomId);
-      
-      console.log(`👤 Player ${playerName} (${playerId}) joined room ${roomId}`);
-      return { success: true, room };
-    } catch (error) {
-      console.error('Error joining room:', error);
-      throw error;
-    }
+    console.log(`👤 Player ${playerName} (${playerId}) joined room ${roomId}`);
+    return { success: true, room };
   }
 
-  // Leave a room
-  leaveRoom(roomId, playerId) {
-    const stmt = this.db.prepare(`
-      UPDATE players SET is_active = 0, last_seen = CURRENT_TIMESTAMP
-      WHERE id = ? AND room_id = ?
-    `);
-
-    try {
-      stmt.run(playerId, roomId);
-      this.updateRoomActivity(roomId);
-      console.log(`👤 Player ${playerId} left room ${roomId}`);
-    } catch (error) {
-      console.error('Error leaving room:', error);
+  // Leave a room (updates Yjs doc and persists)
+  leaveRoom(roomId, playerId, ydoc) {
+    const room = this.getRoomById(roomId);
+    if (!room) {
+      return; // Room might have been deleted
     }
-  }
 
-  // Get all players in a room
-  getRoomPlayers(roomId) {
-    const stmt = this.db.prepare(`
-      SELECT * FROM players 
-      WHERE room_id = ? AND is_active = 1
-      ORDER BY joined_at ASC
-    `);
-    return stmt.all(roomId);
+    // Update room activity
+    this.updateRoomActivity(roomId);
+
+    // Save updated Yjs state if provided
+    if (ydoc) {
+      this.saveRoomState(roomId, ydoc);
+    }
+
+    console.log(`👤 Player ${playerId} left room ${roomId}`);
   }
 
   // Update room activity timestamp
   updateRoomActivity(roomId) {
-    const playerCount = this.getRoomPlayers(roomId).length;
     const stmt = this.db.prepare(`
-      UPDATE rooms 
-      SET last_activity = CURRENT_TIMESTAMP, player_count = ?
+      UPDATE rooms
+      SET last_activity = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
-    stmt.run(playerCount, roomId);
+    stmt.run(roomId);
   }
 
-  // Update player activity
-  updatePlayerActivity(playerId) {
+  // Save Yjs document state to database
+  saveRoomState(roomId, ydoc) {
+    const Y = require('yjs');
+    const stateBuffer = Y.encodeStateAsUpdate(ydoc);
+
     const stmt = this.db.prepare(`
-      UPDATE players SET last_seen = CURRENT_TIMESTAMP WHERE id = ?
-    `);
-    stmt.run(playerId);
-  }
-
-  // Clean up inactive players and empty rooms
-  cleanup() {
-
-    // Mark players as inactive if not seen for 5 minutes
-    const cleanupPlayers = this.db.prepare(`
-      UPDATE players 
-      SET is_active = 0 
-      WHERE is_active = 1 
-      AND datetime(last_seen, '+5 minutes') < datetime('now')
-    `);
-
-    // Delete empty rooms older than 1 hour
-    const cleanupRooms = this.db.prepare(`
-      DELETE FROM rooms 
-      WHERE player_count = 0 
-      AND datetime(last_activity, '+1 hour') < datetime('now')
+      UPDATE rooms SET state = ?, last_activity = CURRENT_TIMESTAMP
+      WHERE id = ?
     `);
 
     try {
-      const playersUpdated = cleanupPlayers.run().changes;
-      const roomsDeleted = cleanupRooms.run().changes;
-      
-      if (playersUpdated > 0 || roomsDeleted > 0) {
-        console.log(`🧹 Cleanup: ${playersUpdated} players marked inactive, ${roomsDeleted} empty rooms deleted`);
+      const result = stmt.run(stateBuffer, roomId);
+
+      if (result.changes === 0) {
+        throw new Error(`Room ${roomId} not found - no rows updated`);
       }
 
-      // Update room player counts after cleanup
-      const updateCounts = this.db.prepare(`
-        UPDATE rooms 
-        SET player_count = (
-          SELECT COUNT(*) FROM players 
-          WHERE players.room_id = rooms.id AND players.is_active = 1
-        )
-      `);
-      updateCounts.run();
+      console.log(`💾 Saved room state for ${roomId} (${stateBuffer.length} bytes)`);
+      return { success: true, stateSize: stateBuffer.length };
+    } catch (error) {
+      console.error('Error saving room state:', error);
+      throw error;
+    }
+  }
 
+  // Load Yjs document state from database
+  loadRoomState(roomId, ydoc) {
+    const stmt = this.db.prepare(`
+      SELECT state FROM rooms WHERE id = ?
+    `);
+
+    try {
+      const result = stmt.get(roomId);
+      if (result?.state) {
+        const Y = require('yjs');
+        Y.applyUpdate(ydoc, result.state);
+        console.log(`📁 Loaded room state for ${roomId}`);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error loading room state:', error);
+      return false;
+    }
+  }
+
+
+
+
+  // Clean up old empty rooms (Yjs docs handle player cleanup)
+  cleanup() {
+    // Delete rooms older than 1 hour with no recent activity
+    const cleanupRooms = this.db.prepare(`
+      DELETE FROM rooms
+      WHERE datetime(last_activity, '+1 hour') < datetime('now')
+    `);
+
+    try {
+      const roomsDeleted = cleanupRooms.run().changes;
+
+      if (roomsDeleted > 0) {
+        console.log(`🧹 Cleanup: ${roomsDeleted} old rooms deleted`);
+      }
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
   }
 
-  // Get room statistics
-  getRoomStats(roomId) {
+  // Get room metadata (data comes from Yjs doc)
+  getRoomMetadata(roomId) {
     const room = this.getRoomById(roomId);
     if (!room) return null;
-
-    const players = this.getRoomPlayers(roomId);
-    return {
-      ...room,
-      activePlayers: players.length,
-      players: players.map(p => ({
-        id: p.id,
-        name: p.name,
-        color: p.color,
-        joinedAt: p.joined_at,
-        lastSeen: p.last_seen
-      }))
-    };
+    return room;
   }
 
-  // List all active rooms
+  // List all active rooms (basic metadata only)
   getActiveRooms() {
     const stmt = this.db.prepare(`
-      SELECT r.*, 
-             COUNT(p.id) as active_players
-      FROM rooms r
-      LEFT JOIN players p ON r.id = p.room_id AND p.is_active = 1
-      WHERE datetime(r.last_activity, '+1 hour') > datetime('now')
-      GROUP BY r.id
-      ORDER BY r.last_activity DESC
+      SELECT *
+      FROM rooms
+      WHERE datetime(last_activity, '+1 hour') > datetime('now')
+      ORDER BY last_activity DESC
       LIMIT 50
     `);
     return stmt.all();
   }
 
-  // Save game state for a room
-  saveGameState(roomId, gameStateBuffer) {
-    const stmt = this.db.prepare(`
-      UPDATE rooms SET game_state = ?, last_activity = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
-    
-    try {
-      const result = stmt.run(gameStateBuffer, roomId);
-      
-      if (result.changes === 0) {
-        throw new Error(`Room ${roomId} not found - no rows updated`);
-      }
-      
-      // Verify the data was actually saved
-      const verifyStmt = this.db.prepare(`
-        SELECT length(game_state) as state_size FROM rooms WHERE id = ?
-      `);
-      const verification = verifyStmt.get(roomId);
-      
-      if (!verification || !verification.state_size) {
-        throw new Error(`Game state verification failed for room ${roomId} - data not saved`);
-      }
-      
-      console.log(`💾 Saved game state for room ${roomId} (${verification.state_size} bytes)`);
-      return { success: true, stateSize: verification.state_size };
-    } catch (error) {
-      console.error('Error saving game state:', error);
-      throw error; // Re-throw so the API can return proper error response
-    }
-  }
 
-  // Get saved game state for a room
-  getGameState(roomId) {
-    const stmt = this.db.prepare(`
-      SELECT game_state FROM rooms WHERE id = ?
-    `);
-    
-    try {
-      const result = stmt.get(roomId);
-      return result?.game_state || null;
-    } catch (error) {
-      console.error('Error loading game state:', error);
-      return null;
-    }
-  }
 
   // Close database connection
   close() {

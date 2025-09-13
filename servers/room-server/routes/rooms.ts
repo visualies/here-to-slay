@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type RoomDatabase from '../../src/lib/database.js'
 
-export function createRoomsRouter(db: RoomDatabase) {
+export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('yjs').Y.Doc>) {
   const router = new Hono()
 
   // Create a new room
@@ -10,8 +10,31 @@ export function createRoomsRouter(db: RoomDatabase) {
       const body = await c.req.json()
       const name = body.name || 'Here to Slay Game'
       const maxPlayers = body.maxPlayers || 4
-      const room = db.createRoom(name, maxPlayers)
-      return c.json(room)
+
+      // Create room in database (minimal metadata)
+      const room = db.createRoom()
+      const roomId = room.roomId
+
+      // Initialize Yjs document with room data
+      if (docs) {
+        const ydoc = new (await import('yjs')).Doc()
+        docs.set(roomId, ydoc)
+
+        // Set room metadata in Yjs document
+        const roomMap = ydoc.getMap('room')
+        roomMap.set('id', roomId)
+        roomMap.set('name', name)
+        roomMap.set('maxPlayers', maxPlayers)
+        roomMap.set('createdAt', new Date().toISOString())
+
+        // Initialize empty collections
+        ydoc.getMap('players')
+        ydoc.getMap('gameState')
+
+        console.log(`🏠 Created room: ${roomId} - "${name}"`)
+      }
+
+      return c.json({ roomId, name, maxPlayers })
     } catch (error) {
       console.error('Error creating room:', error)
       return c.json(
@@ -25,14 +48,57 @@ export function createRoomsRouter(db: RoomDatabase) {
   router.post('/join-room', async (c) => {
     try {
       const { roomId, playerId, playerName, playerColor } = await c.req.json()
-      const result = db.joinRoom(roomId, playerId, playerName, playerColor)
 
-      // Also add player to Yjs document if it exists
-      if (result.success) {
-        // Import docs from the game router scope - we'll need to pass it
-        // For now, let the WebSocket connection handle this
-        console.log(`Player ${playerName} joined room ${roomId} - Yjs sync will happen via WebSocket`)
+      // Get or create Yjs document for this room
+      let ydoc
+      if (!docs || !docs.has(roomId)) {
+        ydoc = new (await import('yjs')).Doc()
+        if (docs) {
+          docs.set(roomId, ydoc)
+        }
+
+        // Try to load existing state from database
+        db.loadRoomState(roomId, ydoc)
+
+        // Initialize room metadata if still missing
+        const roomMap = ydoc.getMap('room')
+        if (!roomMap.get('id')) {
+          roomMap.set('id', roomId)
+          roomMap.set('name', 'Here to Slay Game')
+          roomMap.set('maxPlayers', 4)
+          roomMap.set('createdAt', new Date().toISOString())
+        }
+      } else {
+        ydoc = docs.get(roomId)!
       }
+
+      const playersMap = ydoc.getMap('players')
+      const roomMap = ydoc.getMap('room')
+
+      // Check if room is full
+      const maxPlayers = roomMap.get('maxPlayers') || 4
+      const currentPlayerCount = playersMap.size
+      if (currentPlayerCount >= maxPlayers && !playersMap.has(playerId)) {
+        return c.json(
+          { error: 'Room is full' },
+          400
+        )
+      }
+
+      // Add/update player in Yjs document
+      playersMap.set(playerId, {
+        id: playerId,
+        name: playerName,
+        color: playerColor,
+        lastSeen: Date.now(),
+        hand: [],
+        party: [],
+        actionPoints: 0,
+        joinTime: Date.now()
+      })
+
+      // Use database method to join and persist
+      const result = db.joinRoom(roomId, playerId, playerName, playerColor, ydoc)
 
       return c.json(result)
     } catch (error) {
@@ -43,19 +109,63 @@ export function createRoomsRouter(db: RoomDatabase) {
     }
   })
 
-  // Get room information
-  router.get('/room-info', async (c) => {
-    const roomId = c.req.query('id')
+  // Get complete room state (from Yjs document)
+  router.get('/room/:roomId', async (c) => {
+    const roomId = c.req.param('roomId')
     if (!roomId) {
       return c.json({ error: 'Room ID required' }, 400)
     }
 
     try {
-      const roomInfo = db.getRoomStats(roomId)
-      if (!roomInfo) {
+      // Check if room exists in database
+      const roomMetadata = db.getRoomMetadata(roomId)
+      if (!roomMetadata) {
         return c.json({ error: 'Room not found' }, 404)
       }
-      return c.json(roomInfo)
+
+      // Get or load Yjs document
+      let ydoc
+      if (docs && docs.has(roomId)) {
+        ydoc = docs.get(roomId)!
+      } else {
+        // Load from database if not in memory
+        ydoc = new (await import('yjs')).Doc()
+        const loaded = db.loadRoomState(roomId, ydoc)
+
+        if (loaded && docs) {
+          docs.set(roomId, ydoc) // Keep in memory for future requests
+        }
+      }
+
+      const roomMap = ydoc.getMap('room')
+      const playersMap = ydoc.getMap('players')
+      const gameStateMap = ydoc.getMap('gameState')
+
+      // Convert Yjs maps to plain objects for JSON serialization
+      const room = Array.from(roomMap.entries()).reduce((acc, [key, value]) => {
+        acc[key] = value
+        return acc
+      }, {} as Record<string, any>)
+
+      const players = Array.from(playersMap.entries()).reduce((acc, [key, value]) => {
+        acc[key] = value
+        return acc
+      }, {} as Record<string, any>)
+
+      const gameState = Array.from(gameStateMap.entries()).reduce((acc, [key, value]) => {
+        acc[key] = value
+        return acc
+      }, {} as Record<string, any>)
+
+      // Return the Yjs document content with fallback values
+      return c.json({
+        id: room.id || roomId,
+        name: room.name || 'Here to Slay Game',
+        maxPlayers: room.maxPlayers || 4,
+        createdAt: room.createdAt || roomMetadata.created_at,
+        gameState: Object.keys(gameState).length > 0 ? gameState : null,
+        players: Object.keys(players).length > 0 ? players : null
+      })
     } catch (error) {
       return c.json(
         { error: error instanceof Error ? error.message : 'Unknown error' },
@@ -64,15 +174,70 @@ export function createRoomsRouter(db: RoomDatabase) {
     }
   })
 
-  // List all active rooms
+  // List all active rooms with data from Yjs docs
   router.get('/active-rooms', async (c) => {
     try {
       const rooms = db.getActiveRooms()
-      return c.json(rooms)
+
+      // Enhance with data from Yjs documents
+      const enhancedRooms = rooms.map(room => {
+        if (docs && docs.has(room.id)) {
+          const ydoc = docs.get(room.id)!
+          const roomMap = ydoc.getMap('room')
+          const playersMap = ydoc.getMap('players')
+
+          return {
+            id: room.id,
+            name: roomMap.get('name') || 'Here to Slay Game',
+            maxPlayers: roomMap.get('maxPlayers') || 4,
+            playerCount: playersMap.size,
+            createdAt: roomMap.get('createdAt') || room.created_at,
+            lastActivity: room.last_activity
+          }
+        }
+
+        return {
+          id: room.id,
+          name: 'Here to Slay Game',
+          maxPlayers: 4,
+          playerCount: 0,
+          createdAt: room.created_at,
+          lastActivity: room.last_activity
+        }
+      })
+
+      return c.json(enhancedRooms)
     } catch (error) {
       return c.json(
         { error: error instanceof Error ? error.message : 'Unknown error' },
         500
+      )
+    }
+  })
+
+  // Leave a room
+  router.post('/leave-room', async (c) => {
+    try {
+      const { roomId, playerId } = await c.req.json()
+
+      // Get Yjs document if it exists
+      let ydoc
+      if (docs && docs.has(roomId)) {
+        ydoc = docs.get(roomId)!
+        const playersMap = ydoc.getMap('players')
+
+        // Remove player from Yjs document
+        playersMap.delete(playerId)
+
+        // Use database method to leave and persist
+        db.leaveRoom(roomId, playerId, ydoc)
+      }
+
+      return c.json({ success: true })
+    } catch (error) {
+      return c.json(
+        { error: error instanceof Error ? error.message : 'Unknown error' },
+        400
       )
     }
   })

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import type RoomDatabase from '../../src/lib/database.js'
 import * as Y from 'yjs'
-import { initializeGame, advanceTurn as advanceTurnFn } from '../../../src/lib/game-actions.js'
+import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../../../src/lib/game-actions.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import {
   type ActionContext,
@@ -110,14 +110,49 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   // Debug endpoint to see all documents
   router.get('/debug', async (c) => {
     const roomIds = Array.from(docs.keys())
-    return c.json({ 
-      totalDocs: docs.size, 
+    return c.json({
+      totalDocs: docs.size,
       roomIds: roomIds,
       docs: roomIds.map(id => ({
         id,
         hasDoc: docs.has(id),
         stateSize: docs.get(id) ? Y.encodeStateAsUpdate(docs.get(id)!).length : 0
       }))
+    })
+  })
+
+  // Debug endpoint to get game state for a specific room
+  router.get('/debug/:roomId', async (c) => {
+    const roomId = c.req.param('roomId')
+    if (!roomId) {
+      return c.json({ error: 'Room ID required' }, 400)
+    }
+
+    const ydoc = docs.get(roomId)
+    if (!ydoc) {
+      return c.json({ error: 'Room document not found' }, 404)
+    }
+
+    const playersMap = ydoc.getMap('players')
+    const gameStateMap = ydoc.getMap('gameState')
+
+    // Convert Yjs maps to plain objects for JSON serialization
+    const players = Array.from(playersMap.entries()).reduce((acc, [key, value]) => {
+      acc[key] = value
+      return acc
+    }, {} as Record<string, any>)
+
+    const gameState = Array.from(gameStateMap.entries()).reduce((acc, [key, value]) => {
+      acc[key] = value
+      return acc
+    }, {} as Record<string, any>)
+
+    return c.json({
+      roomId,
+      players,
+      gameState,
+      playersCount: playersMap.size,
+      gameStateKeys: Array.from(gameStateMap.keys())
     })
   })
 
@@ -221,7 +256,6 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const allPlayers = Array.from(playersMap.values())
 
       // Use the existing function
-      const { addPlayerToGame } = await import('../../../src/lib/game-actions.js')
       addPlayerToGame(playersMap, allPlayers, playerId)
 
       console.log(`🎮 Added player ${playerId} to existing game in room ${roomId}`)

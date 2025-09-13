@@ -20,15 +20,14 @@ test.describe('API: Rooms', () => {
       const { roomId } = body
 
       // 2. Verify database state
-      const roomInfo = await request.get(`/api/room-info?id=${roomId}`)
+      const roomInfo = await request.get(`/api/room/${roomId}`)
       expect(roomInfo.status()).toBe(200)
 
       const roomData = await roomInfo.json()
       expect(roomData).toMatchObject({
         id: roomId,
         name: 'Here to Slay Game',
-        max_players: 4,
-        activePlayers: 0
+        maxPlayers: 4
       })
 
       // 3. Trigger Yjs document creation (on-demand)
@@ -115,27 +114,24 @@ test.describe('API: Rooms', () => {
       expect(body).toMatchObject({
         success: true,
         room: expect.objectContaining({
-          id: roomId,
-          name: 'Test Room',
-          max_players: 4
+          id: roomId
         })
       })
 
       // 2. Verify database state
-      const roomInfo = await request.get(`/api/room-info?id=${roomId}`)
+      const roomInfo = await request.get(`/api/room/${roomId}`)
       expect(roomInfo.status()).toBe(200)
 
       const roomData = await roomInfo.json()
       expect(roomData).toMatchObject({
         id: roomId,
-        activePlayers: 1,
-        players: [
-          {
+        players: {
+          'player1': expect.objectContaining({
             id: 'player1',
             name: 'Alice',
             color: 'red'
-          }
-        ]
+          })
+        }
       })
 
       // 3. Trigger Yjs document creation and verify state
@@ -167,12 +163,14 @@ test.describe('API: Rooms', () => {
       }
 
       // Check room info to verify all players joined
-      const roomInfoResponse = await request.get(`/api/room-info?id=${roomId}`)
+      const roomInfoResponse = await request.get(`/api/room/${roomId}`)
       expect(roomInfoResponse.status()).toBe(200)
 
       const roomInfo = await roomInfoResponse.json()
-      expect(roomInfo.activePlayers).toBe(3)
-      expect(roomInfo.players).toHaveLength(3)
+      expect(Object.keys(roomInfo.players)).toHaveLength(3)
+      expect(roomInfo.players['player1']).toMatchObject({ id: 'player1', name: 'Alice' })
+      expect(roomInfo.players['player2']).toMatchObject({ id: 'player2', name: 'Bob' })
+      expect(roomInfo.players['player3']).toMatchObject({ id: 'player3', name: 'Charlie' })
     })
 
     test('should reject joining a full room', async ({ request }) => {
@@ -247,11 +245,11 @@ test.describe('API: Rooms', () => {
       expect(body.success).toBe(true)
 
       // Verify room still has only 1 player
-      const roomInfoResponse = await request.get(`/api/room-info?id=${roomId}`)
+      const roomInfoResponse = await request.get(`/api/room/${roomId}`)
       const roomInfo = await roomInfoResponse.json()
 
-      expect(roomInfo.activePlayers).toBe(1)
-      expect(roomInfo.players[0]).toMatchObject({
+      expect(Object.keys(roomInfo.players)).toHaveLength(1)
+      expect(roomInfo.players['player1']).toMatchObject({
         id: 'player1',
         name: 'Alice Updated',
         color: 'blue'
@@ -259,7 +257,7 @@ test.describe('API: Rooms', () => {
     })
   })
 
-  test.describe('GET /api/room-info', () => {
+  test.describe('GET /api/room/{roomId}', () => {
     test('should return room information', async ({ request }) => {
       // Create a room
       const createResponse = await request.post('/api/create-room', {
@@ -280,40 +278,30 @@ test.describe('API: Rooms', () => {
       })
 
       // Get room info
-      const response = await request.get(`/api/room-info?id=${roomId}`)
+      const response = await request.get(`/api/room/${roomId}`)
       expect(response.status()).toBe(200)
 
       const body = await response.json()
       expect(body).toMatchObject({
         id: roomId,
         name: 'Info Test Room',
-        max_players: 3,
-        player_count: 1,
-        activePlayers: 1,
-        players: [
-          {
+        maxPlayers: 3,
+        players: {
+          'player1': expect.objectContaining({
             id: 'player1',
             name: 'Test Player',
             color: 'green'
-          }
-        ]
+          })
+        }
       })
     })
 
     test('should return 404 for non-existent room', async ({ request }) => {
-      const response = await request.get('/api/room-info?id=NOTFOUND')
+      const response = await request.get('/api/room/NOTFOUND')
       expect(response.status()).toBe(404)
 
       const body = await response.json()
       expect(body.error).toBe('Room not found')
-    })
-
-    test('should return 400 when room ID is missing', async ({ request }) => {
-      const response = await request.get('/api/room-info')
-      expect(response.status()).toBe(400)
-
-      const body = await response.json()
-      expect(body.error).toBe('Room ID required')
     })
   })
 
@@ -330,8 +318,8 @@ test.describe('API: Rooms', () => {
         expect(body[0]).toMatchObject({
           id: expect.any(String),
           name: expect.any(String),
-          max_players: expect.any(Number),
-          active_players: expect.any(Number)
+          maxPlayers: expect.any(Number),
+          playerCount: expect.any(Number)
         })
       }
     })
@@ -380,14 +368,14 @@ test.describe('API: Rooms', () => {
 
       expect(foundRoom1).toMatchObject({
         name: 'Unique Room 1',
-        max_players: 2,
-        active_players: 1
+        maxPlayers: 2,
+        playerCount: 1
       })
 
       expect(foundRoom2).toMatchObject({
         name: 'Unique Room 2',
-        max_players: 4,
-        active_players: 0
+        maxPlayers: 4,
+        playerCount: 0
       })
     })
   })
@@ -427,18 +415,17 @@ test.describe('API: Rooms', () => {
       })
 
       // Step 4: Verify room state
-      const roomInfoResponse = await request.get(`/api/room-info?id=${roomId}`)
+      const roomInfoResponse = await request.get(`/api/room/${roomId}`)
       expect(roomInfoResponse.status()).toBe(200)
 
       const roomInfo = await roomInfoResponse.json()
       expect(roomInfo).toMatchObject({
         name: 'Integration Test Room',
-        max_players: 3,
-        activePlayers: 2,
-        players: expect.arrayContaining([
-          expect.objectContaining({ name: 'Alice', color: 'red' }),
-          expect.objectContaining({ name: 'Bob', color: 'blue' })
-        ])
+        maxPlayers: 3,
+        players: {
+          'alice': expect.objectContaining({ name: 'Alice', color: 'red' }),
+          'bob': expect.objectContaining({ name: 'Bob', color: 'blue' })
+        }
       })
 
       // Step 5: Verify room appears in active rooms
