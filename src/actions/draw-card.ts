@@ -1,9 +1,9 @@
-import type { ActionServiceContext, ActionResult } from '../action-service';
-import { registerAction } from '../action-registry';
-import { addCardToPlayerHand } from '../../lib/players';
-import type { Card } from '../../types';
+import type { ActionContext, ActionResult } from '../services/action-service';
+import { registerAction } from '../services/action-registry';
+import { addCardToPlayerHand } from '../lib/players';
+import type { Card } from '../types';
 
-export function run(context: ActionServiceContext): ActionResult {
+export function run(context: ActionContext): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
   console.log(`🎯 Internal: Drawing card for player ${playerId}`);

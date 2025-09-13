@@ -1,8 +1,8 @@
-import type { ActionServiceContext, ActionResult } from '../action-service';
-import { registerAction } from '../action-registry';
-import type { Card } from '../../types';
+import type { ActionContext, ActionResult } from '../services/action-service';
+import { registerAction } from '../services/action-registry';
+import type { Card } from '../types';
 
-export function run(context: ActionServiceContext): ActionResult {
+export function run(context: ActionContext): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
   console.log(`🎯 Internal: Discarding all cards and redrawing for player ${playerId}`);

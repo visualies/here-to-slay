@@ -1,6 +1,6 @@
 import * as Y from 'yjs';
 import type { Player } from '../types';
-import './actions'; // Auto-import all actions to register them
+import '../actions'; // Auto-import all actions to register them
 import { actionRegistry } from './action-registry';
 
 /**
@@ -12,9 +12,10 @@ import { actionRegistry } from './action-registry';
  * - Game events (triggered actions)
  */
 
-export interface ActionServiceContext {
+export interface ActionContext {
   roomId: string;
   playerId: string;
+  diceResult: number;
   playersMap: Y.Map<Player>;
   gameStateMap: Y.Map<unknown>;
 }

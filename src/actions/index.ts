@@ -5,4 +5,4 @@ import './attack-monster';
 import './discard-all-and-redraw';
 
 // Re-export the registry for convenience
-export { actionRegistry, registerAction } from '../action-registry';
+export { actionRegistry, registerAction } from '../services/action-registry';

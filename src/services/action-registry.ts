@@ -1,7 +1,7 @@
-import type { ActionServiceContext, ActionResult } from './action-service';
+import type { ActionContext, ActionResult } from './action-service';
 
 export interface ActionHandler {
-  run: (context: ActionServiceContext, ...args: any[]) => ActionResult;
+  run: (context: ActionContext, ...args: any[]) => ActionResult;
 }
 
 class ActionRegistry {

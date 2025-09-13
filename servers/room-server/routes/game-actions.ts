@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
 import {
-  type ActionServiceContext,
+  type ActionContext,
   type ActionResult,
   actionRegistry
 } from '../../../src/services/action-service.js'
@@ -43,7 +43,7 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
     playerId: string, 
     roomId: string, 
     requiresActionPoints = true
-  ): { valid: boolean; context?: ActionServiceContext; player?: any; error?: string } {
+  ): { valid: boolean; context?: ActionContext; player?: any; error?: string } {
     const ydoc = getYDoc(roomId)
     if (!ydoc) {
       return { valid: false, error: 'Room not found' }
@@ -68,7 +68,7 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
       return { valid: false, error: 'No action points remaining' }
     }
 
-    const context: ActionServiceContext = {
+    const context: ActionContext = {
       roomId,
       playerId,
       playersMap,
@@ -80,7 +80,7 @@ export function createGameActionsRouter(db: RoomDatabase, docs: Map<string, Y.Do
 
   // Helper function to handle action point deduction and turn advancement
   function handleTurnLogic(
-    context: ActionServiceContext, 
+    context: ActionContext,
     player: any, 
     deductActionPoint = true
   ): void {

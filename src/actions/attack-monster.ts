@@ -1,8 +1,8 @@
-import type { ActionServiceContext, ActionResult } from '../action-service';
-import { registerAction } from '../action-registry';
-import type { Card } from '../../types';
+import type { ActionContext, ActionResult } from '../services/action-service';
+import { registerAction } from '../services/action-registry';
+import type { Card } from '../types';
 
-export function run(context: ActionServiceContext, monsterId: string, diceResult: number): ActionResult {
+export function run(context: ActionContext, monsterId: string, diceResult: number): ActionResult {
   const { gameStateMap, playerId } = context;
 
   console.log(`🎯 Internal: Attacking monster ${monsterId} for player ${playerId} with dice result ${diceResult}`);
