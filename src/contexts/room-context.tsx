@@ -42,7 +42,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     if (providerRef.current) {
       providerRef.current.disconnect();
     }
-    
+
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const originalDoc = new Y.Doc();
     const wsUrl = `ws://192.168.178.61:1234`;
@@ -60,73 +60,18 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     providerRef.current = provider;
     gameStateRef.current = gameState;
     playersRef.current = playersMap;
-    
-    // Set up player presence
+
+    // Set up player presence for cursor tracking
     setupPlayerAwareness(provider, playerId, playerName, playerColor);
-    
-    // Wait for WebSocket connection before adding player
-    const addPlayerWhenConnected = () => {
-      console.log('=== ADDING PLAYER TO ROOM ===');
-      console.log('Room ID:', roomId);
-      console.log('Player ID:', playerId);
-      console.log('Player Name:', playerName);
-      console.log('Current players in map before adding:', playersMap.size);
-      
-      // Check if this is a reconnection attempt
-      const existingPlayers = Array.from(playersMap.values());
-      const storedPlayerData = getStoredPlayerData(roomId);
-      
-      if (storedPlayerData && storedPlayerData.playerId === playerId) {
-        console.log(`🔄 Player ${playerName} (${playerId}) is reconnecting with stored session`);
-        
-        // For reconnecting players, wait a bit for Yjs document to synchronize
-        // This ensures the player's hand cards are restored from the document
-        setTimeout(async () => {
-          const existingPlayer = playersMap.get(playerId);
-          if (existingPlayer) {
-            // Update existing player's presence via API
-            try {
-              await gameServerAPI.updatePlayerPresence(roomId, playerId, playerName, playerColor);
-              console.log(`🔄 Updated existing player presence for ${playerName} via API`);
-            } catch (error) {
-              console.error('Failed to update player presence via API:', error);
-              // Fallback to direct mutation for now
-              playersMap.set(playerId, {
-                ...existingPlayer,
-                lastSeen: Date.now(),
-                name: playerName,
-                color: playerColor,
-              });
-            }
-          } else {
-            // Player was not in game state - this should be handled by the server
-            console.log(`⚠️ Player ${playerName} not found in game state - server should handle this via WebSocket sync`);
-          }
-          console.log('Players in map after adding:', playersMap.size);
-        }, 1000); // Wait 1 second for Yjs document to synchronize
-      } else {
-        console.log(`👋 Player ${playerName} (${playerId}) joining as new player`);
-        // New player joining - server will add them via WebSocket sync after join-room API call
-        console.log('New player will be added to game state by server via WebSocket sync');
-      }
-    };
-    
-    // Add player immediately if already connected, otherwise wait for connection
-    if (provider.wsconnected) {
-      addPlayerWhenConnected();
-    } else {
-      provider.on('status', (event: { status: string }) => {
-        if (event.status === 'connected') {
-          addPlayerWhenConnected();
-        }
-      });
-    }
-    
+
+    console.log(`🔌 Connected to room ${roomId} as ${playerName} (${playerId})`);
+    console.log('Client is now read-only - all game state managed by server');
+
     // Connection status
     provider.on('status', (event: { status: string }) => {
       setIsConnected(event.status === 'connected');
     });
-    
+
     // Cleanup function
     return () => {
       provider.disconnect();
@@ -141,12 +86,11 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     const setupObserver = () => {
       if (!playersRef.current || !gameStateRef.current) return;
       
-      console.log('Setting up Yjs observer for room:', roomId);
+      console.log(`📡 Setting up read-only state observer for room: ${roomId}`);
       const cleanup = createYjsObserver(
         playersRef.current,
         gameStateRef.current,
         (newPlayers, gameState) => {
-          console.log('Yjs observer triggered - players:', newPlayers.length, 'gamePhase:', gameState.gamePhase);
           setPlayers(newPlayers);
           setGamePhase(gameState.gamePhase);
           setCurrentTurn(gameState.currentTurn);
@@ -179,25 +123,20 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     return cleanup;
   }, [roomId]);
   
-  // Heartbeat for player presence and localStorage updates
+  // Update localStorage to keep session fresh
   useEffect(() => {
-    const heartbeat = createHeartbeatInterval(playersRef.current, playerId);
-    
-    // Also update localStorage every 30 seconds to keep session fresh
     const storageUpdateInterval = setInterval(() => {
       updateLastActive(roomId);
     }, 30000);
-    
+
     return () => {
-      cleanupHeartbeat(heartbeat);
       clearInterval(storageUpdateInterval);
     };
-  }, [playerId]);
+  }, [roomId]);
   
-  // Derived state
+  // Derived state - all players are managed by server
   const currentPlayer = players.find(p => p.id === playerId) || null;
   const otherPlayers = players.filter(p => p.id !== playerId);
-  const connectedPlayersCount = players.filter(p => Date.now() - p.lastSeen < 30000).length;
   
   // Check if current player is host (first to join)
   const playerIsHost = isHost(players, playerId);

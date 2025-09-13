@@ -208,22 +208,8 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       return;
     }
 
-    setLoading(true);
-    setError('');
-
-    try {
-      // Create room with a generic name
-      const room = await createRoom('Game Room');
-      console.log('Room created:', room);
-      
-      // Store room ID and go to settings
-      setCreatedRoomId(room.roomId);
-      setMode('settings');
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create room');
-      setLoading(false);
-    }
+    // Go to settings first to configure the room
+    setMode('settings');
   };
 
   const handleJoinExistingRoom = async (roomIdToJoin?: string) => {
@@ -282,8 +268,8 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   };
 
   const handleStartGame = async () => {
-    if (!createdRoomId || !playerName.trim()) {
-      setError('Missing room or player information');
+    if (!playerName.trim()) {
+      setError('Please enter your name');
       return;
     }
 
@@ -291,26 +277,34 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     setError('');
 
     try {
-      // For created rooms, always use new player data (host)
-      console.log(`🏠 Starting game as host: ${playerName.trim()}`);
+      // Create room with the configured settings
+      const room = await createRoom('Game Room', {
+        maxPlayers: 4, // Could be made configurable later
+        turnDuration,
+        selectedDeck
+      });
+      console.log('Room created:', room);
+
+      // Immediately join the created room as the host
       const playerId = generatePersistentPlayerId();
       const finalPlayerName = playerName.trim();
       const playerColor = generatePlayerColor(finalPlayerName);
-      
-      // Join the created room
-      await joinRoom(createdRoomId, playerId, finalPlayerName, playerColor);
-      
+
+      await joinRoom(room.roomId, playerId, finalPlayerName, playerColor);
+
       // Store player data for future reconnection
-      storePlayerData(createdRoomId, playerId, finalPlayerName, playerColor);
-      
+      storePlayerData(room.roomId, playerId, finalPlayerName, playerColor);
+
+      console.log(`🏠 Starting game as host: ${finalPlayerName}`);
+
       // Stop the theme music before joining the game
       stopThemeMusic();
-      
+
       // Connect to the multiplayer game
-      onRoomJoined(createdRoomId, playerId, finalPlayerName, playerColor);
-      
+      onRoomJoined(room.roomId, playerId, finalPlayerName, playerColor);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start game');
+      setError(err instanceof Error ? err.message : 'Failed to create and start game');
     } finally {
       setLoading(false);
     }
@@ -660,20 +654,20 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2">
               <Settings className="h-6 w-6 text-amber-600" />
-              <h2 className="text-2xl">Room Settings</h2>
+              <h2 className="text-2xl">New Room Settings</h2>
             </div>
-            <CardDescription>Configure your game room</CardDescription>
+            <CardDescription>Configure your new game room</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Room ID</label>
+              <label className="block text-sm font-medium text-foreground mb-2">Player Name</label>
               <Input
                 type="text"
-                value={createdRoomId}
-                disabled
-                className="text-center text-lg font-mono bg-muted"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                placeholder="Enter your player name"
+                maxLength={20}
               />
-              <p className="text-xs text-muted-foreground mt-1">Share this code with other players</p>
             </div>
 
             <div>
@@ -736,17 +730,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                 onClick={handleStartGame}
                 disabled={loading}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
-                data-testid="start-game-button"
+                data-testid="create-and-start-game-button"
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Starting...
+                    Creating...
                   </>
                 ) : (
                   <>
                     <Play className="h-4 w-4 mr-2" />
-                    Start Game
+                    Create & Start Game
                   </>
                 )}
               </Button>

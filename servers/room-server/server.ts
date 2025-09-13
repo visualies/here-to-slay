@@ -34,20 +34,18 @@ function restoreGameStateIfExists(roomId: string) {
     console.log(`[DEBUG] No document found for room ${roomId}, cannot restore state`)
     return
   }
-  
+
   const ydoc = docs.get(roomId)!
-  const savedState = db.getGameState(roomId)
-  
-  if (savedState && savedState.length > 0) {
-    try {
-      const uint8Array = new Uint8Array(savedState)
-      Y.applyUpdate(ydoc, uint8Array)
+
+  try {
+    const loaded = db.loadRoomState(roomId, ydoc)
+    if (loaded) {
       console.log(`🔄 Restored game state for room ${roomId} during WebSocket connection`)
-    } catch (error) {
-      console.error(`❌ Error restoring game state for room ${roomId}:`, error)
+    } else {
+      console.log(`[DEBUG] No saved game state found for room ${roomId}`)
     }
-  } else {
-    console.log(`[DEBUG] No saved game state found for room ${roomId}`)
+  } catch (error) {
+    console.error(`❌ Error restoring game state for room ${roomId}:`, error)
   }
 }
 

@@ -10,6 +10,8 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
       const body = await c.req.json()
       const name = body.name || 'Here to Slay Game'
       const maxPlayers = body.maxPlayers || 4
+      const turnDuration = body.turnDuration || 30
+      const selectedDeck = body.selectedDeck || 'standard'
 
       // Create room in database (minimal metadata)
       const room = db.createRoom()
@@ -25,16 +27,18 @@ export function createRoomsRouter(db: RoomDatabase, docs?: Map<string, import('y
         roomMap.set('id', roomId)
         roomMap.set('name', name)
         roomMap.set('maxPlayers', maxPlayers)
+        roomMap.set('turnDuration', turnDuration)
+        roomMap.set('selectedDeck', selectedDeck)
         roomMap.set('createdAt', new Date().toISOString())
 
         // Initialize empty collections
         ydoc.getMap('players')
         ydoc.getMap('gameState')
 
-        console.log(`🏠 Created room: ${roomId} - "${name}"`)
+        console.log(`🏠 Created room: ${roomId} - "${name}" (${turnDuration}s turns, ${selectedDeck} deck)`)
       }
 
-      return c.json({ roomId, name, maxPlayers })
+      return c.json({ roomId, name, maxPlayers, turnDuration, selectedDeck })
     } catch (error) {
       console.error('Error creating room:', error)
       return c.json(

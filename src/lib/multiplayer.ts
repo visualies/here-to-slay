@@ -7,18 +7,30 @@ import { ServerDiceManager } from './server-dice';
 import type { Player, DicePosition, MultiplayerRoom as Room } from '../types';
 
 // Room API functions
-export async function createRoom(name: string = 'Here to Slay Game'): Promise<Room> {
+export async function createRoom(
+  name: string = 'Here to Slay Game',
+  settings?: {
+    maxPlayers?: number;
+    turnDuration?: number;
+    selectedDeck?: string;
+  }
+): Promise<Room> {
   const response = await fetch('/api/rooms/create-room', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
+    body: JSON.stringify({
+      name,
+      maxPlayers: settings?.maxPlayers,
+      turnDuration: settings?.turnDuration,
+      selectedDeck: settings?.selectedDeck
+    })
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.error || 'Failed to create room');
   }
-  
+
   return await response.json();
 }
 
