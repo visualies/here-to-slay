@@ -8,7 +8,6 @@ import {
 import { getActivePlayers, getSortedPlayersByJoinTime } from '../../../src/lib/players';
 import { createSupportStack } from '../../../src/game/deck';
 import { getAllMonsters } from '../../../src/game/monsters';
-import { gameServerAPI } from '../../../src/lib/game-server-api';
 
 export function initializeGame(
   playersMap: Y.Map<unknown>,
@@ -47,8 +46,7 @@ export function advanceTurn(
   playersMap: Y.Map<unknown>,
   gameStateMap: Y.Map<unknown>,
   players: Player[],
-  currentTurn: string,
-  roomId: string
+  currentTurn: string
 ): void {
   const activePlayers = getActivePlayers(players);
   const sortedPlayers = getSortedPlayersByJoinTime(activePlayers);
@@ -67,7 +65,6 @@ export function advanceTurn(
       playersMap.set(nextPlayer.id, { ...nextPlayerDoc, actionPoints: 3 });
     }
     gameStateMap.set('currentTurn', nextPlayer.id);
-    gameServerAPI.saveGameState(roomId);
   }
 }
 

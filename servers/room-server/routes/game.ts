@@ -85,7 +85,15 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
         const currentPlayers = Array.from(context.playersMap.values()) as Player[]
         const currentTurn = context.gameStateMap.get('currentTurn') as string
         console.log(`🔄 Advancing turn from player ${context.playerId}`)
-        advanceTurnFn(context.playersMap, context.gameStateMap, currentPlayers, currentTurn, context.roomId)
+        advanceTurnFn(context.playersMap, context.gameStateMap, currentPlayers, currentTurn)
+        
+        // Save the updated game state after turn advancement
+        const ydoc = getYDoc(context.roomId)
+        try {
+          db.saveRoomState(context.roomId, ydoc)
+        } catch (error) {
+          console.error('Error saving game state after turn advance:', error)
+        }
       }
     }
   }
