@@ -18,7 +18,8 @@ class GameServerAPI {
   constructor() {
     // In a test environment, the server runs on port 8234
     const port = process.env.NODE_ENV === 'test' ? 8234 : 1234;
-    this.baseURL = `http://localhost:${port}`;
+    const host = process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61';
+    this.baseURL = `http://${host}:${port}`;
   }
 
   private async request<T>(endpoint: string, method: string, data?: unknown): Promise<ApiResponse<T>> {
