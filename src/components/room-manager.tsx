@@ -38,17 +38,17 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   // Start background music and load recent rooms when component mounts
   useEffect(() => {
     playThemeMusic();
-    
+
     // Load recent rooms from localStorage
     const rooms = getAllPlayerRooms();
     setRecentRooms(rooms);
     console.log(`🔒 Loaded ${rooms.length} recent rooms from localStorage`);
-    
+
     return () => {
       // Stop theme music when leaving room manager
       stopThemeMusic();
     };
-  }, [playThemeMusic, stopThemeMusic]);
+  }, []); // Remove function dependencies to prevent recreation loop
 
   // Generate consistent player color based on name
   const generatePlayerColor = (name: string) => {
