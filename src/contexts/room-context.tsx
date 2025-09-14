@@ -200,7 +200,6 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     roomId,
     
     // Yjs refs for read-only access if needed
-    doc: docRef.current,
     provider: providerRef.current,
     playersRef: playersRef.current,
     gameStateRef: gameStateRef.current,

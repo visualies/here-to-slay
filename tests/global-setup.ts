@@ -1,10 +1,10 @@
 import { FullConfig } from '@playwright/test'
 import { createApp } from '../servers/room-server/app.js'
 import RoomDatabase from '../src/lib/database.js'
-import { serve } from '@hono/node-server'
 import * as Y from 'yjs'
 import fs from 'fs'
 import path from 'path'
+import http from 'http'
 
 async function globalSetup(_config: FullConfig) {
   // Set test environment variable
@@ -29,20 +29,73 @@ async function globalSetup(_config: FullConfig) {
   // Create the Hono app
   const app = createApp(db, docs)
 
-  // Start the server on a test port
-  const server = serve({
-    fetch: app.fetch,
-    port: 8234, // Use a different port for testing
+  // Create HTTP server that can handle Hono requests
+  const server = http.createServer()
+
+  // Handle HTTP requests with Hono
+  server.on('request', async (req, res) => {
+    try {
+      // Create a proper Request object for Hono
+      const url = `http://${req.headers.host}${req.url}`
+      const method = req.method || 'GET'
+      
+      // Get request body if it exists
+      let body: string | undefined
+      if (method !== 'GET' && method !== 'HEAD') {
+        const chunks: Buffer[] = []
+        for await (const chunk of req) {
+          chunks.push(chunk)
+        }
+        body = Buffer.concat(chunks).toString()
+      }
+      
+      // Create Request object
+      const request = new Request(url, {
+        method,
+        headers: req.headers as HeadersInit,
+        body: body
+      })
+      
+      const response = await app.fetch(request)
+      
+      res.writeHead(response.status, Object.fromEntries(response.headers))
+      
+      if (response.body) {
+        const reader = response.body.getReader()
+        const pump = async (): Promise<void> => {
+          const { done, value } = await reader.read()
+          if (done) {
+            res.end()
+            return
+          }
+          res.write(value)
+          return pump()
+        }
+        await pump()
+      } else {
+        res.end()
+      }
+    } catch (err) {
+      console.error('Error handling request:', err)
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ 
+        success: false, 
+        error: 'Internal Server Error',
+        message: err instanceof Error ? err.message : 'Unknown error'
+      }))
+    }
   })
 
-  // Store server reference for cleanup
-  (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_SERVER__ = server
-  (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__ = db
-
-  console.log('🧪 Test server started on port 8234')
-
-  // Wait a moment for server to be ready
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  // Start the server on a test port
+  return new Promise<void>((resolve) => {
+    server.listen(8234, 'localhost', () => {
+      // Store server reference for cleanup
+      (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_SERVER__ = server;
+      (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__ = db;
+      
+      resolve()
+    })
+  })
 }
 
 export default globalSetup
