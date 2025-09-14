@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bug } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRoom } from "@/contexts/room-context";
+import { useRoom } from "@/hooks/use-room";
 
 export function GameBoard() {
   const router = useRouter();
@@ -84,6 +84,5 @@ export function GameBoard() {
           </GameActionsProvider>
         </StatusProvider>
       </DiceProvider>
-    </RoomProvider>
-  );
-}
+    );
+  }

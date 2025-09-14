@@ -7,7 +7,7 @@ interface BlurContextType {
   setBlurred: (blurred: boolean) => void;
 }
 
-const BlurContext = createContext<BlurContextType | undefined>(undefined);
+export const BlurContext = createContext<BlurContextType | undefined>(undefined);
 
 export function BlurProvider({ children }: { children: ReactNode }) {
   const [isBlurred, setIsBlurred] = useState(false);
@@ -23,10 +23,3 @@ export function BlurProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useBlur() {
-  const context = useContext(BlurContext);
-  if (context === undefined) {
-    throw new Error('useBlur must be used within a BlurProvider');
-  }
-  return context;
-}

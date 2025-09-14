@@ -13,7 +13,7 @@ import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
 import { createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { useUser } from '../hooks/use-user';
 
-const RoomContext = createContext<Room | null>(null);
+export const RoomContext = createContext<Room | null>(null);
 
 interface RoomProviderProps {
   roomId: string;
@@ -35,6 +35,17 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     );
   }
 
+  // Once user is loaded, render the actual room provider
+  return <RoomProviderInner roomId={roomId} user={user}>{children}</RoomProviderInner>;
+}
+
+interface RoomProviderInnerProps {
+  roomId: string;
+  user: NonNullable<ReturnType<typeof useUser>['user']>;
+  children: ReactNode;
+}
+
+function RoomProviderInner({ roomId, user, children }: RoomProviderInnerProps) {
   const { playerId, playerName, playerColor } = user;
 
   // Yjs setup
@@ -251,10 +262,3 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   );
 }
 
-export function useRoom(): Room {
-  const context = useContext(RoomContext);
-  if (!context) {
-    throw new Error('useRoom must be used within a RoomProvider');
-  }
-  return context;
-}

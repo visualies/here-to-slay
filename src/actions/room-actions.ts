@@ -24,8 +24,8 @@ export async function createRoomAction(
     return { error: 'Player name must be 20 characters or less' };
   }
 
-  let roomResponse: any;
-  let playerResponse: any;
+  let roomResponse: Awaited<ReturnType<typeof gameServerAPI.createRoom>>;
+  let playerResponse: Awaited<ReturnType<typeof gameServerAPI.getCurrentPlayer>>;
 
   try {
     // Create room with the configured settings
