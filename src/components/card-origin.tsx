@@ -35,7 +35,7 @@
 
 import { ReactNode, useLayoutEffect, useRef, useMemo } from "react";
 import { RotationWrapper } from "./rotation-wrapper";
-import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
+import { useCardOriginSizing } from "../hooks/use-card-origin-sizing";
 
 interface CardOriginProps {
   aspectRatio: "large" | "default";

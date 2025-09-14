@@ -20,7 +20,7 @@
 "use client";
 
 import { ReactNode, useLayoutEffect, useRef, useState } from "react";
-import { useSizing } from "@/contexts/sizing-context";
+import { useSizing } from "@/hooks/use-sizing";
 
 interface RotationWrapperProps {
   children: ReactNode;

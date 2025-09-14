@@ -1,6 +1,6 @@
 "use client";
 
-import { useBlur } from '../contexts/blur-context';
+import { useBlur } from '../hooks/use-blur';
 
 export function BlurOverlay() {
   const { isBlurred } = useBlur();

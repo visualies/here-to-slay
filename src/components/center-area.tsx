@@ -2,7 +2,7 @@ import { useGameActions } from "../hooks/use-game-actions";
 import { useGameState } from "../hooks/use-game-state";
 import { useStatus } from "../hooks/use-status";
 import { useDice } from "../hooks/use-dice";
-import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
+import { useCardOriginSizing } from "../hooks/use-card-origin-sizing";
 import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";
 import { StartRound } from "./start-round";

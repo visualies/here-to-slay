@@ -14,23 +14,27 @@ import { getServerUserData } from "../lib/server-user";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const patuaOne = Patua_One({
   variable: "--font-patua-one",
   subsets: ["latin"],
   weight: "400",
+  display: "swap",
 });
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {

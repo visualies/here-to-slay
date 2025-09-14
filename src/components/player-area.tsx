@@ -7,7 +7,7 @@ import { ActionPointRing } from "./action-point-ring";
 import { useGameState } from "../hooks/use-game-state";
 import { usePlayerPosition } from "../hooks/use-player-position";
 import { useGameActions } from "../hooks/use-game-actions";
-import { useSizing } from "../contexts/sizing-context";
+import { useSizing } from "../hooks/use-sizing";
 import type { Card as CardType } from "../types";
 
 // Configuration constants

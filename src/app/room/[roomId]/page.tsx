@@ -9,7 +9,7 @@ interface RoomPageProps {
 }
 
 export default async function RoomPage({ params }: RoomPageProps) {
-  const { roomId } = params;
+  const { roomId } = await params;
 
   // Validate room ID format (should be 6 characters)
   if (!roomId || roomId.length !== 6) {

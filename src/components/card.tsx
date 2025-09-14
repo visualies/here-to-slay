@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Card as GameCard } from "../types";
-import { useBlur } from "../contexts/blur-context";
+import { useBlur } from "../hooks/use-blur";
 import { getRandomTransform, getRandomHoverRotation, getCenterDirectedMovement } from "../lib/utils";
 
 interface CardProps {

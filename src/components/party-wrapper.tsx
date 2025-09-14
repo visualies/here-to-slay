@@ -2,7 +2,7 @@
 
 import { ReactNode, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { useSizing } from "@/contexts/sizing-context";
+import { useSizing } from "@/hooks/use-sizing";
 import { CardOrigin } from "./card-origin";
 import {CardSlot} from "@/components/card-slot";
 import { Card } from "@/components/card";
