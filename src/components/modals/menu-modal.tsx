@@ -1,8 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Swords, LogIn, Settings } from "lucide-react";
+import Link from "next/link";
 import type { ServerUser } from "@/lib/server-user";
 
 interface MenuModalProps {
@@ -41,7 +41,7 @@ export function MenuModal({ user }: MenuModalProps) {
               size="lg"
               data-testid="create-room-button"
             >
-              <a href="/create-room">Create Room</a>
+              <Link href="/create-room" prefetch={true}>Create Room</Link>
             </Button>
 
             <Button
@@ -51,10 +51,10 @@ export function MenuModal({ user }: MenuModalProps) {
               size="lg"
               data-testid="join-existing-room-button"
             >
-              <a href="/join-room">
+              <Link href="/join-room" prefetch={true}>
                 <LogIn className="h-4 w-4 mr-2" />
                 Join Existing Room
-              </a>
+              </Link>
             </Button>
 
             <Button
@@ -63,10 +63,10 @@ export function MenuModal({ user }: MenuModalProps) {
               className="w-full border-amber-600 text-amber-700 hover:bg-amber-50"
               size="lg"
             >
-              <a href="/settings">
+              <Link href="/settings" prefetch={true}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
-              </a>
+              </Link>
             </Button>
           </div>
 

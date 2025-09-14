@@ -126,7 +126,7 @@ class GameServerAPI {
     return this.request('/api/users/@me/rooms', 'GET');
   }
 
-  // Room management
+  // Room management (direct room server calls, not following ApiResponse pattern)
   async createRoom(name: string, settings?: {
     maxPlayers?: number;
     turnDuration?: number;
@@ -134,31 +134,87 @@ class GameServerAPI {
   }): Promise<ApiResponse<{
     roomId: string;
     name: string;
-    createdAt: string;
     maxPlayers: number;
     turnDuration?: number;
     selectedDeck?: string;
   }>> {
-    return this.request('/api/rooms', 'POST', {
-      name,
-      maxPlayers: settings?.maxPlayers,
-      turnDuration: settings?.turnDuration,
-      selectedDeck: settings?.selectedDeck
-    });
+    const url = `${this.baseURL}/api/create-room`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          name,
+          maxPlayers: settings?.maxPlayers,
+          turnDuration: settings?.turnDuration,
+          selectedDeck: settings?.selectedDeck
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        data: data
+      };
+    } catch (error) {
+      console.error(`Game server API error (/create-room):`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   async joinRoom(roomId: string, playerId: string, playerName: string, playerColor: string): Promise<ApiResponse<{
-    roomId: string;
-    playerId: string;
-    playerName: string;
-    playerColor: string;
+    success: boolean;
+    room: Record<string, unknown>;
   }>> {
-    return this.request('/api/rooms/join', 'POST', {
-      roomId,
-      playerId,
-      playerName,
-      playerColor
-    });
+    const url = `${this.baseURL}/api/join-room`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          roomId,
+          playerId,
+          playerName,
+          playerColor
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        data: {
+          success: true,
+          room: data
+        }
+      };
+    } catch (error) {
+      console.error(`Game server API error (/join-room):`, error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 }
 

@@ -1,9 +1,14 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { createRoomAction } from "@/actions/room-actions";
 import { ArrowLeft, Settings, Clock, Layers, Play } from "lucide-react";
+import Link from "next/link";
+import { useActionState } from "react";
 import type { ServerUser } from "@/lib/server-user";
 
 interface CreateRoomModalProps {
@@ -11,6 +16,7 @@ interface CreateRoomModalProps {
 }
 
 export function CreateRoomModal({ user }: CreateRoomModalProps) {
+  const [state, formAction, isPending] = useActionState(createRoomAction, { error: undefined });
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -35,7 +41,8 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
           <CardDescription>Configure your new game room</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={createRoomAction} className="space-y-6">
+          <ErrorMessage message={state.error || null} />
+          <form action={formAction} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Player Name</label>
               <Input
@@ -113,18 +120,19 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
                 variant="outline"
                 className="flex-1 border-amber-600 text-amber-700 hover:bg-amber-50"
               >
-                <a href="/">
+                <Link href="/" prefetch={true}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
-                </a>
+                </Link>
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                disabled={isPending}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50"
                 data-testid="create-and-start-game-button"
               >
                 <Play className="h-4 w-4 mr-2" />
-                Create & Start Game
+                {isPending ? 'Creating...' : 'Create & Start Game'}
               </Button>
             </div>
           </form>

@@ -1,9 +1,14 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { joinRoomAction } from "@/actions/room-actions";
 import { ArrowLeft, LogIn, Settings } from "lucide-react";
+import Link from "next/link";
+import { useActionState } from "react";
 import type { ServerUser, RecentRoom } from "@/lib/server-user";
 
 interface JoinRoomModalProps {
@@ -12,6 +17,8 @@ interface JoinRoomModalProps {
 }
 
 export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
+  const [state, formAction, isPending] = useActionState(joinRoomAction, { error: undefined });
+
   // Format time since for recent rooms
   const formatTimeSince = (dateString: string): string => {
     const now = new Date();
@@ -47,7 +54,8 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
           <CardDescription>Enter the room code or select from recent rooms</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={joinRoomAction} className="space-y-6">
+          <ErrorMessage message={state.error || null} />
+          <form action={formAction} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Room ID</label>
               <Input
@@ -80,7 +88,7 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
                 <label className="block text-sm font-medium text-foreground mb-2">Recent Rooms</label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {recentRooms.map((room) => (
-                    <form key={room.roomId} action={joinRoomAction} className="contents">
+                    <form key={room.roomId} action={formAction} className="contents">
                       <input type="hidden" name="roomId" value={room.roomId} />
                       <input type="hidden" name="playerName" value={user?.playerName || ''} />
                       <Button
@@ -109,18 +117,19 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
                 variant="outline"
                 className="flex-1 border-amber-600 text-amber-700 hover:bg-amber-50"
               >
-                <a href="/">
+                <Link href="/" prefetch={true}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back
-                </a>
+                </Link>
               </Button>
               <Button
                 type="submit"
-                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                disabled={isPending}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50"
                 data-testid="join-room-submit-button"
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                Join
+                {isPending ? 'Joining...' : 'Join'}
               </Button>
             </div>
 
@@ -132,10 +141,10 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
                 className="w-full text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 size="sm"
               >
-                <a href="/settings">
+                <Link href="/settings" prefetch={true}>
                   <Settings className="h-4 w-4 mr-2" />
                   Settings
-                </a>
+                </Link>
               </Button>
             </div>
           </form>
