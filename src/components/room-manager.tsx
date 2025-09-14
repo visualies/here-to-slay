@@ -8,28 +8,22 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSound } from "@/contexts/sound-context";
-import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2, Loader2, Check, X } from "lucide-react";
+import { useUser } from "@/hooks/use-user";
+import { Swords, LogIn, Settings, ArrowLeft, Layers, Play, Trash2, Loader2, Clock } from "lucide-react";
 
 interface RoomManagerProps {
   onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
+  initialPlayerData?: {
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+  };
 }
 
-interface PlayerData {
-  playerId: string;
-  playerName: string;
-  playerColor: string;
-  lastSeen: string;
-  createdAt: string;
-}
 
-interface RecentRoom {
-  room_id: string;
-  joined_at: string;
-  last_active: string;
-  room_created_at: string;
-}
 
-export function RoomManager({ onRoomJoined }: RoomManagerProps) {
+export function RoomManager(props: RoomManagerProps) {
+  const { onRoomJoined } = props;
   const [mode, setMode] = useState<'menu' | 'join' | 'settings'>('menu');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [playerName, setPlayerName] = useState('');
@@ -37,46 +31,24 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [error, setError] = useState('');
   const [turnDuration, setTurnDuration] = useState(30);
   const [selectedDeck, setSelectedDeck] = useState('standard');
-  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
-  const [currentPlayer, setCurrentPlayer] = useState<PlayerData | null>(null);
-  const [rejoinStatus, setRejoinStatus] = useState<Record<string, 'idle' | 'connecting' | 'restoring' | 'ready' | 'error'>>({});
   const { playThemeMusic, stopThemeMusic } = useSound();
+  const { user, updateUser } = useUser();
 
-  // Start background music and load player data when component mounts
+  // Start background music and initialize player name from user context
   useEffect(() => {
     playThemeMusic();
 
-    // Load current player and recent rooms from server
-    const loadPlayerData = async () => {
-      try {
-        const [playerResponse, recentRoomsResponse] = await Promise.all([
-          gameServerAPI.getCurrentPlayer(),
-          gameServerAPI.getRecentRooms()
-        ]);
-        
-        if (playerResponse.success && playerResponse.data) {
-          setCurrentPlayer(playerResponse.data);
-          setPlayerName(playerResponse.data.playerName);
-          console.log(`👤 Loaded player: ${playerResponse.data.playerName} (${playerResponse.data.playerId})`);
-        }
-        
-        if (recentRoomsResponse.success && recentRoomsResponse.data) {
-          setRecentRooms(recentRoomsResponse.data.recentRooms);
-          console.log(`🏠 Loaded ${recentRoomsResponse.data.recentRooms.length} recent rooms`);
-        }
-      } catch (error) {
-        console.error('Failed to load player data:', error);
-        setError('Failed to load player data. Please refresh the page.');
-      }
-    };
-
-    loadPlayerData();
+    // Initialize player name from user context
+    if (user) {
+      setPlayerName(user.playerName);
+      console.log(`👤 Using user data from context: ${user.playerName}`);
+    }
 
     return () => {
       // Stop theme music when leaving room manager
       stopThemeMusic();
     };
-  }, []); // Remove function dependencies to prevent recreation loop
+  }, [user]); // Add initialPlayerData as dependency
 
   // Generate consistent player color based on name
   const generatePlayerColor = (name: string): string => {
@@ -97,51 +69,22 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  // Helper function to format time since last active
-  const formatTimeSince = (dateString: string): string => {
-    const now = Date.now();
-    const date = new Date(dateString).getTime();
-    const diff = now - date;
-    
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
+  // Create a player when name is entered
+  const createPlayerIfNeeded = (name: string) => {
+    if (!user && name.trim()) {
+      const newPlayer = {
+        playerId: `player-${Date.now()}`,
+        playerName: name.trim(),
+        playerColor: generatePlayerColor(name.trim()),
+        lastSeen: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      updateUser(newPlayer);
+      return newPlayer;
+    }
+    return user;
   };
 
-  // Handle rejoining a recent room
-  const handleRejoinRoom = async (roomId: string) => {
-    // Prevent multiple clicks
-    if (rejoinStatus[roomId] === 'connecting' || rejoinStatus[roomId] === 'restoring') {
-      return;
-    }
-
-    setRejoinStatus(prev => ({ ...prev, [roomId]: 'connecting' }));
-    
-    try {
-      // First, join the room
-      await handleJoinExistingRoom(roomId);
-      
-      // Set status to restoring - this indicates we're waiting for game state restoration
-      setRejoinStatus(prev => ({ ...prev, [roomId]: 'restoring' }));
-      
-      // Wait for game state to be fully restored
-      // This gives time for the Yjs document to synchronize and restore hand cards
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mark as ready
-      setRejoinStatus(prev => ({ ...prev, [roomId]: 'ready' }));
-      
-    } catch (err) {
-      setRejoinStatus(prev => ({ ...prev, [roomId]: 'error' }));
-      console.error('Failed to rejoin room:', err);
-    } finally {
-    }
-  };
 
 
   // Handle room ID input
@@ -153,6 +96,13 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const handleCreateRoom = async () => {
     if (!playerName.trim()) {
       setError('Please enter your name');
+      return;
+    }
+
+    // Create player if needed
+    const player = createPlayerIfNeeded(playerName.trim());
+    if (!player) {
+      setError('Failed to create player');
       return;
     }
 
@@ -168,9 +118,16 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       return;
     }
 
-    if (!currentPlayer) {
-      setError('Player data not loaded. Please refresh the page.');
-      return;
+    // Create a default player if none exists
+    if (!user) {
+      const defaultPlayer = {
+        playerId: `player-${Date.now()}`,
+        playerName: playerName.trim(),
+        playerColor: generatePlayerColor(playerName.trim()),
+        lastSeen: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      updateUser(defaultPlayer);
     }
 
     setLoading(true);
@@ -179,24 +136,30 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     try {
       // Update player name if it changed
       let finalPlayerName = playerName.trim();
-      let finalPlayerColor = currentPlayer.playerColor;
+      let finalPlayerColor = user?.playerColor || generatePlayerColor(playerName.trim());
       
-      if (finalPlayerName !== currentPlayer.playerName) {
+      if (user && finalPlayerName !== user.playerName) {
         const response = await gameServerAPI.updateCurrentPlayer(finalPlayerName);
         if (response.success && response.data) {
-          setCurrentPlayer(response.data);
+          updateUser({
+            playerId: user.playerId,
+            playerName: response.data.playerName,
+            playerColor: response.data.playerColor
+          });
           finalPlayerColor = response.data.playerColor;
         }
       }
       
       // Join the room via API
-      await joinRoom(targetRoomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
+      await joinRoom(targetRoomId, user?.playerId || `player-${Date.now()}`, finalPlayerName, finalPlayerColor);
+      
+      // Player data is managed by the API, no need to save locally
       
       // Stop the theme music before joining the game
       stopThemeMusic();
       
       // If successful, connect to the multiplayer game
-      onRoomJoined(targetRoomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
+      onRoomJoined(targetRoomId, user?.playerId || `player-${Date.now()}`, finalPlayerName, finalPlayerColor);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
@@ -211,9 +174,16 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       return;
     }
 
-    if (!currentPlayer) {
-      setError('Player data not loaded. Please refresh the page.');
-      return;
+    // Create a default player if none exists
+    if (!user) {
+      const defaultPlayer = {
+        playerId: `player-${Date.now()}`,
+        playerName: playerName.trim(),
+        playerColor: generatePlayerColor(playerName.trim()),
+        lastSeen: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      };
+      updateUser(defaultPlayer);
     }
 
     setLoading(true);
@@ -230,26 +200,28 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
 
       // Update player name if it changed
       let finalPlayerName = playerName.trim();
-      let finalPlayerColor = currentPlayer.playerColor;
+      let finalPlayerColor = user?.playerColor || generatePlayerColor(playerName.trim());
       
-      if (finalPlayerName !== currentPlayer.playerName) {
-        const response = await gameServerAPI.updateCurrentPlayer(finalPlayerName);
-        if (response.success && response.data) {
-          setCurrentPlayer(response.data);
-          finalPlayerColor = response.data.playerColor;
-        }
+      // Update local player data if name changed
+      if (user && finalPlayerName !== user.playerName) {
+        updateUser({
+          ...user,
+          playerName: finalPlayerName
+        });
       }
 
       // Immediately join the created room as the host
-      await joinRoom(room.roomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
+      await joinRoom(room.roomId, user?.playerId || `player-${Date.now()}`, finalPlayerName, finalPlayerColor);
 
       console.log(`🏠 Starting game as host: ${finalPlayerName}`);
+
+      // Player data is managed by the API, no need to save locally
 
       // Stop the theme music before joining the game
       stopThemeMusic();
 
       // Connect to the multiplayer game
-      onRoomJoined(room.roomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
+      onRoomJoined(room.roomId, user?.playerId || `player-${Date.now()}`, finalPlayerName, finalPlayerColor);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create and start game');
@@ -300,92 +272,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               </div>
             )}
 
-            {/* Recent Rooms Section */}
-            {recentRooms.length > 0 && (
-              <div className="space-y-3" data-testid="recent-rooms-section">
-                <h3 className="text-sm font-medium text-foreground flex items-center">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Recent Rooms ({recentRooms.length})
-                </h3>
-                
-                {/* Restoration Status Messages */}
-                {Object.entries(rejoinStatus).map(([roomId, status]) => {
-                  if (status === 'idle' || status === 'error') return null;
-                  
-                  return (
-                    <div key={roomId} className="text-xs text-muted-foreground bg-muted/50 p-2 rounded">
-                      {status === 'connecting' && `Connecting to room ${roomId}...`}
-                      {status === 'restoring' && `Restoring game state for room ${roomId}...`}
-                      {status === 'ready' && `Game state restored for room ${roomId}! You can continue playing.`}
-                    </div>
-                  );
-                })}
-                <div className="max-h-32 overflow-y-auto space-y-2">
-                  {recentRooms.slice(0, 3).map((room) => (
-                    <div key={room.room_id} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800" data-testid={`recent-room-${room.room_id}`}>
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div
-                          className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
-                          style={{ backgroundColor: currentPlayer?.playerColor || '#FF6B6B' }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{room.room_id}</div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {currentPlayer?.playerName || 'Player'} • {formatTimeSince(room.last_active)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        {rejoinStatus[room.room_id] === 'ready' ? (
-                          <Button
-                            onClick={() => {
-                              // The game should already be joined at this point
-                              // This is just a visual confirmation
-                              console.log('Game state restored, player can continue');
-                            }}
-                            size="sm"
-                            variant="outline"
-                            className="h-7 px-2 text-xs bg-green-100 border-green-300 text-green-700 hover:bg-green-200"
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            Continue
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => handleRejoinRoom(room.room_id)}
-                            size="sm"
-                            variant="outline"
-                            disabled={rejoinStatus[room.room_id] === 'connecting' || rejoinStatus[room.room_id] === 'restoring'}
-                            className={`h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 ${
-                              rejoinStatus[room.room_id] === 'error' ? 'bg-red-100 border-red-300 text-red-700' : ''
-                            }`}
-                          >
-                            {rejoinStatus[room.room_id] === 'connecting' ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Connecting...
-                              </>
-                            ) : rejoinStatus[room.room_id] === 'restoring' ? (
-                              <>
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                Restoring...
-                              </>
-                            ) : rejoinStatus[room.room_id] === 'error' ? (
-                              <>
-                                <X className="h-3 w-3 mr-1" />
-                                Error
-                              </>
-                            ) : (
-                              'Rejoin'
-                            )}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className="space-y-3">
               <Button

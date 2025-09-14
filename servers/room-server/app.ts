@@ -18,7 +18,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   app.route('/api', createRoomsRouter(db, docs))
   app.route('/api/game', createGameRouter(db, docs))
   app.route('/api/action-chains', createActionChainsRouter(db, docs))
-  app.route('/api/users', createUsersRouter(db))
+  app.route('/api/users', createUsersRouter())
   app.route('/api', createHealthRouter())
 
   // Default route with API documentation

@@ -1,8 +1,7 @@
 import { Hono } from 'hono'
 import { setCookie, getCookie } from 'hono/cookie'
-import type RoomDatabase from '../../../src/lib/database.js'
 
-export function createUsersRouter(db: RoomDatabase) {
+export function createUsersRouter() {
   const router = new Hono()
 
   // Generate a unique player ID
@@ -22,24 +21,21 @@ export function createUsersRouter(db: RoomDatabase) {
       const playerId = getCookie(c, 'player_id')
       
       if (playerId) {
-        // Try to get existing player data
-        const player = db.getPlayerById(playerId)
-        if (player) {
-          // Update last seen timestamp
-          db.updatePlayerLastSeen(playerId)
-          return c.json({
-            playerId: player.id,
-            playerName: player.name,
-            playerColor: player.color,
-            lastSeen: player.last_seen,
-            createdAt: player.created_at
-          })
-        }
+        // Return existing player data from cookie
+        return c.json({
+          success: true,
+          data: {
+            playerId: playerId,
+            playerName: 'Player', // Default name, can be updated
+            playerColor: '#FF6B6B', // Default color, can be updated
+            lastSeen: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+          }
+        })
       }
 
-      // No valid cookie or player not found - create new player
+      // No valid cookie - create new player
       const newPlayerId = generatePlayerId()
-      const newPlayer = db.createPlayer(newPlayerId)
 
       // Set cookie with 1 year expiration
       setCookie(c, 'player_id', newPlayerId, {
@@ -50,11 +46,14 @@ export function createUsersRouter(db: RoomDatabase) {
       })
 
       return c.json({
-        playerId: newPlayer.id,
-        playerName: newPlayer.name,
-        playerColor: newPlayer.color,
-        lastSeen: newPlayer.last_seen,
-        createdAt: newPlayer.created_at
+        success: true,
+        data: {
+          playerId: newPlayerId,
+          playerName: 'Player', // Default name
+          playerColor: '#FF6B6B', // Default color
+          lastSeen: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
       })
     } catch (error) {
       console.error('Error in /users/@me:', error)
@@ -81,18 +80,17 @@ export function createUsersRouter(db: RoomDatabase) {
         return c.json({ error: 'Player name is required' }, 400)
       }
 
-      const updatedPlayer = db.updatePlayer(playerId, playerName, playerColor)
-      
-      if (!updatedPlayer) {
-        return c.json({ error: 'Player not found' }, 404)
-      }
-
+      // Since we don't have a database, just return the updated data
+      // The actual player data will be stored in the Yjs document when they join a room
       return c.json({
-        playerId: updatedPlayer.id,
-        playerName: updatedPlayer.name,
-        playerColor: updatedPlayer.color,
-        lastSeen: updatedPlayer.last_seen,
-        createdAt: updatedPlayer.created_at
+        success: true,
+        data: {
+          playerId: playerId,
+          playerName: playerName,
+          playerColor: playerColor || '#FF6B6B',
+          lastSeen: new Date().toISOString(),
+          createdAt: new Date().toISOString()
+        }
       })
     } catch (error) {
       console.error('Error updating player:', error)
@@ -112,11 +110,13 @@ export function createUsersRouter(db: RoomDatabase) {
         return c.json({ error: 'No player ID found in cookie' }, 400)
       }
 
-      const recentRooms = db.getPlayerRecentRooms(playerId)
-      
+      // Since we removed recent rooms functionality, return empty array
       return c.json({
-        playerId,
-        recentRooms
+        success: true,
+        data: {
+          playerId,
+          recentRooms: []
+        }
       })
     } catch (error) {
       console.error('Error getting recent rooms:', error)
