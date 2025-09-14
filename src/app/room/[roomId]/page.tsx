@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { GameBoard } from "./game-board";
-import { UserProvider } from "@/contexts/user-context";
-import { getServerUserData } from "@/lib/server-user";
+import { RoomProvider } from "@/contexts/room-context";
 
 interface RoomPageProps {
   params: {
@@ -17,12 +16,9 @@ export default async function RoomPage({ params }: RoomPageProps) {
     notFound();
   }
 
-  // Get server user data
-  const serverUser = await getServerUserData();
-
   return (
-    <UserProvider initialUser={serverUser.playerId ? serverUser : null}>
-      <GameBoard roomId={roomId} user={serverUser} />
-    </UserProvider>
+    <RoomProvider roomId={roomId}>
+      <GameBoard />
+    </RoomProvider>
   );
 }

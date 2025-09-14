@@ -11,25 +11,39 @@ import { gameServerAPI } from '../lib/game-server-api';
 import { updateLastActive } from '../lib/player-persistence';
 import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
 import { createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
+import { useUser } from '../hooks/use-user';
 
 const RoomContext = createContext<Room | null>(null);
 
 interface RoomProviderProps {
   roomId: string;
-  playerId: string;
-  playerName: string;
-  playerColor: string;
   children: ReactNode;
 }
 
-export function RoomProvider({ roomId, playerId, playerName, playerColor, children }: RoomProviderProps) {
+export function RoomProvider({ roomId, children }: RoomProviderProps) {
+  const { user, loading } = useUser();
+
+  // Don't render anything while user is loading
+  if (loading || !user) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading room...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { playerId, playerName, playerColor } = user;
+
   // Yjs setup
   const docRef = useRef<ReadOnlyYDoc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
   const gameStateRef = useRef<Y.Map<unknown> | null>(null);
   const playersRef = useRef<Y.Map<Player> | null>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // React state
   const [players, setPlayers] = useState<Player[]>([]);
   const [gamePhase, setGamePhase] = useState<string>('waiting');
