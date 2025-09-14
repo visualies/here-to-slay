@@ -2,7 +2,6 @@
 
 import { gameServerAPI } from "@/lib/game-server-api";
 import { redirect } from "next/navigation";
-import { isRedirectError } from "next/dist/client/components/redirect";
 
 export type ActionState = {
   error?: string;
@@ -13,21 +12,24 @@ export async function createRoomAction(
   prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const playerName = formData.get('playerName') as string;
+  const turnDuration = parseInt(formData.get('turnDuration') as string) || 30;
+  const selectedDeck = formData.get('selectedDeck') as string || 'standard';
+
+  if (!playerName || playerName.trim().length === 0) {
+    return { error: 'Player name is required' };
+  }
+
+  if (playerName.trim().length > 20) {
+    return { error: 'Player name must be 20 characters or less' };
+  }
+
+  let roomResponse: any;
+  let playerResponse: any;
+
   try {
-    const playerName = formData.get('playerName') as string;
-    const turnDuration = parseInt(formData.get('turnDuration') as string) || 30;
-    const selectedDeck = formData.get('selectedDeck') as string || 'standard';
-
-    if (!playerName || playerName.trim().length === 0) {
-      return { error: 'Player name is required' };
-    }
-
-    if (playerName.trim().length > 20) {
-      return { error: 'Player name must be 20 characters or less' };
-    }
-
     // Create room with the configured settings
-    const roomResponse = await gameServerAPI.createRoom('Game Room', {
+    roomResponse = await gameServerAPI.createRoom('Game Room', {
       maxPlayers: 4, // Could be made configurable later
       turnDuration,
       selectedDeck
@@ -38,7 +40,7 @@ export async function createRoomAction(
     }
 
     // Get current player (this will create one automatically if none exists)
-    let playerResponse = await gameServerAPI.getCurrentPlayer();
+    playerResponse = await gameServerAPI.getCurrentPlayer();
     if (!playerResponse.success || !playerResponse.data) {
       return { error: playerResponse.message || 'Failed to get or create player' };
     }
@@ -52,17 +54,13 @@ export async function createRoomAction(
         return { error: updateResponse.message || 'Failed to update player information' };
       }
     }
-
-    // Redirect to the game with room data
-    redirect(`/room/${roomResponse.data.roomId}?playerId=${playerResponse.data.playerId}&playerName=${encodeURIComponent(playerResponse.data.playerName)}&playerColor=${encodeURIComponent(playerResponse.data.playerColor)}`);
   } catch (error) {
-    // Re-throw redirect errors so they work properly
-    if (isRedirectError(error)) {
-      throw error;
-    }
     console.error('Failed to create room:', error);
     return { error: error instanceof Error ? error.message : 'Failed to create room' };
   }
+
+  // Redirect happens outside try-catch so it's not caught as an error
+  redirect(`/room/${roomResponse.data.roomId}`);
 }
 
 export async function joinRoomAction(
@@ -121,16 +119,12 @@ export async function joinRoomAction(
 
     if (joinResult.success) {
       // Redirect to the game with room data
-      redirect(`/room/${roomId.toUpperCase()}?playerId=${playerId}&playerName=${encodeURIComponent(playerName)}&playerColor=${encodeURIComponent(playerResponse.success && playerResponse.data ? playerResponse.data.playerColor : '#FF6B6B')}`);
+      redirect(`/room/${roomId.toUpperCase()}`);
     } else {
       return { error: joinResult.message || 'Failed to join room. Please check the room ID.' };
     }
   } catch (error) {
-    // Re-throw redirect errors so they work properly
-    if (isRedirectError(error)) {
-      throw error;
-    }
     console.error('Failed to join room:', error);
-    return { error: error instanceof Error ? error.message : 'Failed to join room' };
+    return { error: error instanceof Error ? error.message : 'Failed to create room' };
   }
 }
