@@ -31,6 +31,7 @@ class GameServerAPI {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for user authentication
         body: data ? JSON.stringify(data) : undefined,
       });
 
@@ -80,6 +81,39 @@ class GameServerAPI {
   // Utility
   async saveGameState(roomId: string): Promise<ApiResponse> {
     return this.request('/api/game/save', 'POST', { roomId });
+  }
+
+  // User management
+  async getCurrentPlayer(): Promise<ApiResponse<{
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+    lastSeen: string;
+    createdAt: string;
+  }>> {
+    return this.request('/api/users/@me', 'GET');
+  }
+
+  async updateCurrentPlayer(playerName: string, playerColor?: string): Promise<ApiResponse<{
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+    lastSeen: string;
+    createdAt: string;
+  }>> {
+    return this.request('/api/users/@me', 'PUT', { playerName, playerColor });
+  }
+
+  async getRecentRooms(): Promise<ApiResponse<{
+    playerId: string;
+    recentRooms: Array<{
+      room_id: string;
+      joined_at: string;
+      last_active: string;
+      room_created_at: string;
+    }>;
+  }>> {
+    return this.request('/api/users/@me/rooms', 'GET');
   }
 }
 

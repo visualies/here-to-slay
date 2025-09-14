@@ -3,6 +3,7 @@ import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createActionChainsRouter } from './routes/action-chains.js'
 import { createHealthRouter } from './routes/health.js'
+import { createUsersRouter } from './routes/users.js'
 import { corsMiddleware } from './middleware/cors.js'
 import type RoomDatabase from '../../src/lib/database.js'
 import type * as Y from 'yjs'
@@ -17,6 +18,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   app.route('/api', createRoomsRouter(db, docs))
   app.route('/api/game', createGameRouter(db, docs))
   app.route('/api/action-chains', createActionChainsRouter(db, docs))
+  app.route('/api/users', createUsersRouter(db))
   app.route('/api', createHealthRouter())
 
   // Default route with API documentation
@@ -38,6 +40,9 @@ API Endpoints:
 - POST /api/action-chains/start-chain
 - POST /api/action-chains/continue-chain
 - GET /api/action-chains/pending-chains
+- GET /api/users/@me
+- PUT /api/users/@me
+- GET /api/users/@me/rooms
 - GET /api/test`)
   })
 

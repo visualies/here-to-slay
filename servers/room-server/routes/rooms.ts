@@ -110,6 +110,9 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       // Use database method to join and persist
       const result = db.joinRoom(roomId, playerId, playerName, playerColor, ydoc)
 
+      // Track player joining this room
+      db.trackPlayerRoom(playerId, roomId)
+
       return c.json(result)
     } catch (error) {
       return c.json(

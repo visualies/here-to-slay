@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createRoom, joinRoom } from "../lib/multiplayer";
-import { getStoredPlayerData, storePlayerData, generatePersistentPlayerId, getAllPlayerRooms, clearRoomData } from "../lib/player-persistence";
+import { gameServerAPI } from "../lib/game-server-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -18,7 +18,15 @@ interface PlayerData {
   playerId: string;
   playerName: string;
   playerColor: string;
-  lastActive: number;
+  lastSeen: string;
+  createdAt: string;
+}
+
+interface RecentRoom {
+  room_id: string;
+  joined_at: string;
+  last_active: string;
+  room_created_at: string;
 }
 
 export function RoomManager({ onRoomJoined }: RoomManagerProps) {
@@ -29,20 +37,40 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [error, setError] = useState('');
   const [turnDuration, setTurnDuration] = useState(30);
   const [selectedDeck, setSelectedDeck] = useState('standard');
-  const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: PlayerData }>>([]);
-  const [isReturningPlayer, setIsReturningPlayer] = useState(false);
-  const [originalPlayerName, setOriginalPlayerName] = useState('');
+  const [recentRooms, setRecentRooms] = useState<RecentRoom[]>([]);
+  const [currentPlayer, setCurrentPlayer] = useState<PlayerData | null>(null);
   const [rejoinStatus, setRejoinStatus] = useState<Record<string, 'idle' | 'connecting' | 'restoring' | 'ready' | 'error'>>({});
   const { playThemeMusic, stopThemeMusic } = useSound();
 
-  // Start background music and load recent rooms when component mounts
+  // Start background music and load player data when component mounts
   useEffect(() => {
     playThemeMusic();
 
-    // Load recent rooms from localStorage
-    const rooms = getAllPlayerRooms();
-    setRecentRooms(rooms);
-    console.log(`🔒 Loaded ${rooms.length} recent rooms from localStorage`);
+    // Load current player and recent rooms from server
+    const loadPlayerData = async () => {
+      try {
+        const [playerResponse, recentRoomsResponse] = await Promise.all([
+          gameServerAPI.getCurrentPlayer(),
+          gameServerAPI.getRecentRooms()
+        ]);
+        
+        if (playerResponse.success && playerResponse.data) {
+          setCurrentPlayer(playerResponse.data);
+          setPlayerName(playerResponse.data.playerName);
+          console.log(`👤 Loaded player: ${playerResponse.data.playerName} (${playerResponse.data.playerId})`);
+        }
+        
+        if (recentRoomsResponse.success && recentRoomsResponse.data) {
+          setRecentRooms(recentRoomsResponse.data.recentRooms);
+          console.log(`🏠 Loaded ${recentRoomsResponse.data.recentRooms.length} recent rooms`);
+        }
+      } catch (error) {
+        console.error('Failed to load player data:', error);
+        setError('Failed to load player data. Please refresh the page.');
+      }
+    };
+
+    loadPlayerData();
 
     return () => {
       // Stop theme music when leaving room manager
@@ -51,7 +79,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   }, []); // Remove function dependencies to prevent recreation loop
 
   // Generate consistent player color based on name
-  const generatePlayerColor = (name: string) => {
+  const generatePlayerColor = (name: string): string => {
     const colors = [
       '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
       '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
@@ -69,42 +97,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  // Generate random player name and color on component mount
-  useEffect(() => {
-    const heroNames = [
-      // Fighter Class
-      'Bad Axe', 'Bear Claw', 'Beary Wise', 'Fury Knuckle', 'Heavy Bear', 'Pan Chucks', 'Qi Bear', 'Tough Teddy',
-      // Bard Class
-      'Dodgy Dealer', 'Fuzzy Cheeks', 'Greedy Cheeks', 'Lucky Bucky', 'Mellow Dee', 'Napping Nibbles', 'Peanut', 'Tipsy Tootie',
-      // Guardian Class
-      'Calming Voice', 'Guiding Light', 'Holy Curselifter', 'Iron Resolve', 'Mighty Blade', 'Radiant Horn', 'Vibrant Glow', 'Wise Shield',
-      // Ranger Class
-      'Bullseye', 'Hook', 'Lookie Rookie', 'Quick Draw', 'Serious Grey', 'Sharp Fox', 'Wildshot', 'Wily Red',
-      // Thief Class
-      'Kit Napper', 'Meowzio', 'Plundering Puma', 'Shurikitty', 'Silent Shadow', 'Slippery Paws', 'Sly Pickings', 'Smooth Mimimeow',
-      // Wizard Class
-      'Bun Bun', 'Buttons', 'Fluffy', 'Hopper', 'Snowball', 'Spooky', 'Whiskers', 'Wiggles',
-      // Warrior Class
-      'Agile Dagger', 'Blinding Blade', 'Critical Fang', 'Hardened Hunter', 'Looting Lupo', 'Silent Shield', 'Tenacious Timber', 'Wolfgang Pack',
-      // Druid Class
-      'Big Buckley', 'Buck Omens', 'Doe Fallow', 'Glowing Antler', 'Maegisty', 'Magus Moose', 'Majestelk', 'Stagguard',
-      // Berserker Class
-      'Blood-Crazed Feline', 'Feral Cat', 'Rabid Beast', 'Reckless Raccoon', 'Spiky Bulldog', 'Untamed Orangutan', 'Vicious Wildcat', 'Wild Marmot',
-      // Necromancer Class
-      'Bone Collector', 'Boston Terrier', 'Dark-Magic Dog', 'Grim Puffer', 'Perfect Vessel', 'Plague-Ridden Puppy', 'Soul Stealer', 'Undead Chihuahua',
-      // Sorcerer Class
-      'Dragalter', 'Dystortivern', 'Extraga', 'Luut', 'Mirroryu', 'Oracon', 'Renovern', 'Shamanaga', 'Smok'
-    ];
-    
-    const randomName = heroNames[Math.floor(Math.random() * heroNames.length)];
-    setPlayerName(randomName);
-    setOriginalPlayerName(randomName);
-  }, []);
-
   // Helper function to format time since last active
-  const formatTimeSince = (timestamp: number): string => {
+  const formatTimeSince = (dateString: string): string => {
     const now = Date.now();
-    const diff = now - timestamp;
+    const date = new Date(dateString).getTime();
+    const diff = now - date;
     
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -146,50 +143,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     }
   };
 
-  // Handle removing a room from recent list
-  const handleRemoveRoom = (roomId: string) => {
-    clearRoomData(roomId);
-    const updatedRooms = recentRooms.filter(r => r.roomId !== roomId);
-    setRecentRooms(updatedRooms);
-    // Clear rejoin status for this room
-    setRejoinStatus(prev => {
-      const newStatus = { ...prev };
-      delete newStatus[roomId];
-      return newStatus;
-    });
-    console.log(`🔒 Removed room ${roomId} from recent rooms`);
-  };
 
-
-  // Handle room ID input and check for existing player data
+  // Handle room ID input
   const handleRoomIdChange = (roomId: string) => {
     const formattedRoomId = roomId.toUpperCase();
     setJoinRoomId(formattedRoomId);
-    
-    if (formattedRoomId.length >= 3) { // Check once they've typed at least 3 characters
-      const existingPlayerData = getStoredPlayerData(formattedRoomId);
-      
-      if (existingPlayerData) {
-        // Player has been in this room before - lock in their previous identity
-        setIsReturningPlayer(true);
-        setOriginalPlayerName(playerName); // Store their current name so we can restore it if they change room ID
-        setPlayerName(existingPlayerData.playerName);
-        setError(''); // Clear any previous errors
-        console.log(`🔄 Detected returning player for room ${formattedRoomId}: ${existingPlayerData.playerName}`);
-      } else {
-        // Reset to original state if switching to a new room
-        if (isReturningPlayer) {
-          setIsReturningPlayer(false);
-          setPlayerName(originalPlayerName);
-        }
-      }
-    } else {
-      // Room ID is too short, reset returning player state
-      if (isReturningPlayer) {
-        setIsReturningPlayer(false);
-        setPlayerName(originalPlayerName);
-      }
-    }
   };
 
   const handleCreateRoom = async () => {
@@ -210,44 +168,35 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       return;
     }
 
+    if (!currentPlayer) {
+      setError('Player data not loaded. Please refresh the page.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      // Check for stored player data for reconnection
-      const storedPlayer = getStoredPlayerData(targetRoomId);
+      // Update player name if it changed
+      let finalPlayerName = playerName.trim();
+      let finalPlayerColor = currentPlayer.playerColor;
       
-      let playerId: string;
-      let finalPlayerName: string;
-      let playerColor: string;
-      
-      if (storedPlayer) {
-        // ALWAYS use stored session if it exists - never create new player
-        console.log(`🔄 Found existing session for room ${targetRoomId} - using stored player data`);
-        playerId = storedPlayer.playerId;
-        finalPlayerName = storedPlayer.playerName;
-        playerColor = storedPlayer.playerColor;
-        setPlayerName(finalPlayerName); // Update UI to show reconnected name
-        // Note: Using existing session - this is expected behavior, no need to show message
-      } else {
-        // Only create new player if NO stored session exists
-        console.log(`👋 No existing session found - creating new player: ${playerName.trim()}`);
-        playerId = generatePersistentPlayerId();
-        finalPlayerName = playerName.trim();
-        playerColor = generatePlayerColor(finalPlayerName);
+      if (finalPlayerName !== currentPlayer.playerName) {
+        const response = await gameServerAPI.updateCurrentPlayer(finalPlayerName);
+        if (response.success && response.data) {
+          setCurrentPlayer(response.data);
+          finalPlayerColor = response.data.playerColor;
+        }
       }
       
-      // First, try to join the room via API
-      await joinRoom(targetRoomId, playerId, finalPlayerName, playerColor);
-      
-      // Store player data for future reconnection
-      storePlayerData(targetRoomId, playerId, finalPlayerName, playerColor);
+      // Join the room via API
+      await joinRoom(targetRoomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
       
       // Stop the theme music before joining the game
       stopThemeMusic();
       
       // If successful, connect to the multiplayer game
-      onRoomJoined(targetRoomId, playerId, finalPlayerName, playerColor);
+      onRoomJoined(targetRoomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join room');
@@ -259,6 +208,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const handleStartGame = async () => {
     if (!playerName.trim()) {
       setError('Please enter your name');
+      return;
+    }
+
+    if (!currentPlayer) {
+      setError('Player data not loaded. Please refresh the page.');
       return;
     }
 
@@ -274,15 +228,20 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       });
       console.log('Room created:', room);
 
+      // Update player name if it changed
+      let finalPlayerName = playerName.trim();
+      let finalPlayerColor = currentPlayer.playerColor;
+      
+      if (finalPlayerName !== currentPlayer.playerName) {
+        const response = await gameServerAPI.updateCurrentPlayer(finalPlayerName);
+        if (response.success && response.data) {
+          setCurrentPlayer(response.data);
+          finalPlayerColor = response.data.playerColor;
+        }
+      }
+
       // Immediately join the created room as the host
-      const playerId = generatePersistentPlayerId();
-      const finalPlayerName = playerName.trim();
-      const playerColor = generatePlayerColor(finalPlayerName);
-
-      await joinRoom(room.roomId, playerId, finalPlayerName, playerColor);
-
-      // Store player data for future reconnection
-      storePlayerData(room.roomId, playerId, finalPlayerName, playerColor);
+      await joinRoom(room.roomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
 
       console.log(`🏠 Starting game as host: ${finalPlayerName}`);
 
@@ -290,7 +249,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       stopThemeMusic();
 
       // Connect to the multiplayer game
-      onRoomJoined(room.roomId, playerId, finalPlayerName, playerColor);
+      onRoomJoined(room.roomId, currentPlayer.playerId, finalPlayerName, finalPlayerColor);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create and start game');
@@ -362,22 +321,22 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                   );
                 })}
                 <div className="max-h-32 overflow-y-auto space-y-2">
-                  {recentRooms.slice(0, 3).map(({ roomId, playerData }) => (
-                    <div key={roomId} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800" data-testid={`recent-room-${roomId}`}>
+                  {recentRooms.slice(0, 3).map((room) => (
+                    <div key={room.room_id} className="flex items-center justify-between p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800" data-testid={`recent-room-${room.room_id}`}>
                       <div className="flex items-center space-x-3 flex-1">
                         <div
                           className="w-3 h-3 rounded-full border-2 border-white shadow-sm"
-                          style={{ backgroundColor: playerData.playerColor }}
+                          style={{ backgroundColor: currentPlayer?.playerColor || '#FF6B6B' }}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm">{roomId}</div>
+                          <div className="font-medium text-sm">{room.room_id}</div>
                           <div className="text-xs text-muted-foreground truncate">
-                            {playerData.playerName} • {formatTimeSince(playerData.lastActive)}
+                            {currentPlayer?.playerName || 'Player'} • {formatTimeSince(room.last_active)}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
-                        {rejoinStatus[roomId] === 'ready' ? (
+                        {rejoinStatus[room.room_id] === 'ready' ? (
                           <Button
                             onClick={() => {
                               // The game should already be joined at this point
@@ -393,25 +352,25 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                           </Button>
                         ) : (
                           <Button
-                            onClick={() => handleRejoinRoom(roomId)}
+                            onClick={() => handleRejoinRoom(room.room_id)}
                             size="sm"
                             variant="outline"
-                            disabled={rejoinStatus[roomId] === 'connecting' || rejoinStatus[roomId] === 'restoring'}
+                            disabled={rejoinStatus[room.room_id] === 'connecting' || rejoinStatus[room.room_id] === 'restoring'}
                             className={`h-7 px-2 text-xs border-amber-300 text-amber-700 hover:bg-amber-100 ${
-                              rejoinStatus[roomId] === 'error' ? 'bg-red-100 border-red-300 text-red-700' : ''
+                              rejoinStatus[room.room_id] === 'error' ? 'bg-red-100 border-red-300 text-red-700' : ''
                             }`}
                           >
-                            {rejoinStatus[roomId] === 'connecting' ? (
+                            {rejoinStatus[room.room_id] === 'connecting' ? (
                               <>
                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                 Connecting...
                               </>
-                            ) : rejoinStatus[roomId] === 'restoring' ? (
+                            ) : rejoinStatus[room.room_id] === 'restoring' ? (
                               <>
                                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                 Restoring...
                               </>
-                            ) : rejoinStatus[roomId] === 'error' ? (
+                            ) : rejoinStatus[room.room_id] === 'error' ? (
                               <>
                                 <X className="h-3 w-3 mr-1" />
                                 Error
@@ -421,14 +380,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                             )}
                           </Button>
                         )}
-                        <Button
-                          onClick={() => handleRemoveRoom(roomId)}
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
                   ))}
@@ -452,7 +403,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                   setMode('join');
                   // Reset state when entering join mode
                   setJoinRoomId('');
-                  setIsReturningPlayer(false);
                   setError('');
                 }}
                 disabled={loading}
@@ -534,10 +484,9 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               <Input
                 type="text"
                 value={playerName}
-                onChange={(e) => !isReturningPlayer && setPlayerName(e.target.value)}
+                onChange={(e) => setPlayerName(e.target.value)}
                 placeholder="Enter your player name"
                 maxLength={20}
-                disabled={isReturningPlayer}
                 data-testid="join-player-name-input"
               />
             </div>
@@ -552,11 +501,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
               <Button
                 onClick={() => {
                   setMode('menu');
-                  // Reset returning player state when going back
-                  if (isReturningPlayer) {
-                    setIsReturningPlayer(false);
-                    setPlayerName(originalPlayerName || '');
-                  }
                   setJoinRoomId('');
                   setError('');
                 }}
