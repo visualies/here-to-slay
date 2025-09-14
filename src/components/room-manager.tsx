@@ -307,16 +307,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           <ThemeToggle />
         </div>
         
-        {/* Background video */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
-        </video>
+        {/* Background image */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/flute.png")' }}
+        />
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/40" />
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm relative z-10">
@@ -505,16 +500,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           <ThemeToggle />
         </div>
         
-        {/* Background video */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
-        </video>
+        {/* Background image */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/flute.png")' }}
+        />
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/40" />
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm relative z-10">
@@ -626,16 +616,11 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
           <ThemeToggle />
         </div>
         
-        {/* Background video */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-        >
-          <source src="/flute_boomerang_simple.mp4" type="video/mp4" />
-        </video>
+        {/* Background image */}
+        <div 
+          className="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: 'url("/flute.png")' }}
+        />
         {/* Dark overlay for better readability */}
         <div className="absolute inset-0 bg-black/40" />
         <Card className="w-full max-w-md bg-white/95 backdrop-blur-sm relative z-10">
