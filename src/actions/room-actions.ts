@@ -2,6 +2,7 @@
 
 import { gameServerAPI } from "@/lib/game-server-api";
 import { redirect } from "next/navigation";
+import { isRedirectError } from "next/dist/client/components/redirect";
 
 export type ActionState = {
   error?: string;
@@ -55,6 +56,10 @@ export async function createRoomAction(
     // Redirect to the game with room data
     redirect(`/room/${roomResponse.data.roomId}?playerId=${playerResponse.data.playerId}&playerName=${encodeURIComponent(playerResponse.data.playerName)}&playerColor=${encodeURIComponent(playerResponse.data.playerColor)}`);
   } catch (error) {
+    // Re-throw redirect errors so they work properly
+    if (isRedirectError(error)) {
+      throw error;
+    }
     console.error('Failed to create room:', error);
     return { error: error instanceof Error ? error.message : 'Failed to create room' };
   }
@@ -121,6 +126,10 @@ export async function joinRoomAction(
       return { error: joinResult.message || 'Failed to join room. Please check the room ID.' };
     }
   } catch (error) {
+    // Re-throw redirect errors so they work properly
+    if (isRedirectError(error)) {
+      throw error;
+    }
     console.error('Failed to join room:', error);
     return { error: error instanceof Error ? error.message : 'Failed to join room' };
   }
