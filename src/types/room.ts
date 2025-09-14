@@ -1,5 +1,6 @@
 import type { Player } from './player';
 import type { Card } from './card';
+import type { WebsocketProvider } from 'y-websocket';
 
 export type GameActions = {
   playCard: (cardId: string) => void;
@@ -11,6 +12,11 @@ export type GameActions = {
 export type Room = {
   // Room info
   roomId: string;
+  
+  // Yjs refs for read-only access if needed
+  provider: WebsocketProvider | null;
+  playersRef: unknown; // Y.Map<Player> - using unknown for YJS map
+  gameStateRef: unknown; // Y.Map<unknown> - using unknown for YJS map
   
   // Game state
   players: Player[];

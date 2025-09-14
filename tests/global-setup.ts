@@ -8,7 +8,7 @@ import http from 'http'
 
 async function globalSetup(_config: FullConfig) {
   // Set test environment variable
-  process.env.NODE_ENV = 'test'
+  (process.env as any).NODE_ENV = 'test'
 
   // Clean up any existing test database
   const testDbPath = path.join(process.cwd(), 'test-rooms.db')

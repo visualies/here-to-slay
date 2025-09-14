@@ -220,6 +220,11 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     initializeGame: handleInitializeGame,
     addPlayerToGame: handleAddPlayerToGame,
     updateCursor: handleUpdateCursor,
+    gameActions: {
+      playCard: () => { console.warn('playCard not implemented'); },
+      drawCard: () => { console.warn('drawCard not implemented'); },
+      advanceTurn: () => { console.warn('advanceTurn not implemented'); },
+    },
     
     // Connection state
     isConnected

@@ -77,7 +77,7 @@ test.describe('API: Hand Card Drawing', () => {
       expect(updatedPlayer.hand).toHaveLength(6)
 
       // Find the new card (the one not in initial hand)
-      const newCards = updatedPlayer.hand.filter(card =>
+      const newCards = updatedPlayer.hand.filter((card: any) =>
         !initialHandCards.some(initialCard =>
           initialCard.id === card.id
         )
@@ -116,7 +116,7 @@ test.describe('API: Hand Card Drawing', () => {
           type: drawnCard.type
         },
         drawResponse: drawBody,
-        allHandCards: updatedPlayer.hand.map(card => ({
+        allHandCards: updatedPlayer.hand.map((card: any) => ({
           id: card.id,
           name: card.name,
           type: card.type

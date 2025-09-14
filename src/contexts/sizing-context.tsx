@@ -35,17 +35,21 @@ export function SizingProvider({ children }: SizingProviderProps) {
       }
     });
 
-    // Update sizes only if changed to avoid loops
-    setSizes((prev) => {
+    // Update scales based on size changes
+    setScales((prev) => {
       const positions: Position[] = ['top','right','bottom','left'];
-      const isSame = positions.every((p) => {
-        const a = prev[p];
-        const b = nextSizes[p];
-        if (!a && !b) return true;
-        if (!a || !b) return false;
-        return a.width === b.width && a.height === b.height;
+      const newScales = { ...prev };
+      
+      positions.forEach((pos) => {
+        const currentSize = nextSizes[pos];
+        if (currentSize) {
+          // Calculate scale based on size - this is a simplified version
+          // You might want to implement more sophisticated scaling logic here
+          newScales[pos] = Math.min(1, Math.min(currentSize.width, currentSize.height) / 200);
+        }
       });
-      return isSame ? prev : nextSizes;
+      
+      return newScales;
     });
 
     // Compute global minimum target so all sides match the same smaller dimension

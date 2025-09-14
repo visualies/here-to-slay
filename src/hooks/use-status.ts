@@ -15,7 +15,7 @@ export type GameStatus =
 interface StatusReturn {
   status: GameStatus;
   message: {
-    id: number;
+    id: string;
     message: string;
     type: 'error' | 'warning' | 'success' | 'info';
   } | null;

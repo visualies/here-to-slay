@@ -101,7 +101,7 @@ test.describe('API: Game Start', () => {
         roomId: roomData.id,
         phase: roomData.gameState.phase,
         currentTurn: roomData.gameState.currentTurn,
-        monsters: roomData.gameState.monsters.map(m => m.name),
+        monsters: roomData.gameState.monsters.map((m: any) => m.name),
         players: Object.keys(roomData.players).map(id => ({
           id,
           name: roomData.players[id].name,
@@ -180,7 +180,7 @@ test.describe('API: Game Start', () => {
         roomId: roomData.id,
         phase: roomData.gameState.phase,
         currentTurn: roomData.gameState.currentTurn,
-        monsters: roomData.gameState.monsters.map(m => m.name),
+        monsters: roomData.gameState.monsters.map((m: any) => m.name),
         players: Object.keys(roomData.players).map(id => ({
           id,
           name: roomData.players[id].name,
@@ -276,7 +276,7 @@ test.describe('API: Game Start', () => {
         roomId: roomData.id,
         phase: roomData.gameState.phase,
         currentTurn: roomData.gameState.currentTurn,
-        monsters: roomData.gameState.monsters.map(m => m.name),
+        monsters: roomData.gameState.monsters.map((m: any) => m.name),
         players: Object.keys(roomData.players).map(id => ({
           id,
           name: roomData.players[id].name,
@@ -389,7 +389,7 @@ test.describe('API: Game Start', () => {
         roomId: roomData.id,
         phase: roomData.gameState.phase,
         currentTurn: roomData.gameState.currentTurn,
-        monsters: roomData.gameState.monsters.map(m => m.name),
+        monsters: roomData.gameState.monsters.map((m: any) => m.name),
         players: Object.keys(roomData.players).map(id => ({
           id,
           name: roomData.players[id].name,

@@ -44,11 +44,11 @@ class ReadOnlyYMap<T> {
   }
 
   // Allow observations
-  observe(callback: Y.YMapEvent<T>): void {
+  observe(callback: (event: Y.YMapEvent<T>, transaction: Y.Transaction) => void): void {
     this.map.observe(callback);
   }
 
-  unobserve(callback: Y.YMapEvent<T>): void {
+  unobserve(callback: (event: Y.YMapEvent<T>, transaction: Y.Transaction) => void): void {
     this.map.unobserve(callback);
   }
 
@@ -101,11 +101,11 @@ class ReadOnlyYArray<T> {
   }
 
   // Allow observations
-  observe(callback: Y.YArrayEvent<T>): void {
+  observe(callback: (event: Y.YArrayEvent<T>, transaction: Y.Transaction) => void): void {
     this.array.observe(callback);
   }
 
-  unobserve(callback: Y.YArrayEvent<T>): void {
+  unobserve(callback: (event: Y.YArrayEvent<T>, transaction: Y.Transaction) => void): void {
     this.array.unobserve(callback);
   }
 
@@ -139,26 +139,26 @@ export class ReadOnlyYDoc {
     if (!this.mapCache.has(name)) {
       const map = this.doc.getMap<T>(name);
       const readOnlyMap = new ReadOnlyYMap(map);
-      this.mapCache.set(name, readOnlyMap);
+      this.mapCache.set(name, readOnlyMap as ReadOnlyYMap<unknown>);
     }
-    return this.mapCache.get(name)!;
+    return this.mapCache.get(name)! as ReadOnlyYMap<T>;
   }
 
   getArray<T>(name: string): ReadOnlyYArray<T> {
     if (!this.arrayCache.has(name)) {
       const array = this.doc.getArray<T>(name);
       const readOnlyArray = new ReadOnlyYArray(array);
-      this.arrayCache.set(name, readOnlyArray);
+      this.arrayCache.set(name, readOnlyArray as ReadOnlyYArray<unknown>);
     }
-    return this.arrayCache.get(name)!;
+    return this.arrayCache.get(name)! as ReadOnlyYArray<T>;
   }
 
   // Allow observations on the document
-  on(eventName: string, callback: (...args: unknown[]) => void): void {
+  on(eventName: 'destroy' | 'load' | 'sync' | 'update' | 'updateV2' | 'beforeAllTransactions' | 'beforeTransaction' | 'beforeObserverCalls' | 'afterTransaction' | 'afterTransactionCleanup' | 'afterAllTransactions' | 'subdocs', callback: (...args: unknown[]) => void): void {
     this.doc.on(eventName, callback);
   }
 
-  off(eventName: string, callback: (...args: unknown[]) => void): void {
+  off(eventName: 'destroy' | 'load' | 'sync' | 'update' | 'updateV2' | 'beforeAllTransactions' | 'beforeTransaction' | 'beforeObserverCalls' | 'afterTransaction' | 'afterTransactionCleanup' | 'afterAllTransactions' | 'subdocs', callback: (...args: unknown[]) => void): void {
     this.doc.off(eventName, callback);
   }
 

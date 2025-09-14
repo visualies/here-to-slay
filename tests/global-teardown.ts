@@ -8,11 +8,11 @@ async function globalTeardown(_config: FullConfig) {
   const db = (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__
 
   if (db) {
-    db.close()
+    (db as any).close()
   }
 
   if (server) {
-    server.close()
+    (server as any).close()
   }
 
   // Clean up test database

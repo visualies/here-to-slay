@@ -42,7 +42,10 @@ class DicePhysicsWorld {
     this.lastStableCheck = new Map()
     this.lastPhysicsStep = Date.now()
     this.lastBroadcastedStates = {} as Record<string, ServerDiceState>
-    (this.world as any).gravity.set(0, -19.64, 0)
+    // Set gravity vector (CANNON.js Vec3 properties)
+    (this.world.gravity as { x: number; y: number; z: number }).x = 0;
+    (this.world.gravity as { x: number; y: number; z: number }).y = -19.64;
+    (this.world.gravity as { x: number; y: number; z: number }).z = 0;
     
     // Use better broadphase and solver for more accurate collision detection
     // this.world.broadphase = new CANNON.SAPBroadphase() // Commented out due to type issues
