@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { GameArea } from "./game-area";
 import { ServerDiceCanvas } from "./server-dice-canvas";
 import { MultiplayerPresence } from "./multiplayer-presence";
-import { RoomManager } from "./room-manager";
+import { MenuModal } from "./modals/menu-modal";
 import { DebugMenu } from "./debug-menu";
 import { RoomProvider } from "../contexts/room-context";
 import { GameActionsProvider } from "../contexts/game-actions-context";
@@ -14,8 +14,13 @@ import { useUser } from "../hooks/use-user";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Bug } from "lucide-react";
+import type { ServerUser } from "@/lib/server-user";
 
-export default function GameBoard() {
+interface GameBoardProps {
+  user: ServerUser | null;
+}
+
+export default function GameBoard({ user: serverUser }: GameBoardProps) {
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<{id: string, name: string, color: string} | null>(null);
@@ -62,9 +67,10 @@ export default function GameBoard() {
     );
   }
 
-  // Show room manager if not in a room
+  // Show menu modal if not in a room
   if (!currentRoomId || !playerData) {
-    return <RoomManager onRoomJoined={handleRoomJoined} initialPlayerData={user || undefined} />;
+    const currentUser = user || serverUser;
+    return <MenuModal user={currentUser} />;
   }
 
 

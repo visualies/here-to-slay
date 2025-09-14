@@ -6,6 +6,14 @@ interface User {
   playerId: string
   playerName: string
   playerColor: string
+  recentRooms: RecentRoom[]
+}
+
+interface RecentRoom {
+  roomId: string
+  roomName: string
+  lastJoined: string
+  playerCount: number
 }
 
 interface UserContextType {

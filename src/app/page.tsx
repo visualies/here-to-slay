@@ -7,8 +7,8 @@ export default async function Home() {
   const initialUser = await getServerUserData();
   
   return (
-    <UserProvider initialUser={initialUser}>
-      <GameBoard />
+    <UserProvider initialUser={initialUser.playerId ? initialUser : null}>
+      <GameBoard user={initialUser} />
     </UserProvider>
   );
 }

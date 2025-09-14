@@ -4,23 +4,50 @@ export interface ServerUser {
   playerId: string
   playerName: string
   playerColor: string
+  recentRooms: RecentRoom[]
 }
 
-export async function getServerUserData(): Promise<ServerUser | null> {
+export interface RecentRoom {
+  roomId: string
+  roomName: string
+  lastJoined: string
+  playerCount: number
+}
+
+export async function getServerUserData(): Promise<ServerUser> {
   try {
-    const response = await gameServerAPI.getCurrentPlayer()
+    const [userResponse, roomsResponse] = await Promise.all([
+      gameServerAPI.getCurrentPlayer(),
+      gameServerAPI.getRecentRooms()
+    ])
     
-    if (response.success && response.data) {
+    if (userResponse.success && userResponse.data) {
       return {
-        playerId: response.data.playerId,
-        playerName: response.data.playerName,
-        playerColor: response.data.playerColor
+        playerId: userResponse.data.playerId,
+        playerName: userResponse.data.playerName,
+        playerColor: userResponse.data.playerColor,
+        recentRooms: roomsResponse.success && roomsResponse.data ? roomsResponse.data.recentRooms.map((room: any) => ({
+          roomId: room.room_id,
+          roomName: `Room ${room.room_id}`,
+          lastJoined: room.joined_at,
+          playerCount: 0 // This would need to be fetched separately
+        })) : []
       }
     }
     
-    return null
+    return {
+      playerId: '',
+      playerName: '',
+      playerColor: '',
+      recentRooms: []
+    }
   } catch (error) {
-    console.error('Failed to fetch user data on server:', error)
-    return null
+    // Just return empty list for any error
+    return {
+      playerId: '',
+      playerName: '',
+      playerColor: '',
+      recentRooms: []
+    }
   }
 }

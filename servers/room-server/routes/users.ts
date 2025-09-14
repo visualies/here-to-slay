@@ -106,15 +106,11 @@ export function createUsersRouter() {
     try {
       const playerId = getCookie(c, 'player_id')
       
-      if (!playerId) {
-        return c.json({ error: 'No player ID found in cookie' }, 400)
-      }
-
-      // Since we removed recent rooms functionality, return empty array
+      // Always return empty array, even if no player ID
       return c.json({
         success: true,
         data: {
-          playerId,
+          playerId: playerId || '',
           recentRooms: []
         }
       })

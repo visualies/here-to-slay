@@ -104,6 +104,16 @@ class GameServerAPI {
     return this.request('/api/users/@me', 'PUT', { playerName, playerColor });
   }
 
+  async createPlayer(playerName: string, playerColor?: string): Promise<ApiResponse<{
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+    lastSeen: string;
+    createdAt: string;
+  }>> {
+    return this.request('/api/users', 'POST', { playerName, playerColor });
+  }
+
   async getRecentRooms(): Promise<ApiResponse<{
     playerId: string;
     recentRooms: Array<{
@@ -114,6 +124,41 @@ class GameServerAPI {
     }>;
   }>> {
     return this.request('/api/users/@me/rooms', 'GET');
+  }
+
+  // Room management
+  async createRoom(name: string, settings?: {
+    maxPlayers?: number;
+    turnDuration?: number;
+    selectedDeck?: string;
+  }): Promise<ApiResponse<{
+    roomId: string;
+    name: string;
+    createdAt: string;
+    maxPlayers: number;
+    turnDuration?: number;
+    selectedDeck?: string;
+  }>> {
+    return this.request('/api/rooms', 'POST', {
+      name,
+      maxPlayers: settings?.maxPlayers,
+      turnDuration: settings?.turnDuration,
+      selectedDeck: settings?.selectedDeck
+    });
+  }
+
+  async joinRoom(roomId: string, playerId: string, playerName: string, playerColor: string): Promise<ApiResponse<{
+    roomId: string;
+    playerId: string;
+    playerName: string;
+    playerColor: string;
+  }>> {
+    return this.request('/api/rooms/join', 'POST', {
+      roomId,
+      playerId,
+      playerName,
+      playerColor
+    });
   }
 }
 
