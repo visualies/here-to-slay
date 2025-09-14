@@ -54,6 +54,18 @@ export async function createRoomAction(
         return { error: updateResponse.message || 'Failed to update player information' };
       }
     }
+
+    // Join the room that was just created
+    const joinResult = await gameServerAPI.joinRoom(
+      roomResponse.data.roomId,
+      playerResponse.data.playerId,
+      playerResponse.data.playerName,
+      playerResponse.data.playerColor
+    );
+
+    if (!joinResult.success) {
+      return { error: joinResult.message || 'Failed to join the created room' };
+    }
   } catch (error) {
     console.error('Failed to create room:', error);
     return { error: error instanceof Error ? error.message : 'Failed to create room' };
