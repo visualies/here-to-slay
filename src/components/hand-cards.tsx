@@ -5,7 +5,7 @@ import type { Card as GameCard, Player } from "../types";
 import { CardType } from "../types";
 import { Card } from "./card";
 import { useGameActions } from "../hooks/use-game-actions";
-import { useRoom } from "../contexts/room-context";
+import { useRoom } from "../hooks/use-room";
 
 interface HandCardsProps {
   playerId: string;

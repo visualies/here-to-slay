@@ -1,6 +1,6 @@
 "use client";
 
-import { useRoom } from '../contexts/room-context';
+import { useRoom } from './use-room';
 import { getActivePlayers } from '../lib/players';
 import { getConnectedPlayers } from '../lib/presence';
 

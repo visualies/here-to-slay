@@ -1,10 +1,10 @@
 "use client";
 
 import { createContext, ReactNode, useCallback } from 'react';
-import { useRoom } from './room-context';
+import { useRoom } from '../hooks/use-room';
 import { useStatus } from '../hooks/use-status';
 import { gameServerAPI } from '../lib/game-server-api';
-import { useDice } from './dice-context';
+import { useDice } from '../hooks/use-dice';
 import type { Card } from '../types';
 
 interface GameActionsContextValue {

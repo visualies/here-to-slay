@@ -1,5 +1,5 @@
 import { useGameState } from './use-game-state';
-import { useDice } from '../contexts/dice-context';
+import { useDice } from './use-dice';
 import { useContext } from 'react';
 import { StatusContext } from '../contexts/status-context';
 

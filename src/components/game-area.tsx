@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useGameState } from "../hooks/use-game-state";
 import { usePlayerPresence } from "../hooks/use-player-presence";
 import { usePlayerPosition } from "../hooks/use-player-position";
-import { useDice } from "../contexts/dice-context";
+import { useDice } from "../hooks/use-dice";
 import { HandCards } from "./hand-cards";
 import { PartyWrapper } from "./party-wrapper";
 import { CenterArea } from "./center-area";

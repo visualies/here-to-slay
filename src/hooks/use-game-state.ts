@@ -1,6 +1,6 @@
 "use client";
 
-import { useRoom } from '../contexts/room-context';
+import { useRoom } from './use-room';
 
 // Hook for game state data
 export function useGameState() {

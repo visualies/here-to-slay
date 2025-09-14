@@ -1,7 +1,7 @@
 import { useGameActions } from "../hooks/use-game-actions";
 import { useGameState } from "../hooks/use-game-state";
 import { useStatus } from "../hooks/use-status";
-import { useDice } from "../contexts/dice-context";
+import { useDice } from "../hooks/use-dice";
 import { useCardOriginSizing } from "../contexts/card-origin-sizing-context";
 import { StatusArea } from "./status-area";
 import { DiceResults } from "./dice-results";

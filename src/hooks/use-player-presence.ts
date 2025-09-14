@@ -1,6 +1,6 @@
 "use client";
 
-import { useRoom } from '../contexts/room-context';
+import { useRoom } from './use-room';
 import { getConnectedPlayers } from '../lib/presence';
 
 // Hook for player presence

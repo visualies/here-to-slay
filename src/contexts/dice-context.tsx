@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, ReactNode, useState, useCallback, useEffect, useRef } from 'react';
 import { useRoom } from '../hooks/use-room';
 import { ServerDiceManager, ServerDiceStates } from '../lib/server-dice';
 

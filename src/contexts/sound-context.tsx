@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
+import React, { createContext, useEffect, useRef, useState, useCallback } from 'react';
 
 interface SoundContextType {
   playThemeMusic: () => void;
