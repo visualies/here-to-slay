@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRoom } from '../contexts/room-context';
 import { Button } from './ui/button';
 import { X, Bug, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
+import {useRoom} from "@/hooks/use-room";
 
 interface DebugMenuProps {
   isOpen: boolean;

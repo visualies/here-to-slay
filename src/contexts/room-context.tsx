@@ -21,31 +21,11 @@ interface RoomProviderProps {
 }
 
 export function RoomProvider({ roomId, children }: RoomProviderProps) {
-  const { user, loading } = useUser();
+  const { user } = useUser();
 
-  // Don't render anything while user is loading
-  if (loading || !user) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading room...</p>
-        </div>
-      </div>
-    );
+  if (!user) {
+    throw new Error('RoomProvider requires a user from UserProvider');
   }
-
-  // Once user is loaded, render the actual room provider
-  return <RoomProviderInner roomId={roomId} user={user}>{children}</RoomProviderInner>;
-}
-
-interface RoomProviderInnerProps {
-  roomId: string;
-  user: NonNullable<ReturnType<typeof useUser>['user']>;
-  children: ReactNode;
-}
-
-function RoomProviderInner({ roomId, user, children }: RoomProviderInnerProps) {
   const { playerId, playerName, playerColor } = user;
 
   // Yjs setup
