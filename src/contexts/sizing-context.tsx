@@ -13,7 +13,7 @@ interface SizingContextType {
   register: (position: Position, element: HTMLElement | null) => void;
 }
 
-const SizingContext = createContext<SizingContextType | undefined>(undefined);
+export const SizingContext = createContext<SizingContextType | undefined>(undefined);
 
 interface SizingProviderProps {
   children: ReactNode;
@@ -136,10 +136,3 @@ export function SizingProvider({ children }: SizingProviderProps) {
   );
 }
 
-export function useSizing() {
-  const context = useContext(SizingContext);
-  if (context === undefined) {
-    throw new Error('useSizing must be used within a SizingProvider');
-  }
-  return context;
-}

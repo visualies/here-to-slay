@@ -26,7 +26,7 @@ interface CardOriginSizingContextType {
   getUnscaledTargetDimensions: (targetId: string) => { width: number; height: number } | null;
 }
 
-const CardOriginSizingContext = createContext<CardOriginSizingContextType | undefined>(undefined);
+export const CardOriginSizingContext = createContext<CardOriginSizingContextType | undefined>(undefined);
 
 interface CardOriginSizingProviderProps {
   children: ReactNode;
@@ -186,10 +186,3 @@ export function CardOriginSizingProvider({ children }: CardOriginSizingProviderP
   );
 }
 
-export function useCardOriginSizing() {
-  const context = useContext(CardOriginSizingContext);
-  if (context === undefined) {
-    throw new Error('useCardOriginSizing must be used within a CardOriginSizingProvider');
-  }
-  return context;
-}
