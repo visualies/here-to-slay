@@ -12,8 +12,6 @@ interface DiceState {
 
 export type DiceCaptureStatus = 'waiting' | 'rolling' | 'stable' | 'complete';
 
-// Debug constant to disable timeout for testing
-const DISABLE_TIMEOUT = true;
 
 export interface DiceCaptureResponse {
   status: DiceCaptureStatus;
@@ -117,7 +115,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
         serverDiceManagerRef.current = null;
       }
     };
-  }, [roomId]); // Remove onServerStatesUpdate to prevent recreating manager
+  }, [roomId, onServerStatesUpdate]); // Include onServerStatesUpdate dependency
   
   // Check if all dice are stable (immediate check)
   const allDiceStable = enabled && Object.keys(diceStates).length > 0 && 
@@ -301,7 +299,7 @@ export function DiceProvider({ children }: DiceProviderProps) {
       
       checkForCompletion();
     });
-  }, [isCapturing, stable, hasRolled, results]);
+  }, [isCapturing, stable, hasRolled, results, captureStatus]);
   
   const diceData: DiceData = {
     enabled,

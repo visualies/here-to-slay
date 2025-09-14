@@ -133,7 +133,6 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
         <RotationWrapper
           orientation={orientation}
           side={side}
-          aspectRatio={cardAspectRatio}
           debugMode={debugMode}
           parentScale={isLarge ? 1.5 : 1}
         >

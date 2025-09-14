@@ -3,8 +3,8 @@ import path from 'path';
 import fs from 'fs';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   
@@ -27,7 +27,7 @@ export async function GET(
         'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
-  } catch (error) {
+  } catch {
     return new NextResponse('Image not found', { status: 404 });
   }
 }

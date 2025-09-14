@@ -1,7 +1,7 @@
 import type { ActionContext, ActionResult } from './action-service';
 
 export interface ActionHandler {
-  run: (context: ActionContext, ...args: any[]) => ActionResult;
+  run: (context: ActionContext, ...args: unknown[]) => ActionResult;
 }
 
 class ActionRegistry {

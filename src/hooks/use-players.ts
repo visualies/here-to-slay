@@ -1,7 +1,7 @@
 "use client";
 
 import { useRoom } from '../contexts/room-context';
-import { getCurrentPlayer, getOtherPlayers, getActivePlayers, isHost } from '../lib/players';
+import { getActivePlayers } from '../lib/players';
 import { getConnectedPlayers } from '../lib/presence';
 
 export function usePlayers() {
@@ -25,7 +25,7 @@ export function useCurrentPlayer() {
 
 export function useHostStatus() {
   const room = useRoom();
-  const { players, currentPlayer } = room;
+  const { players } = room;
   
   return {
     isHost: room.isHost,

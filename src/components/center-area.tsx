@@ -10,11 +10,9 @@ import { Card } from "./card";
 import { CardSlot } from "./card-slot";
 import { CardOrigin } from "./card-origin";
 import { Stack } from "./stack";
-import { Clock, User, Loader2 } from "lucide-react";
+import { Clock, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import { heroRegistry } from "../game/heroes";
-import { modifierRegistry } from "../game/modifiers";
-import { CardType, HeroClass } from "../types";
+import { CardType, HeroClass, Card as GameCard } from "../types";
 
 interface CenterAreaProps {
   diceResults?: number[];
@@ -25,15 +23,15 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   const { drawCard } = useGameActions();
   const { currentTurn, currentPlayer, players, supportStack, monsters, initializeGame, isHost } = useGameState();
   const { status } = useStatus();
-  const { enabled: diceEnabled, stable: diceStable, results: diceHookResults, isCapturing, captureStatus } = useDice();
-  const { getTargetDimensions, getUnscaledTargetDimensions } = useCardOriginSizing();
+  const { enabled: diceEnabled, results: diceHookResults } = useDice();
+  const { getTargetDimensions } = useCardOriginSizing();
   
   // Track visual deck count - maintains consistent visual appearance
   const [visualDeckCount, setVisualDeckCount] = useState(5);
   const [deckSeed, setDeckSeed] = useState(0);
   
   // Cache state - All modifier cards
-  const [cacheCards] = useState<any[]>(() => {
+  const [cacheCards] = useState<GameCard[]>(() => {
     return [];
   });
   

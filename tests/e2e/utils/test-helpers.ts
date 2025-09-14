@@ -48,7 +48,7 @@ export class GameTestHelper {
     });
   }
 
-  async waitForHandCards(playerName?: string) {
+  async waitForHandCards() {
     // Wait for hand cards to appear - look for cards with the .card class
     await this.page.waitForSelector('.card', { timeout: 10000 });
     

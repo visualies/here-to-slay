@@ -243,12 +243,12 @@ class ActionQueueManager {
         return { success: true };
 
       case 'steal_hero':
-        const heroTarget = action.data?.userInput as any;
+        const heroTarget = action.data?.userInput as StealHeroInput;
         console.log(`🎭 Stealing hero from player ${heroTarget?.targetPlayerId}`);
         return { success: true };
 
       case 'attack_monster':
-        const monsterTarget = action.data?.userInput as any;
+        const monsterTarget = action.data?.userInput as AttackMonsterInput;
         console.log(`🎭 Attacking monster ${monsterTarget?.monsterId}`);
         return { success: true };
 
@@ -349,6 +349,15 @@ class ActionQueueManager {
       }))
     };
   }
+}
+
+interface StealHeroInput {
+targetPlayerId: string;
+heroId: string;
+}
+
+interface AttackMonsterInput {
+monsterId: string;
 }
 
 // Global singleton instance

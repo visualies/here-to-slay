@@ -15,9 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Bug } from "lucide-react";
 
 export default function GameBoard() {
-  // Debug mode - set to true to show red border lines
-  const DEBUG_MODE = false;
-  
   const [diceResults, setDiceResults] = useState<number[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [playerData, setPlayerData] = useState<{id: string, name: string, color: string} | null>(null);
@@ -94,7 +91,6 @@ export default function GameBoard() {
           {/* Server-controlled dice canvas - covers the entire game board */}
           <ServerDiceCanvas
             onDiceResults={handleDiceResults}
-            roomId={currentRoomId}
           />
 
           {/* Debug Menu */}

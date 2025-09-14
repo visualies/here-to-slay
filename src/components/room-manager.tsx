@@ -5,7 +5,7 @@ import { createRoom, joinRoom } from "../lib/multiplayer";
 import { getStoredPlayerData, storePlayerData, generatePersistentPlayerId, getAllPlayerRooms, clearRoomData } from "../lib/player-persistence";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useSound } from "@/contexts/sound-context";
 import { Swords, LogIn, Settings, ArrowLeft, Clock, Layers, Play, Trash2, Loader2, Check, X } from "lucide-react";
@@ -14,18 +14,22 @@ interface RoomManagerProps {
   onRoomJoined: (roomId: string, playerId: string, playerName: string, playerColor: string) => void;
 }
 
+interface PlayerData {
+  playerId: string;
+  playerName: string;
+  playerColor: string;
+  lastActive: number;
+}
+
 export function RoomManager({ onRoomJoined }: RoomManagerProps) {
   const [mode, setMode] = useState<'menu' | 'join' | 'settings'>('menu');
   const [joinRoomId, setJoinRoomId] = useState('');
   const [playerName, setPlayerName] = useState('');
-  const [playerColor, setPlayerColor] = useState('#FF6B6B');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [createdRoomId, setCreatedRoomId] = useState('');
   const [turnDuration, setTurnDuration] = useState(30);
   const [selectedDeck, setSelectedDeck] = useState('standard');
-  const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: any }>>([]);
-  const [rejoiningRooms, setRejoiningRooms] = useState<Set<string>>(new Set());
+  const [recentRooms, setRecentRooms] = useState<Array<{ roomId: string; playerData: PlayerData }>>([]);
   const [isReturningPlayer, setIsReturningPlayer] = useState(false);
   const [originalPlayerName, setOriginalPlayerName] = useState('');
   const [rejoinStatus, setRejoinStatus] = useState<Record<string, 'idle' | 'connecting' | 'restoring' | 'ready' | 'error'>>({});
@@ -44,7 +48,7 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       // Stop theme music when leaving room manager
       stopThemeMusic();
     };
-  }, []); // Empty dependency array - only run on mount/unmount
+  }, [playThemeMusic, stopThemeMusic]);
 
   // Generate consistent player color based on name
   const generatePlayerColor = (name: string) => {
@@ -95,7 +99,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     const randomName = heroNames[Math.floor(Math.random() * heroNames.length)];
     setPlayerName(randomName);
     setOriginalPlayerName(randomName);
-    setPlayerColor(generatePlayerColor(randomName));
   }, []);
 
   // Helper function to format time since last active
@@ -121,7 +124,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     }
 
     setRejoinStatus(prev => ({ ...prev, [roomId]: 'connecting' }));
-    setRejoiningRooms(prev => new Set(prev).add(roomId));
     
     try {
       // First, join the room
@@ -141,11 +143,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       setRejoinStatus(prev => ({ ...prev, [roomId]: 'error' }));
       console.error('Failed to rejoin room:', err);
     } finally {
-      setRejoiningRooms(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(roomId);
-        return newSet;
-      });
     }
   };
 
@@ -163,10 +160,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
     console.log(`🔒 Removed room ${roomId} from recent rooms`);
   };
 
-  // Reset rejoin status for a room
-  const resetRejoinStatus = (roomId: string) => {
-    setRejoinStatus(prev => ({ ...prev, [roomId]: 'idle' }));
-  };
 
   // Handle room ID input and check for existing player data
   const handleRoomIdChange = (roomId: string) => {
@@ -181,7 +174,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
         setIsReturningPlayer(true);
         setOriginalPlayerName(playerName); // Store their current name so we can restore it if they change room ID
         setPlayerName(existingPlayerData.playerName);
-        setPlayerColor(existingPlayerData.playerColor);
         setError(''); // Clear any previous errors
         console.log(`🔄 Detected returning player for room ${formattedRoomId}: ${existingPlayerData.playerName}`);
       } else {
@@ -189,7 +181,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
         if (isReturningPlayer) {
           setIsReturningPlayer(false);
           setPlayerName(originalPlayerName);
-          setPlayerColor(generatePlayerColor(originalPlayerName));
         }
       }
     } else {
@@ -197,7 +188,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
       if (isReturningPlayer) {
         setIsReturningPlayer(false);
         setPlayerName(originalPlayerName);
-        setPlayerColor(generatePlayerColor(originalPlayerName));
       }
     }
   };
@@ -238,7 +228,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
         finalPlayerName = storedPlayer.playerName;
         playerColor = storedPlayer.playerColor;
         setPlayerName(finalPlayerName); // Update UI to show reconnected name
-        setPlayerColor(playerColor);
         // Note: Using existing session - this is expected behavior, no need to show message
       } else {
         // Only create new player if NO stored session exists
@@ -577,7 +566,6 @@ export function RoomManager({ onRoomJoined }: RoomManagerProps) {
                   if (isReturningPlayer) {
                     setIsReturningPlayer(false);
                     setPlayerName(originalPlayerName || '');
-                    setPlayerColor(generatePlayerColor(originalPlayerName || ''));
                   }
                   setJoinRoomId('');
                   setError('');

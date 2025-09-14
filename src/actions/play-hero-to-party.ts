@@ -1,13 +1,14 @@
 import type { ActionContext, ActionResult } from '../services/action-service';
 import { registerAction } from '../services/action-registry';
 import { removeCardFromPlayerHand, addHeroToParty } from '../lib/players';
+import type { Player } from '../types';
 
 export function run(context: ActionContext, cardId: string): ActionResult {
   const { playersMap, playerId } = context;
 
   console.log(`🎯 Internal: Playing hero to party for player ${playerId} - card ${cardId}`);
 
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as Player;
   if (!player) {
     return { success: false, message: 'Player not found' };
   }
@@ -39,4 +40,9 @@ export function run(context: ActionContext, cardId: string): ActionResult {
   };
 }
 
-registerAction('playHeroToParty', { run });
+registerAction('playHeroToParty', {
+  run: (context: ActionContext, ...args: unknown[]): ActionResult => {
+    const [cardId] = args as [string];
+    return run(context, cardId);
+  }
+});

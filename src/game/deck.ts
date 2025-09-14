@@ -1,5 +1,5 @@
 import type { Card } from '../types';
-import { CardType, HeroClass } from '../types';
+import { CardType } from '../types';
 import { heroRegistry } from './heroes';
 import { modifierRegistry } from './modifiers';
 

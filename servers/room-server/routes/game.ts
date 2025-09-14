@@ -1,14 +1,14 @@
 import { Hono } from 'hono'
-import type RoomDatabase from '../../src/lib/database.js'
+import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import {
   type ActionContext,
-  type ActionResult,
   actionRegistry
 } from '../../../src/services/action-service.js'
+import type { Player } from '../../../src/types/player.js'
 
 // Common payload structure for all game actions
 interface GameActionRequest {
@@ -28,7 +28,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     playerId: string,
     roomId: string,
     requiresActionPoints = true
-  ): { valid: boolean; context?: ActionContext; player?: any; error?: string } {
+  ): { valid: boolean; context?: ActionContext; player?: Player; error?: string } {
     const ydoc = getYDoc(roomId)
     if (!ydoc) {
       return { valid: false, error: 'Room not found' }
@@ -36,7 +36,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
     const playersMap = ydoc.getMap('players')
     const gameStateMap = ydoc.getMap('gameState')
-    const player = playersMap.get(playerId)
+    const player = playersMap.get(playerId) as Player
 
     if (!player) {
       return { valid: false, error: 'Player not found' }
@@ -67,12 +67,12 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   // Helper function to handle action point deduction and turn advancement
   function handleTurnLogic(
     context: ActionContext,
-    player: any,
+    player: Player,
     deductActionPoint = true
   ): void {
     if (deductActionPoint) {
       // Get the current player state from the map (might have been updated by actions)
-      const currentPlayer = context.playersMap.get(context.playerId) || player
+      const currentPlayer = (context.playersMap.get(context.playerId) as Player) || player
       const newActionPoints = Math.max(0, currentPlayer.actionPoints - 1)
 
       // Use current player state, not the stale player parameter
@@ -82,7 +82,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       // Advance turn if no action points left
       if (newActionPoints === 0) {
-        const currentPlayers = Array.from(context.playersMap.values())
+        const currentPlayers = Array.from(context.playersMap.values()) as Player[]
         const currentTurn = context.gameStateMap.get('currentTurn') as string
         console.log(`🔄 Advancing turn from player ${context.playerId}`)
         advanceTurnFn(context.playersMap, context.gameStateMap, currentPlayers, currentTurn, context.roomId)
@@ -193,7 +193,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       }
 
       const playersMap = ydoc.getMap('players')
-      const allPlayers = Array.from(playersMap.values())
+      const allPlayers = Array.from(playersMap.values()) as Player[]
 
       // Use the existing function
       addPlayerToGame(playersMap, allPlayers, playerId)
@@ -237,7 +237,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const gameStateMap = ydoc.getMap('gameState')
 
       // Get current players from the document
-      const allPlayers = Array.from(playersMap.values())
+      const allPlayers = Array.from(playersMap.values()) as Player[]
       const activePlayers = getActivePlayers(allPlayers)
 
       if (activePlayers.length === 0) {
@@ -354,7 +354,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const drawCardAction = actionRegistry.get('drawCard')!
       const result = drawCardAction.run(validation.context!)
 
-      if (result.success) {
+      if (result.success && validation.player) {
         handleTurnLogic(validation.context!, validation.player, true)
       }
 
@@ -383,7 +383,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const playHeroAction = actionRegistry.get('playHeroToParty')!
       const result = playHeroAction.run(validation.context!, cardId)
 
-      if (result.success) {
+      if (result.success && validation.player) {
         handleTurnLogic(validation.context!, validation.player, true)
       }
 
@@ -417,7 +417,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const result = attackAction.run(validation.context!, monsterId, diceResult)
 
       // Always deduct action point and handle turn logic for completed action
-      if (result.success !== undefined) { // Action completed (success or failure)
+      if (result.success !== undefined && validation.player) { // Action completed (success or failure)
         handleTurnLogic(validation.context!, validation.player, true)
       }
 
@@ -443,7 +443,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const result = discardAction.run(validation.context!)
 
       if (result.success) {
-        handleTurnLogic(validation.context!, validation.player, true)
+        handleTurnLogic(validation.context!, validation.player!, true)
       }
 
       return c.json(result)

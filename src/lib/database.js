@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import * as Y from 'yjs';
 
 class RoomDatabase {
   constructor() {
@@ -125,7 +126,6 @@ class RoomDatabase {
 
   // Save Yjs document state to database
   saveRoomState(roomId, ydoc) {
-    const Y = require('yjs');
     const stateBuffer = Y.encodeStateAsUpdate(ydoc);
 
     const stmt = this.db.prepare(`
@@ -157,7 +157,6 @@ class RoomDatabase {
     try {
       const result = stmt.get(roomId);
       if (result?.state) {
-        const Y = require('yjs');
         Y.applyUpdate(ydoc, result.state);
         console.log(`📁 Loaded room state for ${roomId}`);
         return true;

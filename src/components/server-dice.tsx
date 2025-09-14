@@ -5,17 +5,14 @@ import { useFrame, useThree, useLoader, ThreeEvent } from "@react-three/fiber";
 import { OBJLoader } from "three/addons/loaders/OBJLoader.js";
 import { MTLLoader } from "three/addons/loaders/MTLLoader.js";
 import * as THREE from "three";
-import { ServerDiceManager, ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
+import { ServerDiceState, ServerDiceStates, createCoordinateTransformer } from "../lib/server-dice";
 import { playDiceSound } from "../lib/dice-sounds";
-import { useDice } from "../contexts/dice-context";
 
 interface ServerDiceProps {
   diceId: string;
   initialPosition: [number, number, number];
   onResult: (value: number) => void;
-  throwDice: (diceId: string, velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
   throwAllDice: (velocity: [number, number, number], angularVelocity: [number, number, number]) => Promise<void>;
-  moveDice: (diceId: string, position: [number, number, number], isKinematic?: boolean) => Promise<void>;
   moveMultipleDice: (dicePositions: Record<string, [number, number, number]>, isKinematic?: boolean) => Promise<void>;
   serverState: ServerDiceState | null;
   allDiceStates: ServerDiceStates; // Add access to all dice states
@@ -30,6 +27,7 @@ interface ServerDiceProps {
     leadDiceId: string | null;
     leadPosition: THREE.Vector3 | null;
     groupPositions: Record<string, THREE.Vector3> | null;
+    magnetismDisabled?: boolean;
   }>;
   onDragUpdate?: (leadDiceId: string, leadPosition: THREE.Vector3) => void;
   onDragEnd?: () => void;
@@ -169,9 +167,10 @@ export function calculateAllDicePositions(
   return { positions: result, shouldDisableMagnetism };
 }
 
-export function ServerDice({ diceId, initialPosition, onResult, throwDice, throwAllDice, moveDice, moveMultipleDice, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
+export function ServerDice({ diceId, initialPosition, onResult, throwAllDice, moveMultipleDice, serverState, allDiceStates, dragState, dragStateRef, onDragUpdate, onDragEnd, showDebug = false, groupRef: externalGroupRef, allGroupRefs }: ServerDiceProps) {
   const meshRef = useRef<THREE.Mesh>(null);
-  const groupRef = externalGroupRef || useRef<THREE.Group>(null);
+  const internalGroupRef = useRef<THREE.Group>(null);
+  const groupRef = externalGroupRef || internalGroupRef;
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false); // Immediate reference for useFrame
   const [dragOffset, setDragOffset] = useState<THREE.Vector3>(new THREE.Vector3());
@@ -338,7 +337,7 @@ export function ServerDice({ diceId, initialPosition, onResult, throwDice, throw
         const transformer = createCoordinateTransformer(viewport.width, viewport.height);
         const currentPosition = groupRef.current.position;
         const currentDragState = dragStateRef?.current || dragState;
-        const result = calculateAllDicePositions(diceId, currentPosition, allDiceStates, transformer, currentDragState?.magnetismDisabled);
+        const result = calculateAllDicePositions(diceId, currentPosition, allDiceStates, transformer, (currentDragState as typeof currentDragState & { magnetismDisabled?: boolean })?.magnetismDisabled);
         const allPositions = result.positions;
         
         // Async function to handle the sequence properly
@@ -374,7 +373,7 @@ export function ServerDice({ diceId, initialPosition, onResult, throwDice, throw
       // Clear position history
       positionHistory.current = [];
     }
-  }, [isDragging, diceId, throwAllDice, calculateThrowVelocity, onDragEnd]);
+  }, [isDragging, diceId, throwAllDice, calculateThrowVelocity, onDragEnd, groupRef, allGroupRefs, viewport.width, viewport.height, dragStateRef, dragState, moveMultipleDice, allDiceStates]);
 
   // Optimized drag handling with throttled server updates
   const lastServerUpdate = useRef<number>(0);
@@ -397,7 +396,7 @@ export function ServerDice({ diceId, initialPosition, onResult, throwDice, throw
         // Calculate all dice positions with current magnetism state
         const transformer = createCoordinateTransformer(viewport.width, viewport.height);
         const currentDragState = dragStateRef?.current || dragState;
-        const result = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer, currentDragState?.magnetismDisabled);
+        const result = calculateAllDicePositions(diceId, newPosition, allDiceStates, transformer, (currentDragState as typeof currentDragState & { magnetismDisabled?: boolean })?.magnetismDisabled);
         const { positions: allPositions, shouldDisableMagnetism } = result;
         
         // Update magnetism state if it should be disabled
@@ -413,7 +412,6 @@ export function ServerDice({ diceId, initialPosition, onResult, throwDice, throw
           const targetGroupRef = allGroupRefs[targetDiceId];
           if (targetGroupRef?.current) {
             const clientPos = transformer.serverToClient(serverPos[0], serverPos[2]);
-            const newPos = [clientPos.x, serverPos[1], clientPos.z];
             targetGroupRef.current.position.set(clientPos.x, serverPos[1], clientPos.z);
           }
         });

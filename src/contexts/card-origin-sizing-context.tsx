@@ -160,11 +160,12 @@ export function CardOriginSizingProvider({ children }: CardOriginSizingProviderP
 
   // Cleanup on unmount
   useLayoutEffect(() => {
+    const observers = observersRef.current;
     return () => {
-      observersRef.current.forEach(observer => {
+      observers.forEach(observer => {
         observer.disconnect();
       });
-      observersRef.current.clear();
+      observers.clear();
     };
   }, []);
 

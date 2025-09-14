@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type RoomDatabase from '../../src/lib/database.js'
+import type RoomDatabase from '../../../src/lib/database.js'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import * as Y from 'yjs'
 
@@ -86,7 +86,7 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const playersMap = ydoc.getMap('players')
 
       // Check if room is full
-      const maxPlayers = roomMap.get('maxPlayers') || 4
+      const maxPlayers = roomMap.get('maxPlayers') as number || 4
       const currentPlayerCount = playersMap.size
       if (currentPlayerCount >= maxPlayers && !playersMap.has(playerId)) {
         return c.json(
@@ -144,17 +144,17 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const room = Array.from(roomMap.entries()).reduce((acc, [key, value]) => {
         acc[key] = value
         return acc
-      }, {} as Record<string, any>)
+      }, {} as Record<string, unknown>)
 
       const players = Array.from(playersMap.entries()).reduce((acc, [key, value]) => {
         acc[key] = value
         return acc
-      }, {} as Record<string, any>)
+      }, {} as Record<string, unknown>)
 
       const gameState = Array.from(gameStateMap.entries()).reduce((acc, [key, value]) => {
         acc[key] = value
         return acc
-      }, {} as Record<string, any>)
+      }, {} as Record<string, unknown>)
 
       // Return the Yjs document content with fallback values
       return c.json({
@@ -179,14 +179,14 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const rooms = db.getActiveRooms()
 
       // Enhance with data from Yjs documents
-      const enhancedRooms = rooms.map(room => {
-        if (docs.has(room.id)) {
-          const ydoc = docs.get(room.id)!
+      const enhancedRooms = rooms.map((room: Record<string, unknown>) => {
+        if (docs.has(room.id as string)) {
+          const ydoc = docs.get(room.id as string)!
           const roomMap = ydoc.getMap('room')
           const playersMap = ydoc.getMap('players')
 
           return {
-            id: room.id,
+            id: room.id as string,
             name: roomMap.get('name') || 'Here to Slay Game',
             maxPlayers: roomMap.get('maxPlayers') || 4,
             playerCount: playersMap.size,

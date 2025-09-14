@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useGameState } from "../hooks/use-game-state";
-import { useGameActions } from "../hooks/use-game-actions";
 import { usePlayerPresence } from "../hooks/use-player-presence";
 import { usePlayerPosition } from "../hooks/use-player-position";
 import { useDice } from "../contexts/dice-context";
 import { HandCards } from "./hand-cards";
-import { PlayerArea } from "./player-area";
 import { PartyWrapper } from "./party-wrapper";
 import { CenterArea } from "./center-area";
 import { Button } from "@/components/ui/button";
@@ -18,12 +16,11 @@ interface GameAreaProps {
 }
 
 export function GameArea({ diceResults }: GameAreaProps) {
-  const { players, gamePhase, currentTurn, currentPlayer, otherPlayers, initializeGame, isHost } = useGameState();
+  const { players, gamePhase, currentTurn, currentPlayer, initializeGame, isHost } = useGameState();
   const { connectedPlayers, connectedPlayersCount } = usePlayerPresence();
   const { getPlayerPosition } = usePlayerPosition();
   const { 
     enabled: diceEnabled, 
-    results: hookDiceResults, 
     stable: diceStable,
     enable: enableDice,
     disable: disableDice

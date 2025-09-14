@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Card as GameCard, Player } from "../types";
+import { CardType } from "../types";
 import { Card } from "./card";
 import { useGameActions } from "../hooks/use-game-actions";
 import { useRoom } from "../contexts/room-context";
@@ -15,33 +16,19 @@ interface HandCardsProps {
 
 export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playHeroToParty } = useGameActions();
-  const { playersRef, currentTurn } = useRoom();
+  const { players, currentTurn } = useRoom();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
 
-  // Direct Yjs subscription for this specific player
+  // Update cards when players change
   useEffect(() => {
-    if (!playersRef) return;
-
-    const updateCards = () => {
-      const playerData = playersRef.get(playerId);
-      if (playerData) {
-        console.log(`HandCards: Player ${playerId} hand updated:`, playerData.hand);
-        setCards(playerData.hand || []);
-        setPlayer(playerData);
-      }
-    };
-
-    // Initial load
-    updateCards();
-
-    // Subscribe to changes
-    playersRef.observe(updateCards);
-
-    return () => {
-      playersRef.unobserve(updateCards);
-    };
-  }, [playersRef, playerId]);
+    const playerData = players.find(p => p.id === playerId);
+    if (playerData) {
+      console.log(`HandCards: Player ${playerId} hand updated:`, playerData.hand);
+      setCards(playerData.hand || []);
+      setPlayer(playerData);
+    }
+  }, [players, playerId]);
   const cardCount = cards.length;
 
   // Position-specific styles
@@ -107,9 +94,9 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
                     card={{
                       id: 'back',
                       name: 'Hidden',
-                      type: 'Hero' as const,
+                      type: CardType.Hero,
                       description: '',
-                      requirement: '',
+                      requirement: 0,
                       effect: []
                     }} 
                     isBack={true} 

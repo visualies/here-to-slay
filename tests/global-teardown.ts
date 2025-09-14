@@ -2,10 +2,10 @@ import { FullConfig } from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
 
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   // Clean up server
-  const server = (global as any).__TEST_SERVER__
-  const db = (global as any).__TEST_DB__
+  const server = (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_SERVER__
+  const db = (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__
 
   if (db) {
     db.close()

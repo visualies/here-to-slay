@@ -14,7 +14,7 @@ export function run(context: ActionContext, monsterId: string, diceResult: numbe
     return { success: false, message: 'Monster not found' };
   }
 
-  const requiredRoll = monster.rollRequirement || 15;
+  const requiredRoll = monster.requirement || 15;
   const attackSuccess = diceResult >= requiredRoll;
 
   if (attackSuccess) {
@@ -37,4 +37,9 @@ export function run(context: ActionContext, monsterId: string, diceResult: numbe
   }
 }
 
-registerAction('attackMonster', { run });
+registerAction('attackMonster', {
+  run: (context: ActionContext, ...args: unknown[]): ActionResult => {
+    const [monsterId, diceResult] = args as [string, number]
+    return run(context, monsterId, diceResult)
+  },
+});

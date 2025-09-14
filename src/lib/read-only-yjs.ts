@@ -163,7 +163,7 @@ export class ReadOnlyYDoc {
   }
 
   // Block document-level mutations
-  transact(_transaction: () => void): void {
+  transact(): void {
     console.error(MUTATION_ERROR, { operation: 'transact' });
     throw new Error(MUTATION_ERROR);
   }

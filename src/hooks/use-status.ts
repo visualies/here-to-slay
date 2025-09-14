@@ -1,6 +1,5 @@
 import { useGameState } from './use-game-state';
 import { useDice } from '../contexts/dice-context';
-import { getConnectedPlayersCount } from '../lib/presence';
 import { useContext } from 'react';
 import { StatusContext } from '../contexts/status-context';
 
@@ -15,17 +14,18 @@ export type GameStatus =
 
 interface StatusReturn {
   status: GameStatus;
-  message: any; // current message from StatusContext
+  message: {
+    id: number;
+    message: string;
+    type: 'error' | 'warning' | 'success' | 'info';
+  } | null;
   showMessage: (message: string, type?: 'error' | 'warning' | 'success' | 'info', duration?: number) => void;
 }
 
 export function useStatus(): StatusReturn {
-  const { gamePhase, currentTurn, currentPlayer, players } = useGameState();
-  const { enabled: diceEnabled, stable: diceStable, hasRolled, captureStatus } = useDice();
+  const { gamePhase, currentTurn, currentPlayer } = useGameState();
+  const { enabled: diceEnabled, stable: diceStable, hasRolled } = useDice();
   const statusContext = useContext(StatusContext);
-  
-  // Get connected players count
-  const connectedPlayersCount = getConnectedPlayersCount(players);
   
   let gameStatus: GameStatus;
   

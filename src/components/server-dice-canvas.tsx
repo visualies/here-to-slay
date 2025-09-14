@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { ServerDice, calculateAllDicePositions } from "./server-dice";
+import { ServerDice } from "./server-dice";
 import { createCoordinateTransformer, FIELD_SIZE } from "../lib/server-dice";
 import { useDice } from "../contexts/dice-context";
 
@@ -116,12 +116,10 @@ const USE_ORTHOGRAPHIC_CAMERA = true;
 const DEBUG_BOUNDARIES = false;
 
 // Main server dice canvas component  
-export function ServerDiceCanvas({ onDiceResults, roomId }: { 
+export function ServerDiceCanvas({ onDiceResults }: { 
   onDiceResults?: (results: number[]) => void;
-  roomId: string;
 }) {
   const [diceCount] = useState(2);
-  const [localDiceResults, setLocalDiceResults] = useState<number[]>(Array(2).fill(0));
   
   // Store viewport dimensions for coordinate transformation
   const viewportRef = useRef({ width: 10, height: 10 }); // Default fallback
@@ -154,11 +152,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
     stable: diceStable,
     diceStates, 
     isConnected, 
-    lastUpdate,
-    throwDice,
     throwAllDice,
-    moveDice,
-    moveAllDice,
     moveMultipleDice
   } = useDice();
 
@@ -171,7 +165,6 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
         .filter(result => result > 0);
       
       if (results.length > 0 && diceStable) {
-        setLocalDiceResults(results);
         onDiceResults?.(results);
       }
     }
@@ -229,13 +222,6 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
     }, 1000);
   }, []);
 
-  const handleDiceResult = useCallback((value: number, index: number) => {
-    setLocalDiceResults(prev => {
-      const newResults = [...prev];
-      newResults[index] = value;
-      return newResults;
-    });
-  }, []);
 
   // Notify parent component when dice results change from the hook
   useEffect(() => {
@@ -308,7 +294,7 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
         
         // Create and store the ref for this dice
         if (!diceGroupRefs.current[diceId]) {
-          diceGroupRefs.current[diceId] = { current: null };
+          diceGroupRefs.current[diceId] = { current: null as unknown as THREE.Group };
         }
         
         return (
@@ -316,10 +302,8 @@ export function ServerDiceCanvas({ onDiceResults, roomId }: {
             key={`server-dice-${i}`}
             diceId={diceId}
             initialPosition={[i * 1.2 - (diceCount - 1) * 0.6, 2, 0]}
-            onResult={(value) => handleDiceResult(value, i)}
-            throwDice={throwDice}
+            onResult={() => {}} // Dummy function since we handle results via the hook
             throwAllDice={throwAllDice}
-            moveDice={moveDice}
             moveMultipleDice={moveMultipleDice}
             serverState={diceStates[diceId] || null}
             allDiceStates={diceStates}

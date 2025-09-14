@@ -125,7 +125,7 @@ export class ServerDiceManager {
         }
       });
       
-      this.ws.addEventListener('error', (error) => {
+      this.ws.addEventListener('error', () => {
         this.isConnecting = false;
         
         // In development, React Strict Mode can cause WebSocket errors during double-invocation

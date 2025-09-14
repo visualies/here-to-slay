@@ -18,7 +18,7 @@ export async function saveGameState(roomId: string): Promise<void> {
       try {
         const error = await response.json();
         errorMessage = error.error || errorMessage;
-      } catch (parseError) {
+      } catch {
         // If response isn't valid JSON, use the status text
         errorMessage = `HTTP ${response.status}: ${response.statusText}`;
       }
@@ -29,7 +29,7 @@ export async function saveGameState(roomId: string): Promise<void> {
     try {
       const result = await response.json();
       console.log(`💾 Game state saved for room ${roomId}`, result);
-    } catch (parseError) {
+    } catch {
       // Even if we can't parse the success response, the save likely worked
       console.log(`💾 Game state saved for room ${roomId} (response not parseable as JSON)`);
     }

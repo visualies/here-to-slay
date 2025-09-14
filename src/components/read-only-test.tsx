@@ -18,12 +18,10 @@ export function ReadOnlyTest() {
 
     try {
       // This should throw an error if read-only mode is enabled
-      const playersMap = room.playersRef?.current;
-      if (playersMap) {
-        console.log('🧪 Testing client-side mutation...');
-        (playersMap as any).set('test-player', { id: 'test', name: 'Test' });
-        console.log('⚠️ Mutation succeeded - read-only mode is OFF');
-      }
+      console.log('🧪 Testing client-side mutation...');
+      // Try to mutate the players array directly (this should be read-only)
+      (room.players as unknown[]).push({ id: 'test', name: 'Test' });
+      console.log('⚠️ Mutation succeeded - read-only mode is OFF');
     } catch (error) {
       console.log('✅ Mutation blocked - read-only mode is ON');
       console.error(error);

@@ -2,13 +2,10 @@
 
 import { useEffect } from "react";
 import { usePlayerPresence } from "../hooks/use-player-presence";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-interface MultiplayerPresenceProps {}
-
-export function MultiplayerPresence({}: MultiplayerPresenceProps) {
+export function MultiplayerPresence() {
   const { connectedPlayers, isConnected, updateCursor } = usePlayerPresence();
 
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useState, useCallback } from 'react';
+import { createContext, ReactNode, useState, useCallback } from 'react';
 
 interface StatusMessage {
   id: string;

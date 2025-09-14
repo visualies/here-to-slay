@@ -8,7 +8,7 @@ import { isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
 import { gameServerAPI } from '../lib/game-server-api';
-import { canReclaimPlayerSlot, updateLastActive, getStoredPlayerData } from '../lib/player-persistence';
+import { updateLastActive } from '../lib/player-persistence';
 import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
 import { createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 
@@ -55,12 +55,12 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
 
     // Get shared maps after provider is connected
     const gameState = doc.getMap('gameState');
-    const playersMap = doc.getMap('players') as Y.Map<Player>;
+    const playersMap = doc.getMap('players') as unknown as Y.Map<Player>;
 
     // Store refs
     docRef.current = doc;
     providerRef.current = provider;
-    gameStateRef.current = gameState;
+    gameStateRef.current = gameState as unknown as Y.Map<unknown>;
     playersRef.current = playersMap;
 
     // Set up player presence for cursor tracking
@@ -189,7 +189,7 @@ export function RoomProvider({ roomId, playerId, playerName, playerColor, childr
     } catch (error) {
       console.error('❌ Failed to add player to game via API:', error);
     }
-  }, [playerIsHost, roomId, players]);
+  }, [playerIsHost, roomId]);
   
   const handleUpdateCursor = useCallback((x: number, y: number) => {
     updateCursor(providerRef.current, x, y);

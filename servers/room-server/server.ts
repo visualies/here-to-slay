@@ -7,9 +7,7 @@
 
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
-import { serve } from '@hono/node-server'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
-import * as Y from 'yjs'
 import RoomDatabase from '../../src/lib/database.js'
 import { createApp } from './app.js'
 
@@ -142,7 +140,7 @@ wss.on('connection', (ws, req) => {
     setupWSConnection(ws, req, {
       // With this flag, the server will not apply any document updates
       // that are received from this client.
-      readOnly: true,
+      readOnly,
     })
 
     console.log(`[DEBUG] Current docs after setup: [${Array.from(docs.keys()).join(', ')}]`)

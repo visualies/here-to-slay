@@ -21,13 +21,11 @@
 
 import { ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { useSizing } from "@/contexts/sizing-context";
-import { useCardOriginSizing } from "@/contexts/card-origin-sizing-context";
 
 interface RotationWrapperProps {
   children: ReactNode;
   orientation: "horizontal" | "vertical";
   side?: "top" | "bottom" | "left" | "right";
-  aspectRatio: string;
   debugMode?: boolean;
   parentScale?: number; // Scale applied to the CardOrigin itself (e.g., 1.5 for party leaders)
 }
@@ -36,14 +34,12 @@ export function RotationWrapper({
   children, 
   orientation, 
   side, 
-  aspectRatio, 
   debugMode = false,
   parentScale = 1
 }: RotationWrapperProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const [parentDimensions, setParentDimensions] = useState({ width: 0, height: 0 });
   const { scales } = useSizing();
-  const { getAllSizes } = useCardOriginSizing(); // Available for future use if needed
   
   // Determine if content needs rotation based on orientation and side
   const needsRotation = (orientation === "vertical" && (side === "left" || side === "right")) || 

@@ -1,13 +1,13 @@
 import type { ActionContext, ActionResult } from '../services/action-service';
 import { registerAction } from '../services/action-registry';
-import type { Card } from '../types';
+import type { Card, Player } from '../types';
 
 export function run(context: ActionContext): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
   console.log(`🎯 Internal: Discarding all cards and redrawing for player ${playerId}`);
 
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as Player;
   if (!player) {
     return { success: false, message: 'Player not found' };
   }

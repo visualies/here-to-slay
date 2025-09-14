@@ -1,4 +1,4 @@
-import { chromium, FullConfig } from '@playwright/test'
+import { FullConfig } from '@playwright/test'
 import { createApp } from '../servers/room-server/app.js'
 import RoomDatabase from '../src/lib/database.js'
 import { serve } from '@hono/node-server'
@@ -6,7 +6,7 @@ import * as Y from 'yjs'
 import fs from 'fs'
 import path from 'path'
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   // Set test environment variable
   process.env.NODE_ENV = 'test'
 
@@ -36,8 +36,8 @@ async function globalSetup(config: FullConfig) {
   })
 
   // Store server reference for cleanup
-  ;(global as any).__TEST_SERVER__ = server
-  ;(global as any).__TEST_DB__ = db
+  (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_SERVER__ = server
+  (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__ = db
 
   console.log('🧪 Test server started on port 8234')
 

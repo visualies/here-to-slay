@@ -43,13 +43,13 @@ test.describe('Active Rooms List', () => {
     expect(body.length).toBeGreaterThanOrEqual(initialCount + 2)
 
     // Verify our rooms are in the list
-    const roomIds = body.map((room: any) => room.id)
+    const roomIds = body.map((room: { id: string }) => room.id)
     expect(roomIds).toContain(room1.roomId)
     expect(roomIds).toContain(room2.roomId)
 
     // Check specific room details
-    const foundRoom1 = body.find((room: any) => room.id === room1.roomId)
-    const foundRoom2 = body.find((room: any) => room.id === room2.roomId)
+    const foundRoom1 = body.find((room: { id: string }) => room.id === room1.roomId)
+    const foundRoom2 = body.find((room: { id: string }) => room.id === room2.roomId)
 
     expect(foundRoom1).toMatchObject({
       name: 'Unique Room 1',

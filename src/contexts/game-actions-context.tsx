@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, ReactNode, useCallback } from 'react';
+import { createContext, ReactNode, useCallback } from 'react';
 import { useRoom } from './room-context';
 import { useStatus } from '../hooks/use-status';
 import { gameServerAPI } from '../lib/game-server-api';
@@ -12,6 +12,8 @@ interface GameActionsContextValue {
   playHeroToParty: (cardId: string) => Promise<void>;
   attackMonster: (monsterId: string) => Promise<void>;
   discardHandRedraw: () => Promise<void>;
+  heroAbility: (hero: Card) => Promise<void>;
+  canUseHeroAbility: () => boolean;
 }
 
 export const GameActionsContext = createContext<GameActionsContextValue | null>(null);
@@ -20,12 +22,17 @@ interface GameActionsProviderProps {
   children: ReactNode;
 }
 
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+}
+
 export function GameActionsProvider({ children }: GameActionsProviderProps) {
   const room = useRoom();
   const { showMessage } = useStatus();
   const { captureDiceResult } = useDice();
 
-  const handleApiResponse = useCallback((result: any, successMessage: string) => {
+  const handleApiResponse = useCallback((result: ApiResponse, successMessage: string) => {
     if (result.success) {
       showMessage(successMessage, 'success');
     } else {
@@ -63,15 +70,25 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
 
   const discardHandRedraw = useCallback(async () => {
     if (!room?.roomId || !room?.currentPlayer?.id) return;
-    const result = await gameServerAPI.discardHandRedraw(room.roomId, room.currentPlayer.id);
+    const result = await gameServerAPI.discardHandAndRedraw(room.roomId, room.currentPlayer.id);
     handleApiResponse(result, 'Hand discarded and redrawn!');
   }, [room, handleApiResponse]);
+
+  const heroAbility = useCallback(async (hero: Card) => {
+    console.log('Using hero ability', hero);
+  }, []);
+
+  const canUseHeroAbility = useCallback(() => {
+    return true;
+  }, []);
 
   const contextValue: GameActionsContextValue = {
     drawCard,
     playHeroToParty,
     attackMonster,
-    discardHandRedraw
+    discardHandRedraw,
+    heroAbility,
+    canUseHeroAbility
   };
 
   return (

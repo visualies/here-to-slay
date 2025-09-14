@@ -22,7 +22,6 @@ interface SizingProviderProps {
 export function SizingProvider({ children }: SizingProviderProps) {
   // Keep a stable map of elements per position
   const elementsRef = useRef<Partial<Record<Position, HTMLElement>>>({});
-  const [sizes, setSizes] = useState<Partial<Record<Position, { width: number; height: number }>>>({});
   const [scales, setScales] = useState<Record<Position, number>>({ top: 1, right: 1, bottom: 1, left: 1 });
 
   const observersRef = useRef<Map<Element, ResizeObserver>>(new Map());
@@ -113,18 +112,18 @@ export function SizingProvider({ children }: SizingProviderProps) {
     const onResize = () => measureAll();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, []);
+  }, [measureAll]);
 
   // Debug scales visibility
   useLayoutEffect(() => {
-    // eslint-disable-next-line no-console
+     
     console.debug('[Sizing] scales', scales);
   }, [scales]);
 
   // Keep legacy cardSize for compatibility; not used for scaling logic
   const cardSize = 80;
 
-  const value = useMemo(() => ({ cardSize, scales, register }), [cardSize, scales]);
+  const value = useMemo(() => ({ cardSize, scales, register }), [cardSize, scales, register]);
 
   return (
     <SizingContext.Provider value={value}>

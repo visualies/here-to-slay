@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { CardSlot } from "./card-slot";
 import { Card } from "./card";
 import { Stack } from "./stack";
@@ -20,9 +19,9 @@ interface PlayerAreaProps {
 }
 
 function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAreaProps['position'], debugMode?: boolean }) {
-  const { players, currentPlayer, currentTurn } = useGameState();
+  const { players } = useGameState();
   const { getPlayerPosition } = usePlayerPosition();
-  const { useHeroAbility, canUseHeroAbility } = useGameActions();
+  const { heroAbility, canUseHeroAbility } = useGameActions();
   const { cardSize } = useSizing();
   
   // Use global card size for consistent stacking
@@ -35,10 +34,10 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
   const player = players.find(p => getPlayerPosition(p.id) === position) || null;
 
   const handleHeroClick = async (hero: CardType) => {
-    if (!canUseHeroAbility(hero)) return;
+    if (!canUseHeroAbility()) return;
     
     try {
-      await useHeroAbility(hero);
+      await heroAbility(hero);
     } catch (error) {
       console.error('Failed to use hero ability:', error);
     }
@@ -63,11 +62,11 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
         <CardSlot label={player?.name || "Party Leader"} size="large" cardType="party-leader">
           {player?.party?.leader && (
             <div 
-              className={`h-full w-full relative ${canUseHeroAbility(player.party.leader) ? 'cursor-pointer' : 'saturate-50'}`}
-              onClick={canUseHeroAbility(player.party.leader!) ? () => handleHeroClick(player.party.leader!) : undefined}
+              className={`h-full w-full relative ${canUseHeroAbility() ? 'cursor-pointer' : 'saturate-50'}`}
+              onClick={canUseHeroAbility() ? () => handleHeroClick(player.party.leader!) : undefined}
             >
               <Card card={player.party.leader} size="fill" preview={true} />
-              {!canUseHeroAbility(player.party.leader) && (
+              {!canUseHeroAbility() && (
                 <Stack>
                   <div className="absolute inset-0 bg-white/30 rounded" />
                 </Stack>
@@ -126,16 +125,16 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
                           >
                             {hero && (
                               <div 
-                                className={`h-full w-full relative ${canUseHeroAbility(hero) ? 'cursor-pointer' : 'saturate-60'}`}
+                                className={`h-full w-full relative ${canUseHeroAbility() ? 'cursor-pointer' : 'saturate-60'}`}
                                 style={{ 
                                   minWidth: '100%', 
                                   minHeight: '100%',
                                   aspectRatio: '744/1039'
                                 }}
-                                onClick={canUseHeroAbility(hero) ? () => handleHeroClick(hero) : undefined}
+                                onClick={canUseHeroAbility() ? () => handleHeroClick(hero) : undefined}
                               >
                                 <Card card={hero} size="fill" preview={true} />
-                                {!canUseHeroAbility(hero) && (
+                                {!canUseHeroAbility() && (
                                   <Stack>
                                     <div className="absolute inset-0 bg-white/50 rounded" />
                                   </Stack>

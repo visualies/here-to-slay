@@ -11,7 +11,7 @@ import { getAllMonsters } from '../../../src/game/monsters';
 import { gameServerAPI } from '../../../src/lib/game-server-api';
 
 export function initializeGame(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   gameStateMap: Y.Map<unknown>,
   players: Player[]
 ): void {
@@ -44,7 +44,7 @@ export function initializeGame(
 }
 
 export function advanceTurn(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   gameStateMap: Y.Map<unknown>,
   players: Player[],
   currentTurn: string,
@@ -72,11 +72,11 @@ export function advanceTurn(
 }
 
 export function addPlayerToGame(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   players: Player[],
   playerIdToAdd: string
 ): void {
-  const existingPlayer = playersMap.get(playerIdToAdd);
+  const existingPlayer = playersMap.get(playerIdToAdd) as Player;
   if (existingPlayer && existingPlayer.hand && existingPlayer.hand.length > 0) {
     return;
   }

@@ -1,13 +1,13 @@
-import { test, expect, APIRequestContext } from '@playwright/test'
+import { expect, APIRequestContext } from '@playwright/test'
 
 // Test helper functions
-export async function createRoom(request: APIRequestContext, roomData: any = {}) {
+export async function createRoom(request: APIRequestContext, roomData: Record<string, unknown> = {}) {
   const response = await request.post('/api/create-room', { data: roomData })
   expect(response.status()).toBe(200)
   return await response.json()
 }
 
-export async function joinRoom(request: APIRequestContext, roomId: string, playerData: any) {
+export async function joinRoom(request: APIRequestContext, roomId: string, playerData: Record<string, unknown>) {
   const response = await request.post('/api/join-room', {
     data: { roomId, ...playerData }
   })

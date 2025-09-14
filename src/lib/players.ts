@@ -25,8 +25,8 @@ export function getOtherPlayers(players: Player[], playerId: string): Player[] {
   return players.filter(p => p.id !== playerId);
 }
 
-export function updatePlayerPresence(playersMap: Y.Map<Player>, playerId: string): void {
-  const currentPlayer = playersMap.get(playerId);
+export function updatePlayerPresence(playersMap: Y.Map<unknown>, playerId: string): void {
+  const currentPlayer = playersMap.get(playerId) as Player | undefined;
   if (currentPlayer) {
     playersMap.set(playerId, {
       ...currentPlayer,
@@ -38,11 +38,11 @@ export function updatePlayerPresence(playersMap: Y.Map<Player>, playerId: string
 }
 
 export function addCardToPlayerHand(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   playerId: string,
   card: Card
 ): void {
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as Player | undefined;
   if (player) {
     const updatedPlayer = {
       ...player,
@@ -53,12 +53,66 @@ export function addCardToPlayerHand(
   }
 }
 
+export function removeCardFromPlayerHand(
+  playersMap: Y.Map<unknown>,
+  playerId: string,
+  cardId: string
+): { updatedPlayer: Player | undefined; cardIndex: number } {
+  const player = playersMap.get(playerId) as Player | undefined;
+  if (!player) {
+    return { updatedPlayer: undefined, cardIndex: -1 };
+  }
+
+  const cardIndex = player.hand.findIndex(c => c.id === cardId);
+  if (cardIndex === -1) {
+    return { updatedPlayer: player, cardIndex: -1 };
+  }
+
+  const newHand = [...player.hand];
+  newHand.splice(cardIndex, 1);
+
+  const updatedPlayer = {
+    ...player,
+    hand: newHand
+  };
+
+  playersMap.set(playerId, updatedPlayer);
+  return { updatedPlayer, cardIndex };
+}
+
+export function addHeroToParty(
+  playersMap: Y.Map<unknown>,
+  playerId: string,
+  heroCard: Card
+): boolean {
+  const player = playersMap.get(playerId) as Player | undefined;
+  if (!player || !player.party) {
+    return false;
+  }
+
+  // Assuming a party size limit, e.g., 3 heroes
+  if (player.party.heroes.length >= 3) {
+    return false;
+  }
+
+  const updatedPlayer = {
+    ...player,
+    party: {
+      ...player.party,
+      heroes: [...player.party.heroes, heroCard]
+    }
+  };
+
+  playersMap.set(playerId, updatedPlayer);
+  return true;
+}
+
 export function dealCardsToPlayer(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   playerId: string,
   handSize: number = 5
 ): void {
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as Player | undefined;
   if (!player) return;
 
   const deck = createDeck();
@@ -76,11 +130,11 @@ export function dealCardsToPlayer(
 }
 
 export function assignPartyLeaderToPlayer(
-  playersMap: Y.Map<Player>,
+  playersMap: Y.Map<unknown>,
   playerId: string,
   partyLeader?: Card
 ): void {
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as Player | undefined;
   if (!player) return;
 
   const leader = partyLeader || getRandomPartyLeader();
@@ -88,8 +142,8 @@ export function assignPartyLeaderToPlayer(
   const updatedPlayer: Player = {
     ...player,
     party: {
-      heroes: [],
       ...(player.party || {}),
+      heroes: player.party?.heroes || [],
       leader
     }
   };
@@ -97,7 +151,7 @@ export function assignPartyLeaderToPlayer(
   playersMap.set(playerId, updatedPlayer);
 }
 
-export function assignRandomPartyLeadersToAllPlayers(playersMap: Y.Map<Player>): void {
+export function assignRandomPartyLeadersToAllPlayers(playersMap: Y.Map<unknown>): void {
   const players = Array.from(playersMap.keys());
   
   const allPartyLeaders = getAllPartyLeaders();

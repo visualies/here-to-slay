@@ -8,22 +8,30 @@
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import * as CANNON from 'cannon-es'
+import type { ServerDiceState } from '../../src/lib/server-dice'
 
 const host: string = process.env.HOST || '192.168.178.61'
 const port: number = parseInt(process.env.DICE_PORT || '1235', 10)
+
+interface DiceObject {
+  body: CANNON.Body;
+  lastUpdate: number;
+  result: number;
+  isStable: boolean;
+}
 
 // Server-side dice physics system
 class DicePhysicsWorld {
   public roomId: string
   public world: CANNON.World
   public groundBody: CANNON.Body
-  public dice: Map<string, any>
+  public dice: Map<string, DiceObject>
   public diceResults: Map<string, number>
   public isStable: Map<string, boolean>
   public lastStableCheck: Map<string, number>
   public lastPhysicsStep: number
-  public lastBroadcastedStates: Record<string, any>
-  public onStatesUpdate?: (states: any) => void
+  public lastBroadcastedStates: Record<string, ServerDiceState>
+  public onStatesUpdate?: (states: ServerDiceState[]) => void
 
   constructor(roomId: string) {
     this.roomId = roomId
@@ -33,12 +41,12 @@ class DicePhysicsWorld {
     this.isStable = new Map()
     this.lastStableCheck = new Map()
     this.lastPhysicsStep = Date.now()
-    this.lastBroadcastedStates = {}
-    this.world.gravity.set(0, -19.64, 0)
+    this.lastBroadcastedStates = {} as Record<string, ServerDiceState>
+    (this.world as any).gravity.set(0, -19.64, 0)
     
     // Use better broadphase and solver for more accurate collision detection
-    this.world.broadphase = new CANNON.SAPBroadphase(this.world)
-    ;(this.world.solver as any).iterations = 20 // More solver iterations for better accuracy
+    // this.world.broadphase = new CANNON.SAPBroadphase() // Commented out due to type issues
+    (this.world.solver as CANNON.GSSolver).iterations = 20 // More solver iterations for better accuracy
     this.world.defaultContactMaterial.friction = 0.4
     this.world.defaultContactMaterial.restitution = 0.3
     
@@ -104,7 +112,7 @@ class DicePhysicsWorld {
     // Use default material properties
     
     // Enable continuous collision detection for fast-moving dice
-    ;(body as any).ccdSpeedThreshold = 1  // Enable CCD when velocity > 1 unit/s
+    (body as CANNON.Body & { ccdSpeedThreshold: number }).ccdSpeedThreshold = 1  // Enable CCD when velocity > 1 unit/s
     
     this.world.addBody(body)
     this.dice.set(diceId, {
@@ -207,7 +215,7 @@ class DicePhysicsWorld {
       this.world.step(fixedTimeStep, deltaTime, maxSubSteps)
       
       // Update dice results and check stability
-      this.dice.forEach((dice, diceId) => {
+      this.dice.forEach((dice) => {
         const linearVel = dice.body.velocity.length()
         const angularVel = dice.body.angularVelocity.length()
         const wasStable = dice.isStable
@@ -257,7 +265,7 @@ class DicePhysicsWorld {
   }
   
   getDiceStates() {
-    const states: Record<string, any> = {}
+    const states: Record<string, ServerDiceState> = {}
     this.dice.forEach((dice, diceId) => {
       states[diceId] = {
         position: [dice.body.position.x, dice.body.position.y, dice.body.position.z],
@@ -271,7 +279,7 @@ class DicePhysicsWorld {
   }
   
   cleanup() {
-    this.dice.forEach((dice, diceId) => {
+    this.dice.forEach((dice) => {
       this.world.removeBody(dice.body)
     })
     this.dice.clear()

@@ -1,54 +1,59 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRoom } from '../contexts/room-context';
 import { Button } from './ui/button';
 import { X, Bug, ChevronDown, ChevronRight, Copy, Check } from 'lucide-react';
-import * as Y from 'yjs';
 
 interface DebugMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface YjsState {
+  gameState?: Record<string, unknown>;
+  players?: Record<string, unknown>;
+  metadata?: {
+    connectionStatus: string;
+    roomId: string | null;
+    playerCount: number;
+    isHost: boolean;
+  };
+}
+
 export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
   const room = useRoom();
-  const [yjsState, setYjsState] = useState<any>({});
+  const [yjsState, setYjsState] = useState<YjsState>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['gameState', 'players']));
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpen || !room.doc) return;
+    if (!isOpen) return;
 
     const updateYjsState = () => {
-      const state: any = {};
+      const state: YjsState = {};
 
-      // Get all root-level maps from the Yjs document
-      const gameState = room.doc?.getMap('gameState');
-      const players = room.doc?.getMap('players');
+      // Get game state from room context
+      state.gameState = {
+        gamePhase: room.gamePhase,
+        currentTurn: room.currentTurn,
+        supportStack: room.supportStack,
+        monsters: room.monsters,
+      };
 
-      // Convert Yjs maps to plain objects for display
-      if (gameState) {
-        state.gameState = {};
-        gameState.forEach((value, key) => {
-          state.gameState[key] = convertYjsValue(value);
-        });
-      }
+      // Get players from room context
+      state.players = {};
+      room.players.forEach((player, index) => {
+        state.players![`player_${index}`] = player;
+      });
 
-      if (players) {
-        state.players = {};
-        players.forEach((value, key) => {
-          state.players[key] = convertYjsValue(value);
-        });
-      }
-
-      // Add document metadata
+      // Add room metadata
       state.metadata = {
-        clientId: room.doc?.clientID,
-        guid: room.doc?.guid,
         connectionStatus: room.isConnected ? 'connected' : 'disconnected',
-        roomId: room.roomId
+        roomId: room.roomId,
+        playerCount: room.players.length,
+        isHost: room.isHost
       };
 
       setYjsState(state);
@@ -57,40 +62,14 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
     // Initial update
     updateYjsState();
 
-    // Set up observers for real-time updates
-    const observers: (() => void)[] = [];
-
-    if (room.gameStateRef) {
-      const gameStateObserver = () => updateYjsState();
-      room.gameStateRef.observe(gameStateObserver);
-      observers.push(() => room.gameStateRef?.unobserve(gameStateObserver));
-    }
-
-    if (room.playersRef) {
-      const playersObserver = () => updateYjsState();
-      room.playersRef.observe(playersObserver);
-      observers.push(() => room.playersRef?.unobserve(playersObserver));
-    }
+    // Set up interval for periodic updates
+    const interval = setInterval(updateYjsState, 1000);
 
     return () => {
-      observers.forEach(cleanup => cleanup());
+      clearInterval(interval);
     };
-  }, [isOpen, room.doc, room.gameStateRef, room.playersRef, room.isConnected, room.roomId]);
+  }, [isOpen, room.gamePhase, room.currentTurn, room.supportStack, room.monsters, room.players, room.isConnected, room.roomId, room.isHost]);
 
-  const convertYjsValue = (value: any): any => {
-    if (value instanceof Y.Map) {
-      const obj: any = {};
-      value.forEach((v, k) => {
-        obj[k] = convertYjsValue(v);
-      });
-      return obj;
-    } else if (value instanceof Y.Array) {
-      return value.toArray().map(convertYjsValue);
-    } else if (value && typeof value === 'object') {
-      return JSON.parse(JSON.stringify(value));
-    }
-    return value;
-  };
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -122,7 +101,7 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
     }
   };
 
-  const renderValue = (value: any, key: string = '', depth: number = 0): JSX.Element => {
+  const renderValue = (value: unknown, key: string = '', depth: number = 0): React.ReactElement => {
     const itemKey = `${key}_${depth}`;
     const isExpanded = expandedItems.has(itemKey);
 
@@ -130,7 +109,7 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
     if (value === undefined) return <span className="text-gray-500">undefined</span>;
     if (typeof value === 'boolean') return <span className="text-blue-400">{value.toString()}</span>;
     if (typeof value === 'number') return <span className="text-green-400">{value}</span>;
-    if (typeof value === 'string') return <span className="text-yellow-400">"{value}"</span>;
+    if (typeof value === 'string') return <span className="text-yellow-400">&quot;{value}&quot;</span>;
 
     if (Array.isArray(value)) {
       if (value.length === 0) return <span className="text-gray-500">[]</span>;
@@ -191,7 +170,7 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
             <div className="ml-4 mt-1">
               {entries.map(([objKey, objValue]) => (
                 <div key={objKey} className="py-1">
-                  <span className="text-blue-300">"{objKey}"</span>
+                  <span className="text-blue-300">&quot;{objKey}&quot;</span>
                   <span className="text-gray-500">: </span>
                   {renderValue(objValue, `${key}.${objKey}`, depth + 1)}
                 </div>
