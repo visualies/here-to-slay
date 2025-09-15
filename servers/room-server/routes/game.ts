@@ -7,7 +7,7 @@ import { getActivePlayers } from '../../../src/lib/players.js'
 import {
   type ActionContext,
   actionRegistry
-} from '../../../src/services/action-service.js'
+} from '../actions/action-service.js'
 import type { Player } from '../../../src/types/player.js'
 
 // Common payload structure for all game actions

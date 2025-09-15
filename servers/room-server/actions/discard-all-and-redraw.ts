@@ -1,6 +1,6 @@
-import type { ActionContext, ActionResult } from '../services/action-service';
-import { registerAction } from '../services/action-registry';
-import type { Card, Player } from '../types';
+import type { ActionContext, ActionResult } from './action-service';
+import { registerAction } from './action-registry';
+import type { Card, Player } from '../../../src/types';
 
 export function run(context: ActionContext): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;

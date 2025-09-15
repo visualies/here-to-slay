@@ -108,4 +108,3 @@ export async function joinRoomAction(
     return { error: error instanceof Error ? error.message : 'Failed to join room' };
   }
 }
-
