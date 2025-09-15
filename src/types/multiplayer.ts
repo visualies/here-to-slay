@@ -7,9 +7,3 @@ export type DicePosition = {
   timestamp: number;
 };
 
-export type Room = {
-  roomId: string;
-  name: string;
-  playerCount: number;
-  maxPlayers: number;
-};
