@@ -8,9 +8,11 @@
 import dotenv from 'dotenv'
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
+import type { Server as NodeHttpServer } from 'http'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
 import RoomDatabase from '../../src/lib/database.js'
 import { createApp } from './app.js'
+import { createAdaptorServer } from '@hono/node-server'
 
 // Load environment variables
 dotenv.config({ path: '.env.local', quiet: true })
@@ -71,62 +73,8 @@ function restoreGameStateIfExists(roomId: string) {
 // Create Hono app
 const app = createApp(db, docs)
 
-// Create HTTP server that can handle both Hono requests and WebSocket upgrades
-const server = http.createServer()
-
-// Handle HTTP requests with Hono
-server.on('request', async (req, res) => {
-  try {
-    // Create a proper Request object for Hono
-    const url = `http://${req.headers.host}${req.url}`
-    const method = req.method || 'GET'
-    
-    // Get request body if it exists
-    let body: string | undefined
-    if (method !== 'GET' && method !== 'HEAD') {
-      const chunks: Buffer[] = []
-      for await (const chunk of req) {
-        chunks.push(chunk)
-      }
-      body = Buffer.concat(chunks).toString()
-    }
-    
-    // Create Request object
-    const request = new Request(url, {
-      method,
-      headers: req.headers as HeadersInit,
-      body: body
-    })
-    
-    const response = await app.fetch(request)
-    
-    res.writeHead(response.status, Object.fromEntries(response.headers))
-    
-    if (response.body) {
-      const reader = response.body.getReader()
-      const pump = async (): Promise<void> => {
-        const { done, value } = await reader.read()
-        if (done) {
-          res.end()
-          return
-        }
-        res.write(value)
-        return pump()
-      }
-      await pump()
-    } else {
-      res.end()
-    }
-  } catch (err) {
-    console.error('Error handling request:', err)
-    res.writeHead(500, { 'Content-Type': 'application/json' })
-    res.end(JSON.stringify({ 
-      success: false, 
-      error: 'Internal Server Error',
-      message: err instanceof Error ? err.message : 'Unknown error'
-    }))
-  }
-})
+// Use Hono's Node adapter to create an HTTP server and handle requests
+const server = createAdaptorServer({ fetch: app.fetch }) as unknown as NodeHttpServer
 
 // Create WebSocket server  
 const wss = new WebSocketServer({ server })
