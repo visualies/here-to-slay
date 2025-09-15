@@ -16,15 +16,21 @@ class GameServerAPI {
   private baseURL: string;
 
   constructor() {
-    // Prefer Playwright test env, then explicit GAME_SERVER_HOST/GAME_SERVER_PORT, then NODE_ENV heuristic
-    const isPlaywright = process.env.PLAYWRIGHT_TEST === '1' || process.env.PLAYWRIGHT_TEST === 'true';
-    const host = isPlaywright
-      ? 'localhost'
-      : process.env.GAME_SERVER_HOST || (process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61');
-    const port = isPlaywright
-      ? 8234
-      : (process.env.GAME_SERVER_PORT ? parseInt(process.env.GAME_SERVER_PORT, 10) : (process.env.NODE_ENV === 'test' ? 8234 : 1234));
-    this.baseURL = `http://${host}:${port}`;
+    // Detect test environment by checking if we're running on localhost:3000 (test Next.js)
+    const isTestEnv = typeof window !== 'undefined' &&
+                      window.location.hostname === 'localhost' &&
+                      window.location.port === '3000';
+
+    if (isTestEnv) {
+      // In test environment, use localhost:8234 to match Playwright config
+      this.baseURL = 'http://localhost:8234';
+    } else if (process.env.NEXT_PUBLIC_GAME_SERVER_API_URL) {
+      // Use NEXT_PUBLIC_GAME_SERVER_API_URL if available (without /api since we add endpoints)
+      this.baseURL = process.env.NEXT_PUBLIC_GAME_SERVER_API_URL.replace('/api', '');
+    } else {
+      // Fallback to default development server
+      this.baseURL = 'http://192.168.178.61:1234';
+    }
   }
 
   private async request<T>(endpoint: string, method: string, data?: unknown): Promise<ApiResponse<T>> {

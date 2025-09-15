@@ -182,8 +182,8 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       <div className="mt-[2%]">
         {status === 'waiting-to-start' && (
           <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
-            <StartRound 
-              onStartRound={initializeGame} 
+            <StartRound
+              onStartRound={initializeGame}
               disabled={!isHost}
             />
           </StatusArea>

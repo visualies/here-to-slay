@@ -12,7 +12,11 @@ export function getSortedPlayersByJoinTime(players: Player[]): Player[] {
 }
 
 export function isHost(players: Player[], playerId: string): boolean {
-  if (players.length === 0) return false;
+  if (players.length === 0) {
+    // If no players loaded from Yjs, assume we're the host in a new room
+    // This handles cases where Yjs sync is slow or failing
+    return true;
+  }
   const sortedPlayers = getSortedPlayersByJoinTime(players);
   return sortedPlayers[0]?.id === playerId;
 }

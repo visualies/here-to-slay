@@ -52,7 +52,13 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       // Initialize empty collections
       ydoc.getMap('players')
-      ydoc.getMap('gameState')
+
+      // Initialize gameState with default values
+      const gameStateMap = ydoc.getMap('gameState')
+      gameStateMap.set('gamePhase', 'waiting')
+      gameStateMap.set('currentTurn', '')
+      gameStateMap.set('supportStack', [])
+      gameStateMap.set('monsters', [])
 
       console.log(`🏠 Created room: ${roomId} - "${name}" (${turnDuration}s turns, ${selectedDeck} deck)`)
 
@@ -85,6 +91,15 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       const playersMap = ydoc.getMap('players')
 
+      // Initialize gameState if it doesn't exist
+      const gameStateMap = ydoc.getMap('gameState')
+      if (!gameStateMap.has('gamePhase')) {
+        gameStateMap.set('gamePhase', 'waiting')
+        gameStateMap.set('currentTurn', '')
+        gameStateMap.set('supportStack', [])
+        gameStateMap.set('monsters', [])
+      }
+
       // Check if room is full
       const maxPlayers = roomMap.get('maxPlayers') as number || 4
       const currentPlayerCount = playersMap.size
@@ -102,7 +117,7 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
         color: playerColor,
         lastSeen: Date.now(),
         hand: [],
-        party: [],
+        party: { leader: null, heroes: [] },
         actionPoints: 0,
         joinTime: Date.now()
       })

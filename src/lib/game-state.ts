@@ -28,7 +28,7 @@ export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
   
   gameStateMap.forEach((value, key) => {
     console.log('Game state key:', key, 'value:', value);
-    if (key === 'phase') {
+    if (key === 'gamePhase') {
       gamePhase = value as string;
     } else if (key === 'currentTurn') {
       currentTurn = value as string;

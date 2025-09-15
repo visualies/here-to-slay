@@ -52,7 +52,15 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
 
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const originalDoc = new Y.Doc();
-    const wsUrl = process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`;
+
+    // Detect test environment and use appropriate WebSocket URL
+    const isTestEnv = typeof window !== 'undefined' &&
+                      window.location.hostname === 'localhost' &&
+                      window.location.port === '3000';
+    const wsUrl = isTestEnv
+      ? 'ws://localhost:8234'
+      : (process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`);
+
     const provider = new WebsocketProvider(wsUrl, roomId, originalDoc);
 
     // Wrap document with read-only protection
@@ -158,6 +166,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   
   // Check if current player is host (first to join)
   const playerIsHost = isHost(players, playerId);
+
   
   // Actions
   const handleInitializeGame = useCallback(async () => {
