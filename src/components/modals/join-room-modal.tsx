@@ -10,6 +10,7 @@ import { ArrowLeft, LogIn, Settings } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 import type { ServerUser, RecentRoom } from "@/lib/server-user";
+import { useUser } from "@/hooks/use-user";
 
 interface JoinRoomModalProps {
   user: ServerUser | null;
@@ -18,6 +19,7 @@ interface JoinRoomModalProps {
 
 export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
   const [state, formAction, isPending] = useActionState(joinRoomAction, { error: undefined });
+  const { user: clientUser, loading } = useUser();
 
   // Format time since for recent rooms
   const formatTimeSince = (dateString: string): string => {
@@ -82,6 +84,9 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
               />
             </div>
 
+            {/* Hidden player id from cookie-based @me response */}
+            <input type="hidden" name="playerId" value={clientUser?.playerId || ""} />
+
             {/* Recent Rooms */}
             {recentRooms.length > 0 && (
               <div>
@@ -124,7 +129,7 @@ export function JoinRoomModal({ user, recentRooms }: JoinRoomModalProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || loading || !clientUser?.playerId}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50"
                 data-testid="join-room-submit-button"
               >

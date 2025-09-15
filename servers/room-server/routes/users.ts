@@ -18,7 +18,7 @@ export function createUsersRouter() {
   router.get('/@me', async (c) => {
     try {
       // Get player ID from cookie
-      const playerId = getCookie(c, 'player_id')
+      let playerId = getCookie(c, 'player_id')
       
       if (playerId) {
         // Return existing player data from cookie
@@ -34,7 +34,7 @@ export function createUsersRouter() {
         })
       }
 
-      // No valid cookie - create new player
+      // No valid cookie - create new player and set cookie now
       const newPlayerId = generatePlayerId()
 
       // Set cookie with 1 year expiration

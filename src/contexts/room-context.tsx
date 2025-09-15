@@ -22,10 +22,11 @@ interface RoomProviderProps {
 }
 
 export function RoomProvider({ roomId, children }: RoomProviderProps) {
-  const { user } = useUser();
+  const { user, loading } = useUser();
 
-  if (!user) {
-    throw new Error('RoomProvider requires a user from UserProvider');
+  // Wait until user is bootstrapped from cookie (@me)
+  if (loading || !user) {
+    return null;
   }
   const { playerId, playerName, playerColor } = user;
 

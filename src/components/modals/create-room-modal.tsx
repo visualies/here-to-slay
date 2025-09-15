@@ -10,6 +10,7 @@ import { ArrowLeft, Settings, Clock, Layers, Play } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 import type { ServerUser } from "@/lib/server-user";
+import { useUser } from "@/hooks/use-user";
 
 interface CreateRoomModalProps {
   user: ServerUser | null;
@@ -17,6 +18,7 @@ interface CreateRoomModalProps {
 
 export function CreateRoomModal({ user }: CreateRoomModalProps) {
   const [state, formAction, isPending] = useActionState(createRoomAction, { error: undefined });
+  const { user: clientUser, loading } = useUser();
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -55,6 +57,9 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
                 data-testid="create-player-name-input"
               />
             </div>
+
+            {/* Hidden player id from cookie-based @me response */}
+            <input type="hidden" name="playerId" value={clientUser?.playerId || ""} />
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -128,7 +133,7 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || loading || !clientUser?.playerId}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50"
                 data-testid="create-room-button"
               >

@@ -13,6 +13,7 @@ export async function createRoomAction(
   formData: FormData
 ): Promise<ActionState> {
   const playerName = formData.get('playerName') as string;
+  const providedPlayerId = (formData.get('playerId') as string) || '';
   const turnDuration = parseInt(formData.get('turnDuration') as string) || 30;
   const selectedDeck = formData.get('selectedDeck') as string || 'standard';
 
@@ -39,7 +40,7 @@ export async function createRoomAction(
       return { error: roomResponse.message || 'Failed to create room' };
     }
 
-    // Get current player (this will create one automatically if none exists)
+    // Get current player (cookie-based on room server)
     playerResponse = await gameServerAPI.getCurrentPlayer();
     if (!playerResponse.success || !playerResponse.data) {
       return { error: playerResponse.message || 'Failed to get or create player' };
@@ -60,7 +61,8 @@ export async function createRoomAction(
       return { error: 'Failed to determine player information' };
     }
 
-    const { playerId, playerName: finalPlayerName, playerColor } = playerResponse.data;
+    const { playerId: cookiePlayerId, playerName: finalPlayerName, playerColor } = playerResponse.data;
+    const playerId = providedPlayerId || cookiePlayerId;
 
     // Join the room that was just created
     const joinResult = await gameServerAPI.joinRoom(
@@ -89,6 +91,7 @@ export async function joinRoomAction(
   try {
     const roomId = formData.get('roomId') as string;
     const playerName = formData.get('playerName') as string;
+    const providedPlayerId = (formData.get('playerId') as string) || '';
 
     if (!roomId || roomId.trim().length === 0) {
       return { error: 'Room ID is required' };
@@ -106,20 +109,20 @@ export async function joinRoomAction(
       return { error: 'Room ID must be 6 characters' };
     }
 
-    // Get current player or create one
+    // Get current player from room server cookie
     const playerResponse = await gameServerAPI.getCurrentPlayer();
-    let playerId = playerResponse.success && playerResponse.data ? playerResponse.data.playerId : `player-${Date.now()}`;
+    let playerId = providedPlayerId || (playerResponse.success && playerResponse.data ? playerResponse.data.playerId : '');
 
     // Update player name if it changed
     if (playerResponse.success && playerResponse.data && playerName !== playerResponse.data.playerName) {
       const updateResponse = await gameServerAPI.updateCurrentPlayer(playerName);
       if (updateResponse.success && updateResponse.data) {
-        playerId = updateResponse.data.playerId;
+        playerId = providedPlayerId || updateResponse.data.playerId;
       } else {
         return { error: updateResponse.message || 'Failed to update player information' };
       }
-    } else if (!playerResponse.success || !playerResponse.data) {
-      // Create new player
+    } else if (!playerId) {
+      // Create new player via room server, which sets cookie
       const createResponse = await gameServerAPI.createPlayer(playerName);
       if (createResponse.success && createResponse.data) {
         playerId = createResponse.data.playerId;

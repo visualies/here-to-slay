@@ -10,7 +10,7 @@ const allowedOrigins = new Set<string>([
 export const corsMiddleware = cors({
   origin: (origin) => (allowedOrigins.has(origin) ? origin : undefined),
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie'],
+  allowHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization', 'Cookie', 'X-Player-Id'],
   credentials: true,
   maxAge: 86400,
 })

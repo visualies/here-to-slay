@@ -1,4 +1,4 @@
-import { gameServerAPI } from './game-server-api'
+import { cookies } from 'next/headers'
 
 export interface ServerUser {
   playerId: string
@@ -15,41 +15,21 @@ export interface RecentRoom {
 }
 
 export async function getServerUserData(): Promise<ServerUser> {
-  try {
-    const [userResponse, roomsResponse] = await Promise.all([
-      gameServerAPI.getCurrentPlayer(),
-      gameServerAPI.getRecentRooms()
-    ])
-    
-    if (userResponse.success && userResponse.data) {
-      return {
-        playerId: userResponse.data.playerId,
-        playerName: userResponse.data.playerName,
-        playerColor: userResponse.data.playerColor,
-        recentRooms: roomsResponse.success && roomsResponse.data
-          ? roomsResponse.data.recentRooms.map((room) => ({
-              roomId: room.room_id,
-              roomName: `Room ${room.room_id}`,
-              lastJoined: room.joined_at,
-              playerCount: 0 // This would need to be fetched separately
-            }))
-          : []
-      }
-    }
-    
+  // Prefer cookie from the same host (shared across ports) to avoid SSR drift
+  const cookieId = cookies().get('player_id')?.value || ''
+  if (cookieId) {
     return {
-      playerId: '',
-      playerName: '',
-      playerColor: '',
+      playerId: cookieId,
+      playerName: 'Player',
+      playerColor: '#FF6B6B',
       recentRooms: []
     }
-  } catch (error) {
-    // Just return empty list for any error
-    return {
-      playerId: '',
-      playerName: '',
-      playerColor: '',
-      recentRooms: []
-    }
+  }
+  // No cookie yet; let client bootstrap via @me
+  return {
+    playerId: '',
+    playerName: '',
+    playerColor: '',
+    recentRooms: []
   }
 }
