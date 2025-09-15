@@ -12,11 +12,11 @@ import * as CANNON from 'cannon-es'
 import type { ServerDiceState } from '../../src/lib/server-dice'
 
 // Load environment variables
-dotenv.config({ path: '.env.local', debug: false })
+dotenv.config({ path: '.env.local', quiet: true })
 if (process.env.NODE_ENV === 'test') {
-  dotenv.config({ path: '.env.test', debug: false })
+  dotenv.config({ path: '.env.test', quiet: true })
 }
-dotenv.config({ debug: false }) // .env
+dotenv.config({ quiet: true }) // .env
 
 // Validate required environment variables
 const host = process.env.HOST
