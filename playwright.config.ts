@@ -1,5 +1,39 @@
 import { defineConfig } from '@playwright/test'
 
+const webServers = [
+  {
+    command: 'npx tsx servers/room-server/server.ts',
+    url: 'http://localhost:8234',
+    timeout: 120_000,
+    reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      HOST: 'localhost',
+      PORT: '8234',
+      NODE_ENV: 'production',
+      PLAYWRIGHT_TEST: '1',
+      NEXT_TELEMETRY_DISABLED: '1',
+    },
+  },
+]
+
+if (process.env.PW_START_NEXT === '1') {
+  webServers.push({
+    command: 'sh -c "npx next build && npx next start -p 3000"',
+    url: 'http://localhost:3000',
+    timeout: 180_000,
+    reuseExistingServer: !process.env.CI,
+    env: {
+      ...process.env,
+      HOST: 'localhost',
+      PORT: '3000',
+      PLAYWRIGHT_TEST: '1',
+      NEXT_TELEMETRY_DISABLED: '1',
+      NODE_ENV: 'production',
+    },
+  })
+}
+
 export default defineConfig({
   testDir: './tests',
   timeout: 30000,
@@ -7,21 +41,21 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Use single worker for API tests
-  reporter: 'html',
-  globalSetup: './tests/global-setup.ts',
-  globalTeardown: './tests/global-teardown.ts',
+  reporter: 'list',
   use: {
     baseURL: 'http://localhost:8234', // Test server port
-    extraHTTPHeaders: {
-      'Content-Type': 'application/json',
-    },
+    // NOTE: do NOT set global headers here; API project will set JSON headers explicitly
   },
+  webServer: webServers,
   projects: [
     {
       name: 'api',
       testMatch: 'tests/api/**/*.test.ts',
       use: {
         baseURL: 'http://localhost:8234',
+        extraHTTPHeaders: {
+          'Content-Type': 'application/json',
+        },
       },
     },
     {
@@ -29,6 +63,7 @@ export default defineConfig({
       testMatch: 'tests/ui/**/*.test.ts',
       use: {
         baseURL: 'http://localhost:3000',
+        extraHTTPHeaders: {}, // ensure browser-originated requests keep real headers
       },
     },
   ],

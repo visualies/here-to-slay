@@ -3,9 +3,9 @@ import { GameBoard } from "./game-board";
 import { RoomProvider } from "@/contexts/room-context";
 
 interface RoomPageProps {
-  params: {
+  params: Promise<{
     roomId: string;
-  };
+  }>;
 }
 
 export default async function RoomPage({ params }: RoomPageProps) {

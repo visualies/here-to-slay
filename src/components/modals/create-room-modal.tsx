@@ -52,6 +52,7 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
                 placeholder="Enter your player name"
                 maxLength={20}
                 required
+                data-testid="create-player-name-input"
               />
             </div>
 
@@ -129,7 +130,7 @@ export function CreateRoomModal({ user }: CreateRoomModalProps) {
                 type="submit"
                 disabled={isPending}
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-50"
-                data-testid="create-and-start-game-button"
+                data-testid="create-room-button"
               >
                 <Play className="h-4 w-4 mr-2" />
                 {isPending ? 'Creating...' : 'Create & Start Game'}

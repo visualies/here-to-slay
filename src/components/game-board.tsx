@@ -76,10 +76,7 @@ export default function GameBoard({ user: serverUser }: GameBoardProps) {
 
   return (
     <RoomProvider 
-      roomId={currentRoomId} 
-      playerId={playerData.id}
-      playerName={playerData.name}
-      playerColor={playerData.color}
+      roomId={currentRoomId}
     >
       <DiceProvider>
         <StatusProvider>

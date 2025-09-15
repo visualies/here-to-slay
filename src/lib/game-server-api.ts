@@ -16,9 +16,14 @@ class GameServerAPI {
   private baseURL: string;
 
   constructor() {
-    // In a test environment, the server runs on port 8234
-    const port = process.env.NODE_ENV === 'test' ? 8234 : 1234;
-    const host = process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61';
+    // Prefer Playwright test env, then explicit HOST/PORT, then NODE_ENV heuristic
+    const isPlaywright = process.env.PLAYWRIGHT_TEST === '1' || process.env.PLAYWRIGHT_TEST === 'true';
+    const host = isPlaywright
+      ? 'localhost'
+      : process.env.HOST || (process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61');
+    const port = isPlaywright
+      ? 8234
+      : (process.env.PORT ? parseInt(process.env.PORT, 10) : (process.env.NODE_ENV === 'test' ? 8234 : 1234));
     this.baseURL = `http://${host}:${port}`;
   }
 

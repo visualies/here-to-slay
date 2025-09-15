@@ -55,12 +55,19 @@ export async function createRoomAction(
       }
     }
 
+    // Ensure we have player data after possible update
+    if (!playerResponse.data) {
+      return { error: 'Failed to determine player information' };
+    }
+
+    const { playerId, playerName: finalPlayerName, playerColor } = playerResponse.data;
+
     // Join the room that was just created
     const joinResult = await gameServerAPI.joinRoom(
       roomResponse.data.roomId,
-      playerResponse.data.playerId,
-      playerResponse.data.playerName,
-      playerResponse.data.playerColor
+      playerId,
+      finalPlayerName,
+      playerColor
     );
 
     if (!joinResult.success) {

@@ -67,10 +67,18 @@ export function createUsersRouter() {
   // Update player data
   router.put('/@me', async (c) => {
     try {
-      const playerId = getCookie(c, 'player_id')
-      
+      let playerId = getCookie(c, 'player_id')
+
+      // If no player cookie, create one now (mirror GET /@me behavior)
       if (!playerId) {
-        return c.json({ error: 'No player ID found in cookie' }, 400)
+        const newPlayerId = generatePlayerId()
+        setCookie(c, 'player_id', newPlayerId, {
+          maxAge: 365 * 24 * 60 * 60,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'Lax'
+        })
+        playerId = newPlayerId
       }
 
       const body = await c.req.json()

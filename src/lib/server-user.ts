@@ -26,12 +26,14 @@ export async function getServerUserData(): Promise<ServerUser> {
         playerId: userResponse.data.playerId,
         playerName: userResponse.data.playerName,
         playerColor: userResponse.data.playerColor,
-        recentRooms: roomsResponse.success && roomsResponse.data ? roomsResponse.data.recentRooms.map((room: any) => ({
-          roomId: room.room_id,
-          roomName: `Room ${room.room_id}`,
-          lastJoined: room.joined_at,
-          playerCount: 0 // This would need to be fetched separately
-        })) : []
+        recentRooms: roomsResponse.success && roomsResponse.data
+          ? roomsResponse.data.recentRooms.map((room) => ({
+              roomId: room.room_id,
+              roomName: `Room ${room.room_id}`,
+              lastJoined: room.joined_at,
+              playerCount: 0 // This would need to be fetched separately
+            }))
+          : []
       }
     }
     
