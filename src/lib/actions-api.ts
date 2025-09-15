@@ -1,6 +1,6 @@
 import type { GameAction, ActionResponse } from '../types/actions'
 
-const API_BASE_URL = 'http://192.168.178.61:1234/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_GAME_SERVER_API_URL || 'http://192.168.178.61:1234/api'
 
 export async function executeAction(action: GameAction): Promise<ActionResponse> {
   try {

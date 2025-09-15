@@ -52,7 +52,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
 
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const originalDoc = new Y.Doc();
-    const wsUrl = `ws://192.168.178.61:1234`;
+    const wsUrl = process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`;
     const provider = new WebsocketProvider(wsUrl, roomId, originalDoc);
 
     // Wrap document with read-only protection

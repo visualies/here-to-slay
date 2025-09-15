@@ -84,7 +84,7 @@ export class MultiplayerGame {
     this.dicePositions = this.doc.getMap('dicePositions');
     
     // Connect to WebSocket provider with room parameter
-    const wsUrl = `ws://192.168.178.61:1234`;
+    const wsUrl = process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`;
     
     // Test server connectivity first
     fetch('/api/rooms/test')

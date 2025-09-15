@@ -16,14 +16,14 @@ class GameServerAPI {
   private baseURL: string;
 
   constructor() {
-    // Prefer Playwright test env, then explicit HOST/PORT, then NODE_ENV heuristic
+    // Prefer Playwright test env, then explicit GAME_SERVER_HOST/GAME_SERVER_PORT, then NODE_ENV heuristic
     const isPlaywright = process.env.PLAYWRIGHT_TEST === '1' || process.env.PLAYWRIGHT_TEST === 'true';
     const host = isPlaywright
       ? 'localhost'
-      : process.env.HOST || (process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61');
+      : process.env.GAME_SERVER_HOST || (process.env.NODE_ENV === 'test' ? 'localhost' : '192.168.178.61');
     const port = isPlaywright
       ? 8234
-      : (process.env.PORT ? parseInt(process.env.PORT, 10) : (process.env.NODE_ENV === 'test' ? 8234 : 1234));
+      : (process.env.GAME_SERVER_PORT ? parseInt(process.env.GAME_SERVER_PORT, 10) : (process.env.NODE_ENV === 'test' ? 8234 : 1234));
     this.baseURL = `http://${host}:${port}`;
   }
 
