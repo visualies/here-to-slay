@@ -203,7 +203,7 @@ class RoomDatabase {
       FROM rooms
       WHERE datetime(last_activity, '+1 hour') > datetime('now')
       ORDER BY last_activity DESC
-      LIMIT 50
+      LIMIT 100
     `);
     return stmt.all();
   }
