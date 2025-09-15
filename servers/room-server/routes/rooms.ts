@@ -55,7 +55,7 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       // Initialize gameState with default values
       const gameStateMap = ydoc.getMap('gameState')
-      gameStateMap.set('gamePhase', 'waiting')
+      gameStateMap.set('phase', 'waiting')
       gameStateMap.set('currentTurn', '')
       gameStateMap.set('supportStack', [])
       gameStateMap.set('monsters', [])
@@ -93,8 +93,8 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       // Initialize gameState if it doesn't exist
       const gameStateMap = ydoc.getMap('gameState')
-      if (!gameStateMap.has('gamePhase')) {
-        gameStateMap.set('gamePhase', 'waiting')
+      if (!gameStateMap.has('phase')) {
+        gameStateMap.set('phase', 'waiting')
         gameStateMap.set('currentTurn', '')
         gameStateMap.set('supportStack', [])
         gameStateMap.set('monsters', [])

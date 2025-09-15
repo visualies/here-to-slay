@@ -20,7 +20,7 @@ export type Room = {
   
   // Game state
   players: Player[];
-  gamePhase: string;
+  phase: string;
   currentTurn: string;
   supportStack: Card[];
   monsters: Card[];

@@ -6,7 +6,7 @@ import { useRoom } from './use-room';
 export function useGameState() {
   const { 
     players, 
-    gamePhase, 
+    phase, 
     currentTurn, 
     supportStack, 
     monsters, 
@@ -18,7 +18,7 @@ export function useGameState() {
   
   return {
     players,
-    gamePhase, 
+    phase, 
     currentTurn,
     supportStack,
     monsters,

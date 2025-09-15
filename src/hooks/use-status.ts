@@ -23,7 +23,7 @@ interface StatusReturn {
 }
 
 export function useStatus(): StatusReturn {
-  const { gamePhase, currentTurn, currentPlayer } = useGameState();
+  const { phase, currentTurn, currentPlayer } = useGameState();
   const { enabled: diceEnabled, stable: diceStable, hasRolled } = useDice();
   const statusContext = useContext(StatusContext);
   

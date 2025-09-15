@@ -36,7 +36,7 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
 
       // Get game state from room context
       state.gameState = {
-        gamePhase: room.gamePhase,
+        phase: room.phase,
         currentTurn: room.currentTurn,
         supportStack: room.supportStack,
         monsters: room.monsters,
@@ -68,7 +68,7 @@ export function DebugMenu({ isOpen, onClose }: DebugMenuProps) {
     return () => {
       clearInterval(interval);
     };
-  }, [isOpen, room.gamePhase, room.currentTurn, room.supportStack, room.monsters, room.players, room.isConnected, room.roomId, room.isHost]);
+  }, [isOpen, room.phase, room.currentTurn, room.supportStack, room.monsters, room.players, room.isConnected, room.roomId, room.isHost]);
 
 
   const toggleSection = (section: string) => {

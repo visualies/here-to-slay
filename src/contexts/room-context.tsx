@@ -39,7 +39,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
 
   // React state
   const [players, setPlayers] = useState<Player[]>([]);
-  const [gamePhase, setGamePhase] = useState<string>('waiting');
+  const [phase, setPhase] = useState<string>('waiting');
   const [currentTurn, setCurrentTurn] = useState<string>('');
   const [supportStack, setSupportStack] = useState<Card[]>([]);
   const [monsters, setMonsters] = useState<Card[]>([]);
@@ -116,7 +116,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
         gameStateRef.current,
         (newPlayers, gameState) => {
           setPlayers(newPlayers);
-          setGamePhase(gameState.gamePhase);
+          setPhase(gameState.phase);
           setCurrentTurn(gameState.currentTurn);
           setSupportStack(gameState.supportStack);
           setMonsters(gameState.monsters || []);
@@ -218,7 +218,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     
     // Game state
     players,
-    gamePhase,
+    phase,
     currentTurn,
     supportStack,
     monsters,

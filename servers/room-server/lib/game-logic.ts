@@ -39,7 +39,7 @@ export function initializeGame(
   gameStateMap.set('currentTurn', firstPlayerId);
   gameStateMap.set('supportStack', createSupportStack());
   gameStateMap.set('monsters', selectedMonsters);
-  gameStateMap.set('gamePhase', 'playing');
+  gameStateMap.set('phase', 'playing');
 }
 
 export function advanceTurn(

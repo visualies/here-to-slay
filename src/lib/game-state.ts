@@ -16,20 +16,20 @@ export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
 }
 
 export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
-  gamePhase: string;
+  phase: string;
   currentTurn: string;
   supportStack: Card[];
   monsters: Card[];
 } {
-  let gamePhase = 'waiting';
+  let phase = 'waiting';
   let currentTurn = '';
   let supportStack: Card[] = [];
   let monsters: Card[] = [];
   
   gameStateMap.forEach((value, key) => {
     console.log('Game state key:', key, 'value:', value);
-    if (key === 'gamePhase') {
-      gamePhase = value as string;
+    if (key === 'phase') {
+      phase = value as string;
     } else if (key === 'currentTurn') {
       currentTurn = value as string;
     } else if (key === 'supportStack') {
@@ -39,13 +39,13 @@ export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
     }
   });
   
-  return { gamePhase, currentTurn, supportStack, monsters };
+  return { phase, currentTurn, supportStack, monsters };
 }
 
 export function createYjsObserver(
   playersMap: Y.Map<Player>,
   gameStateMap: Y.Map<unknown>,
-  onStateUpdate: (players: Player[], gameState: { gamePhase: string; currentTurn: string; supportStack: Card[]; monsters: Card[] }) => void
+  onStateUpdate: (players: Player[], gameState: { phase: string; currentTurn: string; supportStack: Card[]; monsters: Card[] }) => void
 ): () => void {
   const updateState = () => {
     console.log('=== STATE UPDATE ===');
@@ -55,7 +55,7 @@ export function createYjsObserver(
     
     console.log('State update result:', { 
       playersCount: players.length, 
-      gamePhase: gameState.gamePhase, 
+      phase: gameState.phase, 
       currentTurn: gameState.currentTurn 
     });
     

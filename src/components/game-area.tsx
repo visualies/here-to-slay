@@ -16,7 +16,7 @@ interface GameAreaProps {
 }
 
 export function GameArea({ diceResults }: GameAreaProps) {
-  const { players, gamePhase, currentTurn, currentPlayer, initializeGame, isHost } = useGameState();
+  const { players, phase, currentTurn, currentPlayer, initializeGame, isHost } = useGameState();
   const { connectedPlayers, connectedPlayersCount } = usePlayerPresence();
   const { getPlayerPosition } = usePlayerPosition();
   const { 
@@ -65,7 +65,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
   }, [debugMode]);
 
   // Determine if it's the current player's turn
-  const isMyTurn = currentPlayer?.id === currentTurn && gamePhase === 'playing';
+  const isMyTurn = currentPlayer?.id === currentTurn && phase === 'playing';
 
   // Disable dice when it's not player's turn
   useEffect(() => {
@@ -78,7 +78,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
   // Add players who join an existing game
   useEffect(() => {
-    if (isHost && gamePhase === 'playing') {
+    if (isHost && phase === 'playing') {
       // Find connected players not yet in the game
       const playersInGame = new Set(players.map(p => p.id));
       const playersToAdd = connectedPlayers.filter(p => !playersInGame.has(p.id));
@@ -89,7 +89,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
         // addPlayerToGame(player.id);
       });
     }
-  }, [isHost, gamePhase, players, connectedPlayers]);
+  }, [isHost, phase, players, connectedPlayers]);
 
 
   // Always show the game board - no separate waiting room
@@ -200,7 +200,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
       {/* Control Panel - shows different content based on game phase */}
       <div className="absolute bottom-4 right-4 z-40">
-        {gamePhase === 'waiting' ? (
+        {phase === 'waiting' ? (
           /* Waiting Phase - Start Round Controls */
           <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 border-2 border-purple-500">
             <div className="text-sm font-semibold text-purple-600 mb-3">
