@@ -91,62 +91,21 @@ export async function joinRoomAction(
   try {
     const roomId = formData.get('roomId') as string;
     const playerName = formData.get('playerName') as string;
-    const providedPlayerId = (formData.get('playerId') as string) || '';
 
     if (!roomId || roomId.trim().length === 0) {
       return { error: 'Room ID is required' };
-    }
-
-    if (!playerName || playerName.trim().length === 0) {
-      return { error: 'Player name is required' };
-    }
-
-    if (playerName.trim().length > 20) {
-      return { error: 'Player name must be 20 characters or less' };
     }
 
     if (roomId.trim().length !== 6) {
       return { error: 'Room ID must be 6 characters' };
     }
 
-    // Get current player from room server cookie
-    const playerResponse = await gameServerAPI.getCurrentPlayer();
-    let playerId = providedPlayerId || (playerResponse.success && playerResponse.data ? playerResponse.data.playerId : '');
-
-    // Update player name if it changed
-    if (playerResponse.success && playerResponse.data && playerName !== playerResponse.data.playerName) {
-      const updateResponse = await gameServerAPI.updateCurrentPlayer(playerName);
-      if (updateResponse.success && updateResponse.data) {
-        playerId = providedPlayerId || updateResponse.data.playerId;
-      } else {
-        return { error: updateResponse.message || 'Failed to update player information' };
-      }
-    } else if (!playerId) {
-      // Create new player via room server, which sets cookie
-      const createResponse = await gameServerAPI.createPlayer(playerName);
-      if (createResponse.success && createResponse.data) {
-        playerId = createResponse.data.playerId;
-      } else {
-        return { error: createResponse.message || 'Failed to create player' };
-      }
-    }
-
-    // Join the room
-    const joinResult = await gameServerAPI.joinRoom(
-      roomId.toUpperCase(),
-      playerId,
-      playerName,
-      playerResponse.success && playerResponse.data ? playerResponse.data.playerColor : '#FF6B6B'
-    );
-
-    if (joinResult.success) {
-      // Redirect to the game with room data
-      redirect(`/room/${roomId.toUpperCase()}`);
-    } else {
-      return { error: joinResult.message || 'Failed to join room. Please check the room ID.' };
-    }
+    // Since RoomProvider auto-joins, we just need to redirect to the room
+    // The actual joining will happen when RoomProvider mounts
+    redirect(`/room/${roomId.toUpperCase()}`);
   } catch (error) {
     console.error('Failed to join room:', error);
-    return { error: error instanceof Error ? error.message : 'Failed to create room' };
+    return { error: error instanceof Error ? error.message : 'Failed to join room' };
   }
 }
+

@@ -10,7 +10,6 @@ interface MenuModalProps {
 }
 
 export function MenuModal({ user }: MenuModalProps) {
-
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
       {/* Theme Toggle */}

@@ -3,6 +3,6 @@ import { getServerUserData } from "@/lib/server-user";
 
 export default async function JoinRoomPage() {
   const user = await getServerUserData();
-  
-  return <JoinRoomModal user={user} recentRooms={user?.recentRooms || []} />;
+
+  return <JoinRoomModal user={user} />;
 }

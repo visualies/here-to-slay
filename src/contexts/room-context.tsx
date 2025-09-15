@@ -52,6 +52,20 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
       providerRef.current.disconnect();
     }
 
+    // Automatically join room when RoomProvider mounts
+    const joinRoom = async () => {
+      try {
+        const joinResult = await gameServerAPI.joinRoom(roomId, playerId, playerName, playerColor);
+        if (!joinResult.success) {
+          console.error('Failed to join room:', joinResult.message);
+        }
+      } catch (error) {
+        console.error('Error joining room:', error);
+      }
+    };
+
+    joinRoom();
+
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const originalDoc = new Y.Doc();
 
