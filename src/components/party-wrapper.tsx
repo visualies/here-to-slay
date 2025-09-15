@@ -20,6 +20,7 @@ interface PartyWrapperProps {
 
 export function PartyWrapper({ orientation, debugMode = false, position }: PartyWrapperProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const innerRef = useRef<HTMLDivElement | null>(null);
   const { scales, register } = useSizing();
   const scale = position ? scales[position] ?? 1 : 1;
   const { players } = useGameState();
@@ -33,6 +34,53 @@ export function PartyWrapper({ orientation, debugMode = false, position }: Party
       return () => register(position, null);
     }
   }, [position, register]);
+
+  // Compute paired scale synchronously in layout effect and apply to inner container
+  useLayoutEffect(() => {
+    if (!position) return;
+    const computeAndApply = () => {
+      const topEl = document.querySelector('[data-party-position="top"]') as HTMLElement | null;
+      const bottomEl = document.querySelector('[data-party-position="bottom"]') as HTMLElement | null;
+      const leftEl = document.querySelector('[data-party-position="left"]') as HTMLElement | null;
+      const rightEl = document.querySelector('[data-party-position="right"]') as HTMLElement | null;
+
+      let mySize = 0;
+      let targetMin = 0;
+
+      if (position === 'top' || position === 'bottom') {
+        const th = topEl?.clientHeight ?? 0;
+        const bh = bottomEl?.clientHeight ?? 0;
+        if (th > 0 && bh > 0) {
+          targetMin = Math.min(th, bh);
+          mySize = position === 'top' ? th : bh;
+        }
+      } else {
+        const lw = leftEl?.clientWidth ?? 0;
+        const rw = rightEl?.clientWidth ?? 0;
+        if (lw > 0 && rw > 0) {
+          targetMin = Math.min(lw, rw);
+          mySize = position === 'left' ? lw : rw;
+        }
+      }
+
+      const el = innerRef.current;
+      if (!el) return;
+
+      if (mySize > 0 && targetMin > 0) {
+        const raw = targetMin / mySize;
+        const clamped = Math.min(1, Math.max(0.01, raw));
+        const s = Math.round(clamped * 1000) / 1000;
+        el.style.transform = `scale(${s})`;
+        el.style.transformOrigin = 'center';
+      }
+    };
+
+    computeAndApply();
+
+    const onResize = () => computeAndApply();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [position]);
   // Calculate aspect ratio for 1 party leader + 6 cards with 5:7 ratio
   // Reduced from 37/7 to 4.5:1 for better proportions
   const cardAspectRatio = position === 'top' || position === 'bottom' ? 5 : 5;
@@ -176,14 +224,18 @@ export function PartyWrapper({ orientation, debugMode = false, position }: Party
       )}
       style={{
         "--w": orientation === "horizontal" ? cardAspectRatio : 1,
-        "--h": orientation === "horizontal" ? 1 : cardAspectRatio
+        "--h": orientation === "horizontal" ? 1 : cardAspectRatio,
+        // Seed CSS var so children can use var(--party-scale) immediately
+        "--party-scale": scale
       } as React.CSSProperties}
       ref={containerRef}
+      data-party-position={position}
     >
       <div
         className="w-full h-full relative overflow-visible has-[.card:hover]:z-[60]"
         data-scale={scale.toFixed(3)}
-        style={{ transform: `scale(${scale})`, transformOrigin: "center", willChange: "transform" }}
+        ref={innerRef}
+        style={{ transformOrigin: "center", willChange: "transform" }}
       >
         {/* Use appropriate render function based on position */}
         {position === 'top' || position === 'bottom' ? renderHorizontalCards() : renderVerticalCards()}

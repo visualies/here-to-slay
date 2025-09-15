@@ -30,16 +30,16 @@ export function useStatus(): StatusReturn {
   let gameStatus: GameStatus;
   
   // Game hasn't started yet
-  if (gamePhase === 'waiting') {
+  if (phase === 'waiting') {
     gameStatus = 'waiting-to-start';
   }
   // Game has ended
-  else if (gamePhase === 'ended') {
+  else if (phase === 'ended') {
     gameStatus = 'game-ended';
   }
   
   // Game is playing - determine current state
-  else if (gamePhase === 'playing') {
+  else if (phase === 'playing') {
     const isMyTurn = currentPlayer?.id === currentTurn;
     
     // Dice are enabled - determine dice state

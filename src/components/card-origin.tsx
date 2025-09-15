@@ -69,6 +69,22 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
     return () => registerCardOrigin(cardOriginId, null, aspectRatio, orientation);
   }, [registerCardOrigin, cardOriginId, aspectRatio, orientation]);
 
+  // For center elements, synchronously copy target dimensions from party-bottom-* before paint
+  useLayoutEffect(() => {
+    if (side) return;
+    const targetId = `party-bottom-${aspectRatio}`;
+    const targetEl = document.getElementById(targetId);
+    const el = elementRef.current;
+    if (!targetEl || !el) return;
+    const rect = targetEl.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      el.style.width = `${rect.width}px`;
+      el.style.height = `${rect.height}px`;
+      // Ensure aspect-ratio doesn't override explicit dimensions
+      (el.style as any)["aspectRatio"] = "unset";
+    }
+  }, [side, aspectRatio]);
+
   // Determine colors and aspect ratio based on props
   const isLarge = aspectRatio === "large";
   const bgColor = debugMode ? (isLarge ? "bg-green-500/30" : "bg-blue-500/30") : "";
@@ -96,10 +112,20 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
       aspectRatio: 'unset' // Override the CSS aspect-ratio
     };
   } else {
-    // Normal sizing for party wrappers and center elements
-    sizeProps = orientation === "horizontal" 
-      ? { height: '100%' }
-      : { width: '100%' };
+    const isCenter = !side;
+    if (isCenter) {
+      // Stable non-zero fallback for center elements until party sizes arrive
+      if (orientation === "horizontal") {
+        sizeProps = { width: 'clamp(72px, 12vw, 144px)' };
+      } else {
+        sizeProps = { height: 'clamp(72px, 12vh, 144px)' };
+      }
+    } else {
+      // Party wrappers rely on their container height/width
+      sizeProps = orientation === "horizontal" 
+        ? { height: '100%' }
+        : { width: '100%' };
+    }
     
     // Apply center area scaling for center elements without custom dimensions
     if (!side) {
@@ -111,6 +137,7 @@ export function CardOrigin({ aspectRatio, orientation, side, debugMode = false, 
   return (
     <div
       ref={elementRef}
+      id={cardOriginId}
       className={`${bgColor} ${outlineColor ? `outline outline-2 ${outlineColor}` : ""} flex-shrink-0 flex items-center justify-center relative has-[.card:hover]:z-[60]`}
       style={{
         ...sizeProps,

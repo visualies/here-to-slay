@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useGameState } from "../hooks/use-game-state";
 import { usePlayerPresence } from "../hooks/use-player-presence";
 import { usePlayerPosition } from "../hooks/use-player-position";
@@ -32,7 +32,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
   // Calculate which side should overflow
   const [shouldTopBottomOverflow, setShouldTopBottomOverflow] = useState(false);
   
-  useEffect(() => {
+  useLayoutEffect(() => {
     const calculateOverflow = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;

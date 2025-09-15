@@ -39,6 +39,11 @@ export function CardOriginSizingProvider({ children }: CardOriginSizingProviderP
 
   const measureElement = useCallback((id: string, element: HTMLElement, aspectRatio: "large" | "default", orientation: "horizontal" | "vertical") => {
     const rect = element.getBoundingClientRect();
+    // Ignore initial zero measurements and retry next frame to avoid flash-from-0
+    if (rect.width <= 0 || rect.height <= 0) {
+      requestAnimationFrame(() => measureElement(id, element, aspectRatio, orientation));
+      return;
+    }
     const newSize: CardOriginSize = {
       width: rect.width,
       height: rect.height,
