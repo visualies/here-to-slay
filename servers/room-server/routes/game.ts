@@ -253,12 +253,12 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       }
 
       // Check if game is already started
-      const currentPhase = gameStateMap.get('phase')
+      const currentPhase = gameStateMap.get('gamePhase')
       if (currentPhase === 'playing') {
         return c.json({
           success: false,
           message: 'Game is already started',
-          phase: currentPhase
+          gamePhase: currentPhase
         })
       }
 
@@ -270,7 +270,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       return c.json({
         success: true,
         message: `Game started with ${activePlayers.length} players`,
-        phase: 'playing',
+        gamePhase: 'playing',
         currentTurn: gameStateMap.get('currentTurn'),
         players: activePlayers.map(p => ({ id: p.id, name: p.name }))
       })
