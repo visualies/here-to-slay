@@ -5,10 +5,18 @@
  * Run with: tsx dice-server.ts
  */
 
+import dotenv from 'dotenv'
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import * as CANNON from 'cannon-es'
 import type { ServerDiceState } from '../../src/lib/server-dice'
+
+// Load environment variables
+dotenv.config({ path: '.env.local', debug: false })
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: '.env.test', debug: false })
+}
+dotenv.config({ debug: false }) // .env
 
 // Validate required environment variables
 const host = process.env.HOST

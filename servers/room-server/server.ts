@@ -5,11 +5,19 @@
  * Run with: tsx server.ts
  */
 
+import dotenv from 'dotenv'
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
 import RoomDatabase from '../../src/lib/database.js'
 import { createApp } from './app.js'
+
+// Load environment variables
+dotenv.config({ path: '.env.local', debug: false })
+if (process.env.NODE_ENV === 'test') {
+  dotenv.config({ path: '.env.test', debug: false })
+}
+dotenv.config({ debug: false }) // .env
 
 // Validate required environment variables
 const host = process.env.HOST
