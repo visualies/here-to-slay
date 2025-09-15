@@ -68,7 +68,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       <div className="flex items-center justify-center gap-[8%]">
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-foreground font-medium">Support Deck</div>
+          <div className="text-base text-muted-foreground font-heading">Support</div>
           <CardOrigin 
             id="center-support-deck"
             aspectRatio="default" 
@@ -83,7 +83,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
                     key={`support-${deckSeed}-${i}`}
                     card={{ 
                       id: `support-${i}`, 
-                      name: `Support Deck`, 
+                      name: `Support`, 
                       type: CardType.Hero, 
                       class: HeroClass.Fighter, 
                       requirement: 6,
@@ -102,7 +102,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-foreground font-medium">Monsters</div>
+          <div className="text-base text-muted-foreground font-heading">Monsters</div>
           <div className="flex justify-center gap-[5%]">
             {Array.from({ length: 3 }, (_, i) => (
               <div key={i} className="flex flex-col items-center gap-2">
@@ -127,7 +127,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         </div>
         
         <div className="flex flex-col items-center gap-2">
-          <div className="text-sm text-foreground font-medium">Discard</div>
+          <div className="text-base text-muted-foreground font-heading">Discard</div>
           <CardOrigin 
             id="center-discard"
             aspectRatio="default" 
@@ -135,25 +135,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
             debugMode={debugMode}
             dimensions={discardDimensions || undefined}
           >
-            <CardSlot size="auto" cardType="hero" label="">
-              {/* Discard pile content matching CardSlot empty styling */}
-              <div 
-                className="w-full h-full rounded flex items-center justify-center relative"
-                style={{
-                  borderWidth: "2px", 
-                  borderColor: "var(--outline)",
-                  borderRadius: "0.375rem",
-                  borderStyle: "dashed"
-                }}
-              >
-                {/* White overlay like CardSlot */}
-                <div className="absolute inset-0 rounded" style={{ backgroundColor: "#C5C3C1", opacity: "0.2" }} />
-                
-                {/* Content layer */}
-                <div className="relative z-10 flex items-center justify-center w-full h-full">
-                  <div className="text-xs text-foreground font-medium">DISCARD</div>
-                </div>
-              </div>
+            <CardSlot size="auto" cardType="hero">
             </CardSlot>
           </CardOrigin>
         </div>
@@ -161,7 +143,6 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {/* Cache positioned absolutely to escape layout constraints */}
       <div className={`absolute bottom-0 right-0 translate-x-[80%] translate-y-12 flex flex-col items-center gap-2 z-10 ${debugMode ? 'outline outline-2 outline-red-300 p-2' : ''}`}>
-        <div className="text-sm text-foreground font-medium">Cache</div>
         <div className="flex items-center justify-center">
           <Stack>
             {cacheCards.map((card, index) => (

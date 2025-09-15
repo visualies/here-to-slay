@@ -155,7 +155,7 @@ export function GameArea({ diceResults }: GameAreaProps) {
 
       {/* Dotted background pattern */}
       <div 
-        className="absolute inset-0 opacity-20"
+        className="absolute inset-0 opacity-60"
         style={{
           backgroundImage: `radial-gradient(circle, var(--outline) 1px, transparent 1px)`,
           backgroundSize: '20px 20px'
