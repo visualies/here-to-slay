@@ -11,8 +11,21 @@ import { setupWSConnection, docs } from '@y/websocket-server/utils'
 import RoomDatabase from '../../src/lib/database.js'
 import { createApp } from './app.js'
 
-const host: string = process.env.HOST || '192.168.178.61'
-const port: number = parseInt(process.env.PORT || '1234', 10)
+// Validate required environment variables
+const host = process.env.HOST
+const port = process.env.PORT
+
+if (!host) {
+  throw new Error('Missing required environment variable: HOST')
+}
+if (!port) {
+  throw new Error('Missing required environment variable: PORT')
+}
+
+const portNumber = parseInt(port, 10)
+if (isNaN(portNumber)) {
+  throw new Error('PORT environment variable must be a valid number')
+}
 
 // Initialize database
 const db = new RoomDatabase()
@@ -176,8 +189,8 @@ wss.on('connection', (ws, req) => {
   }
 })
 
-server.listen(port, host, () => {
-  console.log(`🎲 Here-to-Slay Room-based WebSocket server running at http://${host}:${port}`)
+server.listen(portNumber, host, () => {
+  console.log(`🎲 Here-to-Slay Room-based WebSocket server running at http://${host}:${portNumber}`)
   console.log('Players can create and join rooms for multiplayer dice games!')
 })
 

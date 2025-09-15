@@ -1,6 +1,8 @@
 import type { GameAction, ActionResponse } from '../types/actions'
+import { env } from './env-validation'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_GAME_SERVER_API_URL || 'http://192.168.178.61:1234/api'
+const { gameServerApiUrl } = env()
+const API_BASE_URL = gameServerApiUrl
 
 export async function executeAction(action: GameAction): Promise<ActionResponse> {
   try {

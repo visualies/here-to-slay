@@ -32,7 +32,7 @@ if (process.env.PW_START_NEXT === '1') {
       NODE_ENV: 'production',
       NEXT_PUBLIC_GAME_SERVER_WS_URL: 'ws://localhost:8234',
       NEXT_PUBLIC_GAME_SERVER_API_URL: 'http://localhost:8234/api',
-    } as Record<string, string | undefined>,
+    } as any,
   })
 }
 

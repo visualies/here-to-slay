@@ -3,6 +3,7 @@
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { ServerDiceManager } from './server-dice';
+import { env } from './env-validation';
 
 import type { Player, DicePosition, MultiplayerRoom as Room } from '../types';
 
@@ -84,7 +85,8 @@ export class MultiplayerGame {
     this.dicePositions = this.doc.getMap('dicePositions');
     
     // Connect to WebSocket provider with room parameter
-    const wsUrl = process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`;
+    const { gameServerWsUrl } = env();
+    const wsUrl = gameServerWsUrl;
     
     // Test server connectivity first
     fetch('/api/rooms/test')

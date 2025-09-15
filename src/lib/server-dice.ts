@@ -1,5 +1,7 @@
 "use client";
 
+import { env } from './env-validation';
+
 // Coordinate transformation utilities for responsive boundaries
 export const FIELD_SIZE = 5; // Server field half-size (-5 to +5)
 
@@ -42,8 +44,8 @@ export class ServerDiceManager {
   private initialized: boolean = false;
   private ws: WebSocket | null = null;
   private messageHandler: ((event: MessageEvent) => void) | null = null;
-  private diceServerUrl: string = process.env.NEXT_PUBLIC_DICE_SERVER_WS_URL || 'ws://192.168.178.61:1235';
-  private diceApiUrl: string = '';
+  private diceServerUrl: string;
+  private diceApiUrl: string;
   private isConnecting: boolean = false;
   private reconnectTimeout: NodeJS.Timeout | null = null;
 
@@ -51,7 +53,12 @@ export class ServerDiceManager {
     this.roomId = roomId;
     this.onStatesUpdate = onStatesUpdate;
     this.initialized = true;
-    
+
+    // Validate environment variables and set URLs
+    const envConfig = env();
+    this.diceServerUrl = envConfig.diceServerWsUrl;
+    this.diceApiUrl = envConfig.diceServerApiUrl;
+
     // Automatically connect to dedicated dice server
     this.connectToDiceServer();
   }

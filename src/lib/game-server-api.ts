@@ -6,6 +6,8 @@
  * It is a singleton class, so there is only one instance of it in the application.
  */
 
+import { env } from './env-validation';
+
 interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
@@ -16,21 +18,10 @@ class GameServerAPI {
   private baseURL: string;
 
   constructor() {
-    // Detect test environment by checking if we're running on localhost:3000 (test Next.js)
-    const isTestEnv = typeof window !== 'undefined' &&
-                      window.location.hostname === 'localhost' &&
-                      window.location.port === '3000';
-
-    if (isTestEnv) {
-      // In test environment, use localhost:8234 to match Playwright config
-      this.baseURL = 'http://localhost:8234';
-    } else if (process.env.NEXT_PUBLIC_GAME_SERVER_API_URL) {
-      // Use NEXT_PUBLIC_GAME_SERVER_API_URL if available (without /api since we add endpoints)
-      this.baseURL = process.env.NEXT_PUBLIC_GAME_SERVER_API_URL.replace('/api', '');
-    } else {
-      // Fallback to default development server
-      this.baseURL = 'http://192.168.178.61:1234';
-    }
+    // Get validated environment configuration
+    const { gameServerApiUrl } = env();
+    // Remove /api suffix since we add endpoints in methods
+    this.baseURL = gameServerApiUrl.replace('/api', '');
   }
 
   private async request<T>(endpoint: string, method: string, data?: unknown): Promise<ApiResponse<T>> {

@@ -12,6 +12,7 @@ import { updateLastActive } from '../lib/player-persistence';
 import { wrapDocument, ReadOnlyYDoc } from '../lib/read-only-yjs';
 import { createHeartbeatInterval, cleanupHeartbeat } from '../lib/presence';
 import { useUser } from '../hooks/use-user';
+import { env } from '../lib/env-validation';
 
 export const RoomContext = createContext<Room | null>(null);
 
@@ -53,13 +54,9 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     // Create Yjs doc and provider - let WebsocketProvider handle document sharing
     const originalDoc = new Y.Doc();
 
-    // Detect test environment and use appropriate WebSocket URL
-    const isTestEnv = typeof window !== 'undefined' &&
-                      window.location.hostname === 'localhost' &&
-                      window.location.port === '3000';
-    const wsUrl = isTestEnv
-      ? 'ws://localhost:8234'
-      : (process.env.NEXT_PUBLIC_GAME_SERVER_WS_URL || `ws://192.168.178.61:1234`);
+    // Get WebSocket URL from environment variables
+    const { gameServerWsUrl } = env();
+    const wsUrl = gameServerWsUrl;
 
     const provider = new WebsocketProvider(wsUrl, roomId, originalDoc);
 

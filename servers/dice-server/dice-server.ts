@@ -10,8 +10,21 @@ import http from 'http'
 import * as CANNON from 'cannon-es'
 import type { ServerDiceState } from '../../src/lib/server-dice'
 
-const host: string = process.env.HOST || '192.168.178.61'
-const port: number = parseInt(process.env.DICE_PORT || '1235', 10)
+// Validate required environment variables
+const host = process.env.HOST
+const dicePort = process.env.DICE_PORT
+
+if (!host) {
+  throw new Error('Missing required environment variable: HOST')
+}
+if (!dicePort) {
+  throw new Error('Missing required environment variable: DICE_PORT')
+}
+
+const port = parseInt(dicePort, 10)
+if (isNaN(port)) {
+  throw new Error('DICE_PORT environment variable must be a valid number')
+}
 
 interface DiceObject {
   body: CANNON.Body;
@@ -397,7 +410,7 @@ const server = http.createServer((request: http.IncomingMessage, response: http.
 
   // Default response
   response.writeHead(200, { 'Content-Type': 'text/plain' })
-  response.end('Dice Physics Server\n\nWebSocket: ws://192.168.178.61:1235\nAPI: /api/dice/move, /api/dice/throw, /api/dice/state')
+  response.end(`Dice Physics Server\n\nWebSocket: ws://${host}:${port}\nAPI: /api/dice/move, /api/dice/throw, /api/dice/state`)
 })
 
 // WebSocket server for real-time dice state updates

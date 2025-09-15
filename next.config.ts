@@ -2,20 +2,30 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   async rewrites() {
+    const gameServerUrl = process.env.NEXT_PUBLIC_GAME_SERVER_API_URL;
+    const diceServerUrl = process.env.NEXT_PUBLIC_DICE_SERVER_API_URL;
+
+    if (!gameServerUrl) {
+      throw new Error('Missing required environment variable: NEXT_PUBLIC_GAME_SERVER_API_URL');
+    }
+    if (!diceServerUrl) {
+      throw new Error('Missing required environment variable: NEXT_PUBLIC_DICE_SERVER_API_URL');
+    }
+
     return [
-      // Proxy room/game server API requests to port 1234
+      // Proxy room/game server API requests
       {
         source: '/api/rooms/:path*',
-        destination: 'http://192.168.178.61:1234/api/:path*',
+        destination: `${gameServerUrl}/:path*`,
       },
       {
         source: '/api/game/:path*',
-        destination: 'http://192.168.178.61:1234/api/game/:path*',
+        destination: `${gameServerUrl}/game/:path*`,
       },
-      // Proxy dice server API requests to port 1235
+      // Proxy dice server API requests
       {
         source: '/api/dice/:path*',
-        destination: 'http://192.168.178.61:1235/api/dice/:path*',
+        destination: `${diceServerUrl}/:path*`,
       },
     ];
   },
