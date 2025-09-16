@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Card as GameCard } from "../types";
+import type { Card } from "../types";
 import { useBlur } from "../hooks/use-blur";
 import { getRandomTransform, getRandomHoverRotation, getCenterDirectedMovement } from "../lib/utils";
 
 interface CardProps {
-  card: GameCard;
+  card: Card;
   isBack?: boolean;
   size?: 'default' | 'large' | 'fill';
   className?: string;
@@ -43,7 +43,7 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
   const baseClasses = getBaseClasses();
 
   // Get background image for card
-  const getCardBackground = (card: GameCard) => {
+  const getCardBackground = (card: Card) => {
     // If card has imagePath, use it
     if (card.imagePath) {
       return `url(${card.imagePath})`;
@@ -113,21 +113,21 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
             }`}>
               {card.type}
             </div>
-            {card.class && (
+            {(card as any).heroClass && (
               <div className="text-xs text-foreground mt-0.5">
-                {card.class}
+                {(card as any).heroClass}
               </div>
             )}
           </div>
           <div className="text-xs text-center text-foreground">
-            {card.requirement && (
+            {card.requirements && card.requirements.length > 0 && (
               <div className="font-semibold">
-                {card.requirement.type === 'point' && `${card.requirement.value} AP`}
-                {card.requirement.type === 'roll' && `Roll ${card.requirement.value}+`}
-                {card.requirement.type === 'hero' && `${card.requirement.value} Heroes`}
-                {card.requirement.type === 'class' && `${card.requirement.class} Class`}
-                {card.requirement.type === 'hand' && `${card.requirement.value} Cards`}
-                {card.requirement.type === 'duplicate' && 'No Duplicates'}
+                {card.requirements[0].type === 'point' && `${card.requirements[0].value} AP`}
+                {card.requirements[0].type === 'roll' && `Roll ${card.requirements[0].value}+`}
+                {card.requirements[0].type === 'hero' && `${card.requirements[0].value} Heroes`}
+                {card.requirements[0].type === 'class' && `${card.requirements[0].description} Class`}
+                {card.requirements[0].type === 'hand' && `${card.requirements[0].value} Cards`}
+                {card.requirements[0].type === 'duplicate' && 'No Duplicates'}
               </div>
             )}
           </div>

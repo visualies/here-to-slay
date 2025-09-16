@@ -113,10 +113,10 @@ export function PartyWrapper({ orientation, debugMode = false, position }: Party
         <div className={`flex items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', height: '100%', flex: 1 }}>
           {(() => {
             const MAX_PARTY_COLUMNS = 6;
-            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as CardType[];
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
             const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as CardType[]);
             allHeroes.forEach((hero) => {
-              let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
+              let target = columns.findIndex(col => col.length > 0 && col[0].heroClass === hero.heroClass);
               if (target === -1) target = columns.findIndex(col => col.length === 0);
               if (target !== -1) columns[target].push(hero);
             });
@@ -178,10 +178,10 @@ export function PartyWrapper({ orientation, debugMode = false, position }: Party
         <div className={`flex flex-col items-center justify-center ${debugMode ? "outline outline-1 outline-blue-300" : ""}`} style={{ gap: '2%', padding: '1%', width: '100%', flex: 1 }}>
           {(() => {
             const MAX_PARTY_COLUMNS = 6;
-            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as CardType[];
+            const allHeroes = (player?.party?.heroes || []).filter(h => h !== null) as any[];
             const columns = Array.from({ length: MAX_PARTY_COLUMNS }, () => [] as CardType[]);
             allHeroes.forEach((hero) => {
-              let target = columns.findIndex(col => col.length > 0 && col[0].class === hero.class);
+              let target = columns.findIndex(col => col.length > 0 && col[0].heroClass === hero.heroClass);
               if (target === -1) target = columns.findIndex(col => col.length === 0);
               if (target !== -1) columns[target].push(hero);
             });

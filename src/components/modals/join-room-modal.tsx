@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -6,12 +8,15 @@ import { joinRoomAction } from "@/actions/room-actions";
 import { ArrowLeft, LogIn, Settings } from "lucide-react";
 import Link from "next/link";
 import type { ServerUser } from "@/lib/server-user";
+import { useActionState } from "react";
 
 interface JoinRoomModalProps {
   user: ServerUser | null;
 }
 
 export function JoinRoomModal({ user }: JoinRoomModalProps) {
+  const [state, formAction, isPending] = useActionState(joinRoomAction, { error: undefined });
+
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
       {/* Theme Toggle */}
@@ -35,7 +40,7 @@ export function JoinRoomModal({ user }: JoinRoomModalProps) {
           <CardDescription>Enter the room code and your player name</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={joinRoomAction} className="space-y-6">
+          <form action={formAction} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Room ID</label>
               <Input
@@ -62,6 +67,12 @@ export function JoinRoomModal({ user }: JoinRoomModalProps) {
               />
             </div>
 
+            {state?.error && (
+              <div className="text-red-500 text-sm text-center">
+                {state.error}
+              </div>
+            )}
+
             <div className="flex gap-3">
               <Button
                 type="button"
@@ -78,9 +89,10 @@ export function JoinRoomModal({ user }: JoinRoomModalProps) {
                 type="submit"
                 className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold"
                 data-testid="join-room-submit-button"
+                disabled={isPending}
               >
                 <LogIn className="h-4 w-4 mr-2" />
-                Join
+                {isPending ? 'Joining...' : 'Join'}
               </Button>
             </div>
 

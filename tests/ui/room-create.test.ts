@@ -192,7 +192,7 @@ test('create room and call player presence endpoint from browser', async ({ page
     } catch (error) {
       return {
         status: 500,
-        body: { error: error.message }
+        body: { error: error instanceof Error ? error.message : 'Unknown error' }
       }
     }
   }, { roomId })

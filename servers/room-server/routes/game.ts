@@ -25,7 +25,7 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     docs.set(roomId, ydoc)
 
     // Try to restore state from database only for truly new documents
-    const savedState = db.getRoomById(roomId)?.state
+    const savedState = (db.getRoomById(roomId) as any)?.state
     if (savedState) {
       try {
         const uint8Array = new Uint8Array(savedState)

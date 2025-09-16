@@ -1,8 +1,9 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerRequirement } from './requirement-registry';
 
-export function run(context: ActionContext, actionName: string): ActionResult {
+export function run(context: ActionContext, ...args: unknown[]): ActionResult {
   const { gameStateMap, playerId } = context;
+  const actionName = args[0] as string;
 
   console.log(`🎯 Requirement: Checking if player ${playerId} is doing ${actionName} for the first time this turn`);
 

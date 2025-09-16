@@ -1,12 +1,14 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerRequirement } from './requirement-registry';
 
-export function run(context: ActionContext, minCards = 1, maxCards?: number): ActionResult {
+export function run(context: ActionContext, ...args: unknown[]): ActionResult {
   const { playersMap, playerId } = context;
+  const minCards = (args[0] as number) || 1;
+  const maxCards = args[1] as number | undefined;
 
   console.log(`🎯 Requirement: Checking hand cards for player ${playerId} (min: ${minCards}, max: ${maxCards || 'unlimited'})`);
 
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as any;
   if (!player) {
     return { success: false, message: 'Player not found' };
   }

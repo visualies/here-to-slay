@@ -85,8 +85,8 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
                       id: `support-${i}`, 
                       name: `Support`, 
                       type: CardType.Hero, 
-                      class: HeroClass.Fighter, 
-                      requirement: { type: 'point', value: 6 },
+                      heroClass: HeroClass.Fighter, 
+                      requirements: [{ type: 'point', value: 6 }],
                       description: 'Support card',
                       effect: []
                     }} 

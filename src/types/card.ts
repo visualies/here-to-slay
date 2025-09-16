@@ -1,21 +1,6 @@
 
-export type Requirement = {
-  type: 'point' | 'hero' | 'roll' | 'duplicate' | 'class' | 'hand';
-  value?: number;
-  class?: HeroClass;
-  description?: string;
-};
-
-export type Card = {
-  id: string;
-  name: string;
-  type: CardType;
-  class?: HeroClass;
-  description: string;
-  requirement?: Requirement;
-  effect: Action[];
-  imagePath?: string;
-};
+// Re-export shared Card type as the canonical Card type
+export type { Card } from '../../shared/types/card';
 
 export enum CardType {
   Hero = 'Hero',

@@ -107,7 +107,8 @@ export function processActionQueue(
       playersMap,
       gameStateMap,
       playerId,
-      roomId
+      roomId,
+      diceResult: 0 // Default value, will be set by dice roll actions
     };
 
     // Execute the action

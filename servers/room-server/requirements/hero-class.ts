@@ -1,18 +1,19 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerRequirement } from './requirement-registry';
 
-export function run(context: ActionContext, requiredClass: string): ActionResult {
+export function run(context: ActionContext, ...args: unknown[]): ActionResult {
   const { playersMap, playerId } = context;
+  const requiredClass = args[0] as string;
 
   console.log(`🎯 Requirement: Checking hero class ${requiredClass} for player ${playerId}`);
 
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as any;
   if (!player) {
     return { success: false, message: 'Player not found' };
   }
 
   // Check if player has a hero of the required class
-  const hasRequiredClass = player.party.some(card =>
+  const hasRequiredClass = player.party.some((card: any) =>
     card.type === 'hero' && card.heroClass === requiredClass
   );
 

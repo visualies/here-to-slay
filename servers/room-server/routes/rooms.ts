@@ -176,7 +176,7 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
         id: room.id || roomId,
         name: room.name || 'Here to Slay Game',
         maxPlayers: room.maxPlayers || 4,
-        createdAt: room.createdAt || roomMetadata.created_at,
+        createdAt: (room as any).created_at || (roomMetadata as any).created_at,
         gameState: Object.keys(gameState).length > 0 ? gameState : null,
         players: Object.keys(players).length > 0 ? players : null
       })
@@ -194,7 +194,7 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       const rooms = db.getActiveRooms()
 
       // Enhance with data from Yjs documents
-      const enhancedRooms = rooms.map((room: Record<string, unknown>) => {
+      const enhancedRooms = rooms.map((room: any) => {
         if (docs.has(room.id as string)) {
           const ydoc = docs.get(room.id as string)!
           const roomMap = ydoc.getMap('room')

@@ -1,12 +1,13 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerRequirement } from './requirement-registry';
 
-export function run(context: ActionContext, requiredPoints = 1): ActionResult {
+export function run(context: ActionContext, ...args: unknown[]): ActionResult {
   const { playersMap, playerId } = context;
+  const requiredPoints = (args[0] as number) || 1;
 
   console.log(`🎯 Requirement: Checking if player ${playerId} has ${requiredPoints} action points`);
 
-  const player = playersMap.get(playerId);
+  const player = playersMap.get(playerId) as any;
   if (!player) {
     return { success: false, message: 'Player not found' };
   }

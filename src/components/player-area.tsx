@@ -88,7 +88,7 @@ function PlayerAreaContent({ position, debugMode = false }: { position: PlayerAr
             
             // Find existing column with same class, or use first empty column
             let targetColumn = herosByColumn.findIndex(column => 
-              column.length > 0 && column[0].class === hero.class
+              column.length > 0 && column[0].heroClass === hero.heroClass
             );
             
             if (targetColumn === -1) {

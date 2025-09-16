@@ -1,14 +1,13 @@
-import type { Card } from '../types';
-import { CardType, HeroClass } from '../types';
+import { CardType, HeroClass, Card } from '../types';
 
 export const partyLeaderRegistry: Card[] = [
   {
     id: 'party-leader-001',
     name: 'The Fist of Reason',
     type: CardType.PartyLeader,
-    class: HeroClass.Fighter,
+    heroClass: HeroClass.Fighter,
     description: 'Each time YOU roll to CHALLENGE, +2 to your roll.',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'CHALLENGE_BOOST',
       amount: 2,
@@ -19,9 +18,9 @@ export const partyLeaderRegistry: Card[] = [
     id: 'party-leader-002',
     name: 'The Charismatic Song',
     type: CardType.PartyLeader,
-    class: HeroClass.Bard,
+    heroClass: HeroClass.Bard,
     description: 'Each time you roll to use a Hero\'s effect, +1 to your roll.',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'HERO_EFFECT_BOOST',
       amount: 1,
@@ -32,9 +31,9 @@ export const partyLeaderRegistry: Card[] = [
     id: 'party-leader-003',
     name: 'The Divine Arrow',
     type: CardType.PartyLeader,
-    class: HeroClass.Ranger,
+    heroClass: HeroClass.Ranger,
     description: 'Each time you roll to ATTACK a Monster card, +1 to your roll.',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'ATTACK_BOOST',
       amount: 1,
@@ -45,9 +44,9 @@ export const partyLeaderRegistry: Card[] = [
     id: 'party-leader-004',
     name: 'The Shadow Claw',
     type: CardType.PartyLeader,
-    class: HeroClass.Thief,
+    heroClass: HeroClass.Thief,
     description: 'Once per turn on your turn, you may spend one action point to pull a card from another player\'s hand. This leader may not be used in 2-player games.',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'STEAL_CARD',
       amount: 1,

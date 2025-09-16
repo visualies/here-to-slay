@@ -1,5 +1,4 @@
-import type { Card } from '../types';
-import { CardType } from '../types';
+import { CardType, Card } from '../types';
 
 export const modifierRegistry: Card[] = [
   {
@@ -7,7 +6,7 @@ export const modifierRegistry: Card[] = [
     name: 'Sample Modifier',
     type: CardType.Modifier,
     description: 'A sample modifier card',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [],
     imagePath: '/api/images/modifiers/modifier-001.png',
   },
@@ -16,7 +15,7 @@ export const modifierRegistry: Card[] = [
     name: '+3 Modifier',
     type: CardType.Modifier,
     description: 'Adds +3 to dice roll',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'MODIFY_ROLL',
       amount: 3,
@@ -28,7 +27,7 @@ export const modifierRegistry: Card[] = [
     name: '-3 Modifier',
     type: CardType.Modifier,
     description: 'Subtracts 3 from dice roll',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'MODIFY_ROLL',
       amount: -3,
@@ -40,7 +39,7 @@ export const modifierRegistry: Card[] = [
     name: '+4 Modifier',
     type: CardType.Modifier,
     description: 'Adds +4 to dice roll',
-    requirement: { type: 'point', value: 0 },
+    requirements: [{ type: 'point', value: 0 }],
     effect: [{
       action: 'MODIFY_ROLL',
       amount: 4,

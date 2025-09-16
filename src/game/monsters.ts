@@ -1,5 +1,4 @@
-import type { Card } from '../types';
-import { CardType } from '../types';
+import { CardType, Card } from '../types';
 
 export const monsterRegistry: Card[] = [
   {
@@ -7,7 +6,7 @@ export const monsterRegistry: Card[] = [
     name: 'Anuran Cauldron',
     type: CardType.Monster,
     description: 'A mystical amphibian creature brewing dark magic.',
-    requirement: { type: 'roll', value: 8 },
+    requirements: [{ type: 'roll', value: 8 }],
     effect: [{
       action: 'POISON',
       amount: 2,
@@ -19,7 +18,7 @@ export const monsterRegistry: Card[] = [
     name: 'Crowned Serpent',
     type: CardType.Monster,
     description: 'A regal serpent with venomous fangs and ancient wisdom.',
-    requirement: { type: 'roll', value: 10 },
+    requirements: [{ type: 'roll', value: 10 }],
     effect: [{
       action: 'HYPNOSIS',
       amount: 1,
@@ -31,7 +30,7 @@ export const monsterRegistry: Card[] = [
     name: 'Mega Slime',
     type: CardType.Monster,
     description: 'A massive gelatinous creature that absorbs everything in its path.',
-    requirement: { type: 'roll', value: 12 },
+    requirements: [{ type: 'roll', value: 12 }],
     effect: [{
       action: 'ABSORB',
       amount: 3,
