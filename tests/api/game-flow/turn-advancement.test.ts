@@ -24,7 +24,7 @@ test.describe('API: Turn Advancement', () => {
   test('should advance turn after a player uses all action points', async ({ request }) => {
     // 1. Get initial game state to see whose turn it is
     const initialRoom = await getRoomInfo(request, roomId);
-    const initialTurnPlayerId = initialRoom.gameState.currentTurn;
+    const initialTurnPlayerId = initialRoom.gameState.currentTurn.player_id;
     expect(initialTurnPlayerId).toBeTruthy();
 
     const otherPlayerId = initialTurnPlayerId === player1Id ? player2Id : player1Id;
@@ -34,12 +34,13 @@ test.describe('API: Turn Advancement', () => {
     const playerState = initialRoom.players[initialTurnPlayerId];
     expect(playerState.actionPoints).toBe(3);
 
-    // Draw 3 cards
+    // Draw 3 cards using the new play-card endpoint
     for (let i = 0; i < 3; i++) {
-      const drawResponse = await request.post('/api/game/draw-card', {
+      const drawResponse = await request.post('/api/game/play-card', {
         data: {
           roomId,
-          playerId: initialTurnPlayerId
+          playerId: initialTurnPlayerId,
+          cardId: 'draw-001'
         }
       });
       expect(drawResponse.status()).toBe(200);
@@ -50,7 +51,7 @@ test.describe('API: Turn Advancement', () => {
 
     // 4. Get updated room state and verify the turn has advanced
     const updatedRoom = await getRoomInfo(request, roomId);
-    const updatedTurnPlayerId = updatedRoom.gameState.currentTurn;
+    const updatedTurnPlayerId = updatedRoom.gameState.currentTurn.player_id;
 
     // ✅ Requirement: The turn should have advanced to the other player.
     expect(updatedTurnPlayerId).toBe(otherPlayerId);
@@ -81,7 +82,7 @@ test.describe('API: Turn Advancement', () => {
 
     // 1. Get initial game state to find the first player
     let roomState = await getRoomInfo(request, newRoomId);
-    const firstPlayerId = roomState.gameState.currentTurn;
+    const firstPlayerId = roomState.gameState.currentTurn.player_id;
     expect(firstPlayerId).toBe('p1');
 
     const playerIdsInOrder = ['p1', 'p2', 'p3', 'p4'];
@@ -93,14 +94,15 @@ test.describe('API: Turn Advancement', () => {
 
       // Verify it's the correct player's turn
       roomState = await getRoomInfo(request, newRoomId);
-      expect(roomState.gameState.currentTurn).toBe(currentPlayerId);
+      expect(roomState.gameState.currentTurn.player_id).toBe(currentPlayerId);
 
       // Player uses all action points
       for (let j = 0; j < 3; j++) {
-        const drawResponse = await request.post('/api/game/draw-card', {
+        const drawResponse = await request.post('/api/game/play-card', {
           data: {
             roomId: newRoomId,
-            playerId: currentPlayerId
+            playerId: currentPlayerId,
+            cardId: 'draw-001'
           }
         });
         expect(drawResponse.status()).toBe(200);
@@ -110,11 +112,11 @@ test.describe('API: Turn Advancement', () => {
 
       // Verify turn has advanced to the next player
       roomState = await getRoomInfo(request, newRoomId);
-      expect(roomState.gameState.currentTurn).toBe(nextPlayerId);
+      expect(roomState.gameState.currentTurn.player_id).toBe(nextPlayerId);
     }
 
     // 3. Final check: After the last player's turn, it should be the first player's turn again.
     const finalRoomState = await getRoomInfo(request, newRoomId);
-    expect(finalRoomState.gameState.currentTurn).toBe(firstPlayerId);
+    expect(finalRoomState.gameState.currentTurn.player_id).toBe(firstPlayerId);
   });
 });

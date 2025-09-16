@@ -2,10 +2,10 @@ import { Hono } from 'hono'
 import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
-import { initializeGame, addPlayerToGame } from '../lib/game-logic.js'
+import { initializeGame, addPlayerToGame, advanceTurn } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import { playCard } from '../lib/card-service.js'
-import type { Player } from '../../../shared/types'
+import type { Player, Turn } from '../../../shared/types'
 
 export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const router = new Hono()
@@ -180,11 +180,15 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
 
       console.log(`🎮 Game started for room ${roomId} with ${activePlayers.length} players`)
 
+      // Get the current turn info
+      const currentTurnInfo = gameStateMap.get('currentTurn') as any
+      const currentTurnPlayerId = currentTurnInfo?.player_id || activePlayers[0]?.id
+
       return c.json({
         success: true,
         message: `Game started with ${activePlayers.length} players`,
         phase: 'playing',
-        currentTurn: gameStateMap.get('currentTurn'),
+        currentTurn: currentTurnPlayerId,
         players: activePlayers.map(p => ({ id: p.id, name: p.name }))
       })
     } catch (error) {
@@ -289,6 +293,8 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       return c.json({ success: false, message: 'Internal server error' }, 500)
     }
   })
+
+  // Note: draw-card endpoint removed - use play-card with cardId "draw-001" instead
 
   return router
 }

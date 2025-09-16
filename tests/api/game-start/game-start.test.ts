@@ -88,7 +88,8 @@ test.describe('API: Game Start', () => {
 
       // Additional verifications - room metadata
       expect(roomData.gameState.phase).toBe('playing')
-      expect(roomData.gameState.currentTurn).toBe(playerId)
+      expect(roomData.gameState.currentTurn.player_id).toBe(playerId)
+      expect(roomData.gameState.currentTurn.action_points).toBe(3)
       expect(roomData.id).toBe(roomId)
       expect(roomData.name).toBeDefined()
       expect(roomData.maxPlayers).toBeDefined()
@@ -173,7 +174,7 @@ test.describe('API: Game Start', () => {
       // Game state verification
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
-      expect([playerId, playerId2]).toContain(roomData.gameState.currentTurn)
+      expect([playerId, playerId2]).toContain(roomData.gameState.currentTurn.player_id)
 
       // Snapshot of final game state for inspection
       const gameSnapshot = {
@@ -269,7 +270,7 @@ test.describe('API: Game Start', () => {
       // Game state verification
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
-      expect([playerId, playerId2, playerId3]).toContain(roomData.gameState.currentTurn)
+      expect([playerId, playerId2, playerId3]).toContain(roomData.gameState.currentTurn.player_id)
 
       // Snapshot of final game state for inspection
       const gameSnapshot = {
@@ -382,7 +383,7 @@ test.describe('API: Game Start', () => {
       // Game state verification
       expect(roomData.gameState.monsters).toHaveLength(3)
       expect(roomData.gameState.phase).toBe('playing')
-      expect([playerId, playerId2, playerId3, playerId4]).toContain(roomData.gameState.currentTurn)
+      expect([playerId, playerId2, playerId3, playerId4]).toContain(roomData.gameState.currentTurn.player_id)
 
       // Snapshot of final game state for inspection
       const gameSnapshot = {

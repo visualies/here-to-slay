@@ -46,6 +46,68 @@ export function ensureSchema() {
   `)
 }
 
+export function seedDrawCardIfMissing() {
+  const exists = db.select({ id: cards.id }).from(cards).where(eq(cards.id, 'draw-001')).all()[0]
+  if (exists) return
+
+  console.log('🃏 Seeding draw-001 system card...')
+
+  // Insert the draw-001 system card
+  db.insert(cards).values({
+    id: 'draw-001',
+    name: 'Draw Card',
+    type: 'System',
+    description: 'System card that draws one card from the support deck to your hand, costing 1 action point.',
+    imagePath: null,
+  }).run()
+
+  // Add the two actions: deduct-point and draw-card
+  const deductPointAction = db.insert(actions).values({
+    cardId: 'draw-001',
+    action: 'deductPoint'
+  }).run()
+
+  const drawCardAction = db.insert(actions).values({
+    cardId: 'draw-001',
+    action: 'drawCard'
+  }).run()
+
+  // Add parameters for deduct-point action (amount: 1)
+  const deductActionId = (deductPointAction as unknown as { lastInsertRowid: number }).lastInsertRowid as number
+  db.insert(actionParams).values({
+    actionId: deductActionId,
+    name: 'amount',
+    type: 'AMOUNT',
+    value: '1'
+  }).run()
+
+  // Add parameters for draw-card action (from support deck to own hand, amount 1)
+  const drawActionId = (drawCardAction as unknown as { lastInsertRowid: number }).lastInsertRowid as number
+
+  db.insert(actionParams).values({
+    actionId: drawActionId,
+    name: 'target',
+    type: 'LOCATION',
+    value: 'support-deck'
+  }).run()
+
+  db.insert(actionParams).values({
+    actionId: drawActionId,
+    name: 'destination',
+    type: 'LOCATION',
+    value: 'own-hand'
+  }).run()
+
+  db.insert(actionParams).values({
+    actionId: drawActionId,
+    name: 'amount',
+    type: 'AMOUNT',
+    value: '1'
+  }).run()
+
+  console.log('✅ draw-001 system card seeded successfully')
+}
+
 export function seedButtonsIfMissing() {
   const exists = db.select({ id: cards.id }).from(cards).where(eq(cards.id, 'hero-042')).all()[0]
   if (exists) return

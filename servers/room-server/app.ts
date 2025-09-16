@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { ensureSchema, seedButtonsIfMissing } from './db/migrate'
+import { ensureSchema, seedButtonsIfMissing, seedDrawCardIfMissing } from './db/migrate'
 import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createActionChainsRouter } from './routes/action-chains.js'
@@ -28,6 +28,7 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   try {
     ensureSchema()
     seedButtonsIfMissing()
+    seedDrawCardIfMissing()
   } catch (e) {
     console.error('[DB] Failed to ensure schema/seed:', e)
   }

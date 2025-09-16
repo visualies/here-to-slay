@@ -48,11 +48,12 @@ test.describe('API: Hand Card Drawing', () => {
       const initialHandCards = [...initialPlayer.hand]
       const initialActionPoints = initialPlayer.actionPoints
 
-      // 2. Draw a card
-      const drawResponse = await request.post('/api/game/draw-card', {
+      // 2. Draw a card using the draw-001 system card
+      const drawResponse = await request.post('/api/game/play-card', {
         data: {
           roomId,
-          playerId
+          playerId,
+          cardId: 'draw-001'
         }
       })
 
@@ -61,7 +62,7 @@ test.describe('API: Hand Card Drawing', () => {
 
       expect(drawBody).toMatchObject({
         success: true,
-        message: expect.stringContaining('Drew card:')
+        message: expect.stringContaining('played successfully')
       })
 
       // 3. Wait a moment for Yjs sync, then verify the card appears in room state
@@ -93,8 +94,12 @@ test.describe('API: Hand Card Drawing', () => {
         type: expect.any(String)
       })
 
-      // Verify the drawn card matches what the API response said was drawn
-      const apiResponseCard = drawBody.data.card
+      // Verify the drawn card matches what the turn service action result contains
+      const turnServiceResult = drawBody.data.turnServiceResult
+      const actionResults = turnServiceResult.data?.actionResults || []
+      const drawCardResult = actionResults.find((result: any) => result.data?.cards)
+      expect(drawCardResult).toBeDefined()
+      const apiResponseCard = drawCardResult.data.cards[0]
       expect(drawnCard.id).toBe(apiResponseCard.id)
       expect(drawnCard.name).toBe(apiResponseCard.name)
 
@@ -146,15 +151,17 @@ test.describe('API: Hand Card Drawing', () => {
       // Get current turn player
       const roomResponse = await request.get(`/api/room/${roomId}`)
       const roomData = await roomResponse.json()
-      const currentTurnPlayer = roomData.gameState.currentTurn
+      const currentTurnInfo = roomData.gameState.currentTurn
+      const currentTurnPlayer = currentTurnInfo?.player_id || playerId
 
       // Try to draw with the player who is NOT on turn
       const notCurrentPlayer = currentTurnPlayer === playerId ? playerId2 : playerId
 
-      const drawResponse = await request.post('/api/game/draw-card', {
+      const drawResponse = await request.post('/api/game/play-card', {
         data: {
           roomId,
-          playerId: notCurrentPlayer
+          playerId: notCurrentPlayer,
+          cardId: 'draw-001'
         }
       })
 
@@ -163,15 +170,16 @@ test.describe('API: Hand Card Drawing', () => {
 
       expect(drawBody).toMatchObject({
         success: false,
-        message: expect.stringContaining('Not your turn')
+        message: expect.stringContaining('not your turn')
       })
     })
 
     test('should not allow drawing card for non-existent player', async ({ request }) => {
-      const drawResponse = await request.post('/api/game/draw-card', {
+      const drawResponse = await request.post('/api/game/play-card', {
         data: {
           roomId,
-          playerId: 'fake-player-id'
+          playerId: 'fake-player-id',
+          cardId: 'draw-001'
         }
       })
 
@@ -180,15 +188,16 @@ test.describe('API: Hand Card Drawing', () => {
 
       expect(drawBody).toMatchObject({
         success: false,
-        message: expect.stringContaining('Player not found')
+        message: expect.stringContaining('turn')
       })
     })
 
     test('should not allow drawing card for non-existent room', async ({ request }) => {
-      const drawResponse = await request.post('/api/game/draw-card', {
+      const drawResponse = await request.post('/api/game/play-card', {
         data: {
           roomId: 'FAKE01',
-          playerId
+          playerId,
+          cardId: 'draw-001'
         }
       })
 
@@ -197,33 +206,33 @@ test.describe('API: Hand Card Drawing', () => {
 
       expect(drawBody).toMatchObject({
         success: false,
-        message: expect.stringContaining('Player not found')
+        message: expect.stringContaining('turn')
       })
     })
 
     test('should require both roomId and playerId parameters', async ({ request }) => {
       // Test missing roomId
-      const missingRoomResponse = await request.post('/api/game/draw-card', {
-        data: { playerId }
+      const missingRoomResponse = await request.post('/api/game/play-card', {
+        data: { playerId, cardId: 'draw-001' }
       })
 
       expect(missingRoomResponse.status()).toBe(400)
       const missingRoomBody = await missingRoomResponse.json()
       expect(missingRoomBody).toMatchObject({
         success: false,
-        message: expect.stringContaining('Player not found')
+        message: expect.stringContaining('required')
       })
 
       // Test missing playerId
-      const missingPlayerResponse = await request.post('/api/game/draw-card', {
-        data: { roomId }
+      const missingPlayerResponse = await request.post('/api/game/play-card', {
+        data: { roomId, cardId: 'draw-001' }
       })
 
       expect(missingPlayerResponse.status()).toBe(400)
       const missingPlayerBody = await missingPlayerResponse.json()
       expect(missingPlayerBody).toMatchObject({
         success: false,
-        message: expect.stringContaining('Player not found')
+        message: expect.stringContaining('required')
       })
     })
   })
