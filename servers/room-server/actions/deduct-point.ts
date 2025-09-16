@@ -9,7 +9,12 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   // Get the amount parameter (defaults to 1 if not provided)
   let amount: number = 1;
   try {
-    amount = getParam<Amount>(params, 'amount');
+    const amountParam = getParam<Amount>(params, 'amount');
+    if (typeof amountParam === 'number') {
+      amount = amountParam;
+    } else if (typeof amountParam === 'string' && !isNaN(Number(amountParam))) {
+      amount = Number(amountParam);
+    }
   } catch (error) {
     // If amount parameter is missing, default to 1
     console.log(`➖ Using default amount of 1 for deduct-point action`);

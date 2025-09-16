@@ -37,7 +37,16 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   }
 
   // Check if source has enough cards
-  const numAmount = typeof amount === 'number' ? amount : (amount === Amount.All ? sourceCards.length : 1);
+  let numAmount: number;
+  if (amount === Amount.All || amount === 'all') {
+    numAmount = sourceCards.length;
+  } else if (typeof amount === 'number') {
+    numAmount = amount;
+  } else if (typeof amount === 'string' && !isNaN(Number(amount))) {
+    numAmount = Number(amount);
+  } else {
+    numAmount = 1; // Default fallback
+  }
   if (sourceCards.length < numAmount) {
     return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
   }

@@ -13,7 +13,8 @@
     "dice-server": "tsx servers/dice-server/dice-server.ts",
     "stop": "pkill -f 'tsx servers' && pkill -f 'next dev' && echo 'All development servers stopped'",
     "test": "playwright test",
-    "test:api": "playwright test --project=api",
+    "test:api": "./scripts/test-api-with-report.sh",
+    "test:api:single": "playwright test --project=api",
     "test:ui": "PW_START_NEXT=1 playwright test --project=ui",
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug"
