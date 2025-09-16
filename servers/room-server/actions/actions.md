@@ -2,6 +2,10 @@
 
 This document provides detailed information about all action files in the game.
 
+
+actions should export a categroy and description
+system, special, game
+
 ## Client-Side Actions (`src/actions/`)
 
 ### `room-actions.ts`
