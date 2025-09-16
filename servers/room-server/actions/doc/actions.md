@@ -6,6 +6,9 @@ This document provides detailed information about all action files in the game.
 actions should export a categroy and description
 system, special, game
 
+when selecting a card type in the card editor these system actions should be predefined in grey. then colorful custom ones can be added.
+system ones can be added aswell. also removed with an x but the greyed out color indicates it should not be tampered with.
+
 ## Client-Side Actions (`src/actions/`)
 
 ### `room-actions.ts`
@@ -86,11 +89,12 @@ type ActionState = {
 #### `discard-card.ts`
 **Purpose:** Move card from hand to discard pile
 **Notes:**
-with this action the source must pick which card
+with this action the target must pick which card
 
 #### `draw-card.ts`
 **Purpose:** Draw cards from deck to hand
 **Notes:**
+with this action the player may pick a card
 draw is used for face down cards only
 if you need to draw a face up card use pick-card (former search)
 

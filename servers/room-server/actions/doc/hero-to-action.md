@@ -36,14 +36,13 @@ This document explains how each hero maps to a list of actions and their corresp
 **Requirement:** 8
 **Effect:** Each other player must give you a card from their hand.
 **Actions:**
-- `draw-card.ts`
 - `deduct-point.ts`
 - `place-card.ts`
 - `capture-challenge.ts`
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `discard-card.ts` source: all other players, target: cache, amount n/a
+- `discard-card.ts` source: other-hands, target: cache, amount 1
 - `draw-card.ts` source: cache, target: hand, amount: 1
 - `discard-card.ts` source: cache, target: discard-pile, amount: all
 
@@ -61,7 +60,6 @@ This document explains how each hero maps to a list of actions and their corresp
 - `steal-card.ts` source: any-hand, target: cache, amount: 1
 - `play-card.ts` source: cache, type: hero
 - `draw-card.ts` source: cache, target: hand, amount: all
-  (COULD WORK WITH EVENTS TOO, saves us the type param)
 
 ### Mellow Dee
 **ID:** `hero-005`
@@ -92,7 +90,7 @@ This document explains how each hero maps to a list of actions and their corresp
 ### Peanut
 **ID:** `hero-007`
 **Requirement:** 7
-**Effect:** RAW 2 cards.
+**Effect:** DRAW 2 cards.
 **Actions:**
 - `deduct-point.ts`
 - `place-card.ts`
