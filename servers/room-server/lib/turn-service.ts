@@ -1,7 +1,7 @@
 import * as Y from 'yjs';
 import type { Action, ActionContext, ActionResult, Turn, Player } from '../../../shared/types';
 import { actionRegistry } from '../actions/action-service';
-import { advanceTurn } from './game-logic';
+import { advanceTurn } from './game-service';
 
 /**
  * Turn Service - Manages action queue processing for turns

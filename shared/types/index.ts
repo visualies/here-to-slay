@@ -15,6 +15,7 @@ export type { Requirement } from './requirement';
 // Action parameter enums
 export { Location } from './location';
 export { Amount } from './amount';
+export { SelectionMode } from './selection-mode';
 export type { ActionParameter, ActionParams } from './action-parameter';
 
 // Dice physics types

@@ -1,9 +1,11 @@
 import { db } from '../db/client';
 import { eq } from 'drizzle-orm';
 import { cards } from '../db/schema';
-import type { Card, Turn, Action } from '../../../shared/types';
+import type { Card, Turn, Action, ActionContext, ActionResult, ActionParams, Player } from '../../../shared/types';
+import { Location, Amount, SelectionMode } from '../../../shared/types';
 import * as Y from 'yjs';
 import { addActionsToQueue } from './turn-service';
+import { addCardToPlayerHand } from '../../../src/lib/players';
 
 /**
  * Card service for retrieving card data and handling card actions
@@ -126,4 +128,156 @@ export async function playCard(
       message: 'Failed to play card due to server error'
     }
   }
+}
+
+/**
+ * Move cards between locations with simplified selection mode
+ * @param context - Action context containing players and game state
+ * @param target - Source location to move cards from
+ * @param destination - Destination location to move cards to
+ * @param amount - Number of cards to move
+ * @returns ActionResult with success status and data
+ */
+export function moveCard(
+  context: ActionContext, 
+  target: Location, 
+  destination: Location, 
+  amount: Amount
+): ActionResult {
+  const { playersMap, gameStateMap, playerId } = context;
+
+  if (!target || !destination || !amount) {
+    return { success: false, message: 'target, destination, and amount parameters are required' };
+  }
+
+  // Always use 'first' selection mode for now
+  const selectionMode = SelectionMode.First;
+
+  // Only support 'first' selection mode for now
+  if (selectionMode !== SelectionMode.First) {
+    return { 
+      success: false, 
+      message: `Selection mode '${selectionMode}' is not yet implemented. Only 'first' is supported.` 
+    };
+  }
+
+  console.log(`🎯 Card Service: Moving ${amount} card(s) from ${target} to ${destination} for player ${playerId}`);
+
+  // Handle different source locations
+  let sourceCards: Card[] = [];
+  let updateSourceFunction: (cards: Card[]) => void;
+
+  switch (target) {
+    case Location.SupportDeck:
+      sourceCards = gameStateMap.get('supportStack') as Card[] || [];
+      updateSourceFunction = (cards) => gameStateMap.set('supportStack', cards);
+      break;
+    case Location.OwnHand:
+      const player = playersMap.get(playerId) as Player;
+      sourceCards = player?.hand || [];
+      updateSourceFunction = (cards) => {
+        if (player) {
+          playersMap.set(playerId, { ...player, hand: cards });
+        }
+      };
+      break;
+    case Location.OtherHands:
+      // Get all other players' hands combined
+      const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+
+      if (otherPlayers.length === 0) {
+        return { success: false, message: 'No other players to draw from' };
+      }
+
+      // For 'first' selection mode, take from the first other player
+      const firstOtherPlayer = otherPlayers[0];
+      sourceCards = firstOtherPlayer.hand || [];
+
+      updateSourceFunction = (remainingCards) => {
+        playersMap.set(firstOtherPlayer.id, { ...firstOtherPlayer, hand: remainingCards });
+      };
+      break;
+    default:
+      return { success: false, message: `Unsupported source location: ${target}` };
+  }
+
+  // Check if source has enough cards
+  let numAmount: number;
+  if (amount === Amount.All) {
+    numAmount = sourceCards.length;
+  } else if (typeof amount === 'number') {
+    numAmount = amount;
+  } else if (typeof amount === 'string' && !isNaN(Number(amount))) {
+    numAmount = Number(amount);
+  } else {
+    numAmount = 1; // Default fallback
+  }
+
+  // Handle special case of drawing 0 cards (no-op)
+  if (numAmount === 0) {
+    console.log(`✅ Card Service: No-op - moving 0 cards from ${target} to ${destination} for player ${playerId}`);
+    return {
+      success: true,
+      message: `No-op: moved 0 cards from ${target} to ${destination}`,
+      data: {
+        cards: [],
+        target,
+        destination,
+        amount: 0
+      }
+    };
+  }
+
+  if (sourceCards.length < numAmount) {
+    return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
+  }
+
+  // Draw cards from source
+  const newSourceCards = [...sourceCards];
+  const drawnCards: Card[] = [];
+
+  for (let i = 0; i < numAmount; i++) {
+    const card = newSourceCards.pop();
+    if (card) {
+      drawnCards.push(card);
+    }
+  }
+
+  if (drawnCards.length === 0) {
+    return { success: false, message: `Failed to draw cards from ${target}` };
+  }
+
+  // Update source
+  updateSourceFunction(newSourceCards);
+
+  // Handle different destination locations
+  switch (destination) {
+    case Location.OwnHand:
+      // Add cards to player hand
+      drawnCards.forEach(card => {
+        addCardToPlayerHand(playersMap, playerId, card);
+      });
+      break;
+    case Location.SupportDeck:
+      // Add cards back to support stack
+      const currentSupportStack = gameStateMap.get('supportStack') as Card[] || [];
+      gameStateMap.set('supportStack', [...currentSupportStack, ...drawnCards]);
+      break;
+    default:
+      return { success: false, message: `Unsupported destination location: ${destination}` };
+  }
+
+  const cardNames = drawnCards.map(card => card.name).join(', ');
+  console.log(`✅ Card Service: Moved card(s) ${cardNames} from ${target} to ${destination} for player ${playerId}`);
+
+  return {
+    success: true,
+    message: `Moved ${drawnCards.length} card(s) from ${target} to ${destination}`,
+    data: {
+      cards: drawnCards,
+      target,
+      destination,
+      amount: drawnCards.length
+    }
+  };
 }

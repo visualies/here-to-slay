@@ -2,10 +2,10 @@ import { Hono } from 'hono'
 import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
-import { initializeGame, addPlayerToGame, advanceTurn } from '../lib/game-logic.js'
+import { initializeGame, addPlayerToGame } from '../lib/game-service.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import { playCard } from '../lib/card-service.js'
-import type { Player, Turn } from '../../../shared/types'
+import type { Player } from '../../../shared/types'
 
 export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const router = new Hono()

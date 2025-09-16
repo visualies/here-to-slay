@@ -40,10 +40,7 @@ test.describe('API: Game Start', () => {
         data: { roomId }
       })
 
-      // Debug: Log the response to understand what's happening
       const startBody = await startResponse.json()
-      console.log('Start response status:', startResponse.status())
-      console.log('Start response body:', JSON.stringify(startBody, null, 2))
 
       expect(startResponse.status()).toBe(200)
 

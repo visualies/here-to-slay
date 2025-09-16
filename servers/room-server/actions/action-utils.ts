@@ -2,13 +2,15 @@ import type { ActionParams } from '../../../shared/types';
 import {
   Location,
   Amount,
-  CardType
+  CardType,
+  SelectionMode
 } from '../../../shared/types';
 
 // Type-specific getParam overloads for built-in enum types
 export function getParam<T extends Location>(params: ActionParams | undefined, name: string): T;
 export function getParam<T extends Amount>(params: ActionParams | undefined, name: string): T;
 export function getParam<T extends CardType>(params: ActionParams | undefined, name: string): T;
+export function getParam<T extends SelectionMode>(params: ActionParams | undefined, name: string): T;
 export function getParam<T extends string>(params: ActionParams | undefined, name: string): T;
 export function getParam<T extends number>(params: ActionParams | undefined, name: string): T;
 export function getParam<T extends boolean>(params: ActionParams | undefined, name: string): T;
@@ -40,6 +42,7 @@ export function getParam<T>(
   if (isLocation(value)) return value as T;
   if (isAmount(value)) return value as T;
   if (isCardType(value)) return value as T;
+  if (isSelectionMode(value)) return value as T;
 
   // For primitive types, just return as-is (TypeScript will catch type mismatches at compile time)
   return value as T;
@@ -62,5 +65,9 @@ function isAmount(value: unknown): value is Amount {
 
 function isCardType(value: unknown): value is CardType {
   return typeof value === 'string' && Object.values(CardType).includes(value as CardType);
+}
+
+function isSelectionMode(value: unknown): value is SelectionMode {
+  return typeof value === 'string' && Object.values(SelectionMode).includes(value as SelectionMode);
 }
 
