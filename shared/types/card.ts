@@ -10,7 +10,7 @@ export type Card = {
   type: CardType;
   class?: HeroClass;
   description: string;
-  requirement?: Requirement;
+  requirement: Requirement[];
   effect: Action[];
   imagePath?: string;
 };

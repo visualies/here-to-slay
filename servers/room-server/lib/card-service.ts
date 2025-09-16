@@ -14,25 +14,39 @@ export function getCard(cardId: string): Card | null {
       type: CardType.Hero,
       class: HeroClass.Thief,
       description: 'Pull a card from another player\'s hand. If it is a Magic card, you may play it immediately.',
-      requirement: { type: 'point', value: 6 },
+      requirement: [{ type: 'point', value: 6 }],
       effect: [
         {
-          action: 'deduct-point'
+          action: 'deduct-point',
+          parameters: [
+            { name: 'amount', type: 'NUMBER', value: 6 }
+          ]
         },
         {
-          action: 'place-card'
+          action: 'place-card',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: Location.OwnHand }
+          ]
         },
         {
-          action: 'capture-challenge'
+          action: 'capture-challenge',
+          parameters: []
         },
         {
-          action: 'capture-dice'
+          action: 'capture-dice',
+          parameters: [
+            { name: 'target', type: 'NUMBER', value: 1 }
+          ]
         },
         {
-          action: 'capture-modifier'
+          action: 'capture-modifier',
+          parameters: []
         },
         {
-          action: 'end-move'
+          action: 'end-move',
+          parameters: [
+            { name: 'requirement', type: 'NUMBER', value: 1 }
+          ]
         },
         {
           action: 'draw-card',
