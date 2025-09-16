@@ -715,21 +715,45 @@ This template now includes all heroes with Lorem ipsum placeholder text that can
 ## Complete Actions and Parameters Analysis
 
 ### All Actions Used
-- `capture-challenge.ts`
-- `capture-dice.ts`
-- `capture-modifier.ts`
-- `deduct-point.ts`
-- `destroy-card.ts`
-- `discard-card.ts`
-- `draw-card.ts`
-- `end-move.ts`
-- `move-card.ts`
-- `pick-card.ts`
-- `place-card.ts`
-- `play-card.ts`
-- `sacrifice-card.ts`
-- `steal-card.ts`
-- `trade-hands.ts`
+
+- **`capture-challenge.ts`**
+  - No parameters
+
+- **`capture-dice.ts`**
+  - NUMBER (target)
+
+- **`capture-modifier.ts`**
+  - No parameters
+
+- **`deduct-point.ts`**
+  - NUMBER (amount)
+
+- **`destroy-card.ts`**
+  - LOCATION (target/destination), NUMBER (amount)
+
+- **`discard-card.ts`**
+  - LOCATION (target), LOCATION (destination), NUMBER (amount)
+
+- **`draw-card.ts`**
+  - LOCATION (target), LOCATION (destination), NUMBER (amount)
+
+- **`end-move.ts`**
+  - NUMBER (requirement)
+
+- **`pick-card.ts`**
+  - LOCATION (target), LOCATION (destination), NUMBER (amount), CARD_TYPE (type)
+
+- **`place-card.ts`**
+  - LOCATION (target)
+
+- **`play-card.ts`**
+  - LOCATION (target), CARD_TYPE (type)
+
+- **`sacrifice-card.ts`**
+  - LOCATION (target), CARD_TYPE (type), NUMBER (amount)
+
+- **`steal-card.ts`**
+  - LOCATION (target), LOCATION (destination), NUMBER (amount)
 
 ### Parameters by Data Type
 
@@ -768,4 +792,69 @@ This template now includes all heroes with Lorem ipsum placeholder text that can
 
 #### SELECTION_MODE (selection):
 - `input` (1)
-- `last-selection` (1) 
+- `last-selection` (1)
+
+---
+
+## REDUNDANT PARAMETERS ANALYSIS
+
+The following actions have parameters that are always the same across all usages, making them redundant:
+
+### Actions with Consistent Destinations
+
+**`deduct-point.ts`**
+- Always used without explicit parameters - likely has default behavior
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+**`place-card.ts`**
+- Always used without explicit parameters - likely places to own-party by default
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+**`capture-challenge.ts`**
+- Always used without explicit parameters
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+**`capture-dice.ts`**
+- Always used without explicit parameters
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+**`capture-modifier.ts`**
+- Always used without explicit parameters
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+**`end-move.ts`**
+- Always used without explicit parameters
+- **Redundancy**: No explicit parameters needed, behavior is consistent
+
+### Actions with Partially Redundant Parameters
+
+**`discard-card.ts` to discard-pile**
+- Lines 47, 160, 187, 230, 447: Always has `destination: discard-pile`
+- **Redundancy**: The `destination` parameter could default to `discard-pile` since that's the most common usage (5/8 times)
+
+**`draw-card.ts` from support-deck**
+- Lines 75, 362, 378, 420, 446, 506: Always has `target: support-deck` when drawing cards normally
+- **Redundancy**: The `target` parameter could default to `support-deck` for standard card draws (6/15 times)
+
+**`draw-card.ts` to own-hand**
+- Lines 77, 101, 378, 420, 446, 563, 606: Always has `destination: own-hand`
+- **Redundancy**: The `destination` parameter could default to `own-hand` since that's the most common usage (7/15 times)
+
+**`steal-card.ts` to own-party**
+- Lines 478, 491: Always has `destination: own-party` when stealing hero cards
+- **Redundancy**: When stealing heroes, destination is always `own-party`
+
+**`destroy-card.ts` from any-party**
+- Lines 130, 419, 619, 675: Always has `target: any-party`
+- **Redundancy**: The `target` parameter could default to `any-party` since that's the only usage
+
+**`pick-card.ts` amount: 1**
+- Lines 159, 260, 317, 363, 391, 533, 547, 591: Always has `amount: 1` when picking single cards
+- **Redundancy**: The `amount` parameter could default to `1` since that's the most common usage (8/10 times)
+
+### Most Redundant Actions (Candidates for Parameter Defaults)
+
+1. **`destroy-card.ts`** - `target` is always `any-party` (100% redundant)
+2. **`discard-card.ts`** - `destination` is `discard-pile` in 62.5% of cases
+3. **`draw-card.ts`** - `destination` is `own-hand` in 46.7% of cases, `target` is `support-deck` in 40% of cases
+4. **`pick-card.ts`** - `amount` is `1` in 80% of cases 
