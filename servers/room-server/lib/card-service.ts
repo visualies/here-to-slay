@@ -1,81 +1,89 @@
-import type { Card } from '../../../shared/types';
-import { CardType, HeroClass, Location, Amount } from '../../../shared/types';
+import { db } from '../db/client';
+import { eq } from 'drizzle-orm';
+import { cards } from '../db/schema';
+import type { Card, Turn } from '../../../shared/types';
+import * as Y from 'yjs';
 
 /**
- * Card service for retrieving card data by ID
+ * Card service for retrieving card data and handling card actions
  */
 
-export function getCard(cardId: string): Card | null {
-  // For now, return hardcoded Buttons card
-  if (cardId === 'hero-042') {
-    return {
-      id: 'hero-042',
-      name: 'Buttons',
-      type: CardType.Hero,
-      class: HeroClass.Thief,
-      description: 'Pull a card from another player\'s hand. If it is a Magic card, you may play it immediately.',
-      requirement: [{ type: 'point', value: 6 }],
-      effect: [
-        {
-          action: 'deduct-point',
-          parameters: [
-            { name: 'amount', type: 'NUMBER', value: 6 }
-          ]
+export async function getCard(cardId: string): Promise<Card | null> {
+  const result = await db.query.cards.findFirst({
+    where: eq(cards.id, cardId),
+    with: {
+      requirements: true,
+      actions: {
+        with: {
+          params: true,
         },
-        {
-          action: 'place-card',
-          parameters: [
-            { name: 'target', type: 'LOCATION', value: Location.OwnHand }
-          ]
-        },
-        {
-          action: 'capture-challenge',
-          parameters: []
-        },
-        {
-          action: 'capture-dice',
-          parameters: [
-            { name: 'target', type: 'NUMBER', value: 1 }
-          ]
-        },
-        {
-          action: 'capture-modifier',
-          parameters: []
-        },
-        {
-          action: 'end-move',
-          parameters: [
-            { name: 'requirement', type: 'NUMBER', value: 1 }
-          ]
-        },
-        {
-          action: 'draw-card',
-          parameters: [
-            { name: 'target', type: 'LOCATION', value: Location.AnyHand },
-            { name: 'destination', type: 'STRING', value: 'cache' },
-            { name: 'amount', type: 'AMOUNT', value: Amount.One }
-          ]
-        },
-        {
-          action: 'play-card',
-          parameters: [
-            { name: 'target', type: 'STRING', value: 'cache' },
-            { name: 'type', type: 'CARD_TYPE', value: CardType.Magic }
-          ]
-        },
-        {
-          action: 'draw-card',
-          parameters: [
-            { name: 'target', type: 'STRING', value: 'cache' },
-            { name: 'destination', type: 'LOCATION', value: Location.OwnHand },
-            { name: 'amount', type: 'AMOUNT', value: Amount.All }
-          ]
-        }
-      ],
-      imagePath: '/api/images/heroes/thief_buttons.png',
-    };
-  }
+      },
+    },
+  })
 
-  // Card not found
-  return null;
+  return result ?? null
+}
+
+export async function playCard(
+  playerId: string,
+  roomId: string,
+  cardId: string,
+  ydoc: Y.Doc
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    // Get the card data first
+    const card = await getCard(cardId)
+    if (!card) {
+      return {
+        success: false,
+        message: `Card ${cardId} not found`
+      }
+    }
+
+    // Get current turn from Yjs document
+    const gameStateMap = ydoc.getMap('gameState')
+    const currentTurn = gameStateMap.get('currentTurn') as Turn | null
+
+    if (!currentTurn) {
+      return {
+        success: false,
+        message: 'No active turn found'
+      }
+    }
+
+    // Check if it's the player's turn
+    if (currentTurn.player_id !== playerId) {
+      return {
+        success: false,
+        message: `It's not your turn. Current turn belongs to player ${currentTurn.player_id}`
+      }
+    }
+
+    console.log(`🎮 Playing card: ${card.name} (${card.type}) by player ${playerId}`)
+
+    // TODO: Implement additional game logic
+    // - Verify player has the card in hand
+    // - Validate card requirements
+    // - Execute card actions based on card.actions
+    // - Remove card from player's hand
+    // - Add card to appropriate game area
+
+    return {
+      success: true,
+      message: `Card ${card.name} played successfully`,
+      data: {
+        playerId,
+        roomId,
+        cardId,
+        cardName: card.name,
+        cardType: card.type
+      }
+    }
+  } catch (error) {
+    console.error('Error playing card:', error)
+    return {
+      success: false,
+      message: 'Failed to play card due to server error'
+    }
+  }
 }

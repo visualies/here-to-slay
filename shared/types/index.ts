@@ -5,6 +5,7 @@ export type { GameState } from './game-state';
 export type { Room } from './room';
 export type { DicePosition } from './multiplayer';
 export type { Action } from './action';
+export type { Turn } from './turn';
 
 // Shared enums and types
 export { CardType } from './card-type';

@@ -1,16 +1,10 @@
-import { Action } from '@/types';
-import { CardType } from './card-type';
-import { HeroClass } from './hero-class';
-import { Requirement } from './requirement';
+import type { InferSelectModel } from 'drizzle-orm'
+import type { cards, requirements, actions, actionParams } from '../../servers/room-server/db/schema'
 
-
-export type Card = {
-  id: string;
-  name: string;
-  type: CardType;
-  class?: HeroClass;
-  description: string;
-  requirement: Requirement[];
-  effect: Action[];
-  imagePath?: string;
-};
+// Use Drizzle's inferred types as source of truth
+export type Card = InferSelectModel<typeof cards> & {
+  requirements: InferSelectModel<typeof requirements>[]
+  actions: (InferSelectModel<typeof actions> & {
+    params: InferSelectModel<typeof actionParams>[]
+  })[]
+}

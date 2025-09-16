@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
+import { ensureSchema, seedButtonsIfMissing } from './db/migrate'
 import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createActionChainsRouter } from './routes/action-chains.js'
 import { createHealthRouter } from './routes/health.js'
 import { createUsersRouter } from './routes/users.js'
+import { createCardsRouter } from './routes/cards.js'
 import { corsMiddleware } from './middleware/cors.js'
 import type RoomDatabase from '../../src/lib/database.js'
 import type * as Y from 'yjs'
@@ -19,7 +21,16 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   app.route('/api/game', createGameRouter(db, docs))
   app.route('/api/action-chains', createActionChainsRouter(db, docs))
   app.route('/api/users', createUsersRouter())
+  app.route('/api/cards', createCardsRouter())
   app.route('/api', createHealthRouter())
+
+  // Ensure card schema exists and seed a card (no-op if already there)
+  try {
+    ensureSchema()
+    seedButtonsIfMissing()
+  } catch (e) {
+    console.error('[DB] Failed to ensure schema/seed:', e)
+  }
 
   // Default route with API documentation
   app.get('/', (c) => {
@@ -33,13 +44,12 @@ API Endpoints:
 - POST /api/game/start
 - POST /api/game/update-player-presence
 - POST /api/game/save
-- POST /api/game/draw-card
-- POST /api/game/play-hero-to-party
-- POST /api/game/attack-monster
-- POST /api/game/discard-hand-redraw
+- POST /api/game/play-card
 - POST /api/action-chains/start-chain
 - POST /api/action-chains/continue-chain
 - GET /api/action-chains/pending-chains
+- GET /api/cards
+- GET /api/cards/:cardId
 - GET /api/users/@me
 - PUT /api/users/@me
 - GET /api/users/@me/rooms

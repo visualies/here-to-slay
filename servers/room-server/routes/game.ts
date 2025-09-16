@@ -4,6 +4,7 @@ import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, addPlayerToGame } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
+import { playCard } from '../lib/card-service.js'
 import type { Player } from '../../../shared/types'
 
 export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
@@ -269,14 +270,20 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
         return c.json({ success: false, message: 'playerId, roomId, and cardId are required' }, 400)
       }
 
-      // TODO: Implement card playing logic
-      console.log('Card play action logged')
+      // Get the Yjs document for the room
+      const ydoc = getYDoc(roomId)
+      if (!ydoc) {
+        return c.json({ success: false, message: 'Failed to get room document' }, 500)
+      }
 
-      return c.json({
-        success: true,
-        message: `Card ${cardId} played by player ${playerId}`,
-        data: { playerId, roomId, cardId }
-      })
+      // Use the card service to handle the card playing logic
+      const result = await playCard(playerId, roomId, cardId, ydoc)
+
+      if (result.success) {
+        return c.json(result)
+      } else {
+        return c.json(result, 400)
+      }
     } catch (error) {
       console.error('❌ Play card error:', error)
       return c.json({ success: false, message: 'Internal server error' }, 500)
