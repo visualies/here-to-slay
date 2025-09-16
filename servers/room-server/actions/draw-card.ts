@@ -1,7 +1,7 @@
-import type { ActionContext, ActionResult } from './action-service';
+import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { addCardToPlayerHand } from '../../../src/lib/players';
-import type { Card } from '../../../src/types';
+import type { Card } from '../../../shared/types';
 
 export function run(context: ActionContext): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;

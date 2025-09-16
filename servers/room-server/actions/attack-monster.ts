@@ -1,6 +1,6 @@
-import type { ActionContext, ActionResult } from './action-service';
+import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerAction } from './action-registry';
-import type { Card } from '../../../src/types';
+import type { Card } from '../../../shared/types';
 
 export function run(context: ActionContext, monsterId: string, diceResult: number): ActionResult {
   const { gameStateMap, playerId } = context;
@@ -14,7 +14,8 @@ export function run(context: ActionContext, monsterId: string, diceResult: numbe
     return { success: false, message: 'Monster not found' };
   }
 
-  const requiredRoll = monster.requirement || 15;
+  // Get the required roll from the Requirement object
+  const requiredRoll = monster.requirement?.value || 15;
   const attackSuccess = diceResult >= requiredRoll;
 
   if (attackSuccess) {
@@ -24,22 +25,16 @@ export function run(context: ActionContext, monsterId: string, diceResult: numbe
     console.log(`✅ Internal: Successfully defeated ${monster.name} (rolled ${diceResult} vs ${requiredRoll})`);
     return {
       success: true,
-      message: `Defeated ${monster.name}! (Rolled ${diceResult})`,
-      data: { monster, diceResult, requiredRoll }
+      message: `Successfully defeated ${monster.name}! (rolled ${diceResult} vs ${requiredRoll})`
     };
   } else {
     console.log(`❌ Internal: Failed to defeat ${monster.name} (rolled ${diceResult} vs ${requiredRoll})`);
     return {
       success: false,
-      message: `Attack failed! Rolled ${diceResult}, needed ${requiredRoll}`,
-      data: { monster, diceResult, requiredRoll }
+      message: `Failed to defeat ${monster.name}. (rolled ${diceResult} vs ${requiredRoll})`
     };
   }
 }
 
-registerAction('attackMonster', {
-  run: (context: ActionContext, ...args: unknown[]): ActionResult => {
-    const [monsterId, diceResult] = args as [string, number]
-    return run(context, monsterId, diceResult)
-  },
-});
+// Register the action
+registerAction('attackMonster', { run });

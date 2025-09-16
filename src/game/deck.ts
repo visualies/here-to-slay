@@ -23,7 +23,7 @@ export function createDeck(): Card[] {
       name: `Item Card ${i + 1}`,
       type: CardType.Item,
       description: 'A mysterious item.',
-      requirement: 4,
+      requirement: { type: 'point', value: 4 },
       effect: []
     });
   }
@@ -35,7 +35,7 @@ export function createDeck(): Card[] {
       name: `Modifier Card ${i + 1}`,
       type: CardType.Modifier,
       description: 'A card that modifies game rules or effects.',
-      requirement: 3,
+      requirement: { type: 'point', value: 3 },
       effect: []
     });
   }

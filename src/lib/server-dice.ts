@@ -2,13 +2,12 @@
 
 import { env } from './env-validation';
 
-// Coordinate transformation utilities for responsive boundaries
-export const FIELD_SIZE = 5; // Server field half-size (-5 to +5)
+import type { CoordinateTransformer, ServerDiceStates } from '../../shared/types';
+import { FIELD_SIZE } from '../../shared/types';
 
-export interface CoordinateTransformer {
-  serverToClient: (serverX: number, serverZ: number) => { x: number; z: number };
-  clientToServer: (clientX: number, clientZ: number) => { x: number; z: number };
-}
+// Re-export for backward compatibility
+export type { ServerDiceState, ServerDiceStates, CoordinateTransformer } from '../../shared/types';
+export { FIELD_SIZE } from '../../shared/types';
 
 export function createCoordinateTransformer(viewportWidth: number, viewportHeight: number): CoordinateTransformer {
   return {
@@ -26,17 +25,7 @@ export function createCoordinateTransformer(viewportWidth: number, viewportHeigh
   };
 }
 
-export interface ServerDiceState {
-  position: [number, number, number];
-  rotation: [number, number, number, number]; // quaternion
-  result: number;
-  isStable: boolean;
-  lastUpdate: number;
-}
-
-export interface ServerDiceStates {
-  [diceId: string]: ServerDiceState;
-}
+// Types imported from shared
 
 export class ServerDiceManager {
   private roomId: string;

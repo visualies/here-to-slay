@@ -7,7 +7,7 @@ export const modifierRegistry: Card[] = [
     name: 'Sample Modifier',
     type: CardType.Modifier,
     description: 'A sample modifier card',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [],
     imagePath: '/api/images/modifiers/modifier-001.png',
   },
@@ -16,7 +16,7 @@ export const modifierRegistry: Card[] = [
     name: '+3 Modifier',
     type: CardType.Modifier,
     description: 'Adds +3 to dice roll',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'MODIFY_ROLL',
       amount: 3,
@@ -28,7 +28,7 @@ export const modifierRegistry: Card[] = [
     name: '-3 Modifier',
     type: CardType.Modifier,
     description: 'Subtracts 3 from dice roll',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'MODIFY_ROLL',
       amount: -3,
@@ -40,7 +40,7 @@ export const modifierRegistry: Card[] = [
     name: '+4 Modifier',
     type: CardType.Modifier,
     description: 'Adds +4 to dice roll',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'MODIFY_ROLL',
       amount: 4,

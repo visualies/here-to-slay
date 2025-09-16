@@ -1,4 +1,4 @@
-import type { ActionContext, ActionResult } from './action-service';
+import type { ActionContext, ActionResult } from '../../../shared/types';
 
 export interface ActionHandler {
   run: (context: ActionContext, ...args: unknown[]) => ActionResult;

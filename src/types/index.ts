@@ -1,7 +1,9 @@
-export type { Player } from './player';
-export type { Card } from './card';
-export { CardType, HeroClass } from './card';
-export type { Action, ActionParams } from './action';
-export type { GameState } from './game-state';
-export type { Room, GameActions } from './room';
-export type { DicePosition, Room as MultiplayerRoom } from './multiplayer';
+// Re-export shared types for backward compatibility
+export type { Player, Card, Action, ActionParams, GameState, Room, DicePosition, ServerDiceState, ServerDiceStates, CoordinateTransformer, ActionContext, ActionResult } from '../../shared/types';
+export { CardType, HeroClass, FIELD_SIZE } from '../../shared/types';
+
+// Legacy re-exports
+export type { Room as MultiplayerRoom } from '../../shared/types';
+
+// Frontend-specific types that don't need sharing
+export type GameActions = Record<string, unknown>; // Define this type here if it's frontend-specific

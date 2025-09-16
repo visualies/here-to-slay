@@ -5,10 +5,9 @@ import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
 import {
-  type ActionContext,
   actionRegistry
 } from '../actions/action-service.js'
-import type { Player } from '../../../src/types/player.js'
+import type { ActionContext, Player } from '../../../shared/types'
 
 // Common payload structure for all game actions
 interface GameActionRequest {

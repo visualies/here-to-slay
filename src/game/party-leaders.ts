@@ -8,7 +8,7 @@ export const partyLeaderRegistry: Card[] = [
     type: CardType.PartyLeader,
     class: HeroClass.Fighter,
     description: 'Each time YOU roll to CHALLENGE, +2 to your roll.',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'CHALLENGE_BOOST',
       amount: 2,
@@ -21,7 +21,7 @@ export const partyLeaderRegistry: Card[] = [
     type: CardType.PartyLeader,
     class: HeroClass.Bard,
     description: 'Each time you roll to use a Hero\'s effect, +1 to your roll.',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'HERO_EFFECT_BOOST',
       amount: 1,
@@ -34,7 +34,7 @@ export const partyLeaderRegistry: Card[] = [
     type: CardType.PartyLeader,
     class: HeroClass.Ranger,
     description: 'Each time you roll to ATTACK a Monster card, +1 to your roll.',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'ATTACK_BOOST',
       amount: 1,
@@ -47,7 +47,7 @@ export const partyLeaderRegistry: Card[] = [
     type: CardType.PartyLeader,
     class: HeroClass.Thief,
     description: 'Once per turn on your turn, you may spend one action point to pull a card from another player\'s hand. This leader may not be used in 2-player games.',
-    requirement: 0,
+    requirement: { type: 'point', value: 0 },
     effect: [{
       action: 'STEAL_CARD',
       amount: 1,

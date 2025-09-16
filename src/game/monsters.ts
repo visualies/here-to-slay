@@ -7,7 +7,7 @@ export const monsterRegistry: Card[] = [
     name: 'Anuran Cauldron',
     type: CardType.Monster,
     description: 'A mystical amphibian creature brewing dark magic.',
-    requirement: 8,
+    requirement: { type: 'roll', value: 8 },
     effect: [{
       action: 'POISON',
       amount: 2,
@@ -19,7 +19,7 @@ export const monsterRegistry: Card[] = [
     name: 'Crowned Serpent',
     type: CardType.Monster,
     description: 'A regal serpent with venomous fangs and ancient wisdom.',
-    requirement: 10,
+    requirement: { type: 'roll', value: 10 },
     effect: [{
       action: 'HYPNOSIS',
       amount: 1,
@@ -31,7 +31,7 @@ export const monsterRegistry: Card[] = [
     name: 'Mega Slime',
     type: CardType.Monster,
     description: 'A massive gelatinous creature that absorbs everything in its path.',
-    requirement: 12,
+    requirement: { type: 'roll', value: 12 },
     effect: [{
       action: 'ABSORB',
       amount: 3,

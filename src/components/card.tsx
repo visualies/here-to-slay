@@ -121,7 +121,14 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
           </div>
           <div className="text-xs text-center text-foreground">
             {card.requirement && (
-              <div className="font-semibold">{card.requirement}</div>
+              <div className="font-semibold">
+                {card.requirement.type === 'point' && `${card.requirement.value} AP`}
+                {card.requirement.type === 'roll' && `Roll ${card.requirement.value}+`}
+                {card.requirement.type === 'hero' && `${card.requirement.value} Heroes`}
+                {card.requirement.type === 'class' && `${card.requirement.class} Class`}
+                {card.requirement.type === 'hand' && `${card.requirement.value} Cards`}
+                {card.requirement.type === 'duplicate' && 'No Duplicates'}
+              </div>
             )}
           </div>
         </div>

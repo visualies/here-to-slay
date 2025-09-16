@@ -96,7 +96,7 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
                       name: 'Hidden',
                       type: CardType.Hero,
                       description: '',
-                      requirement: 0,
+                      requirement: { type: 'point', value: 0 },
                       effect: []
                     }} 
                     isBack={true} 

@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import type { Player } from '../../../src/types';
+import type { Player } from '../../../shared/types';
 import {
   dealCardsToPlayer,
   assignRandomPartyLeadersToAllPlayers,

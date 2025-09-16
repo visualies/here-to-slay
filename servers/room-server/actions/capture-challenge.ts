@@ -1,4 +1,4 @@
-import type { ActionContext, ActionResult } from './action-service';
+import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerAction } from './action-registry';
 
 export function run(context: ActionContext): ActionResult {

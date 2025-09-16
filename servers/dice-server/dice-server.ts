@@ -9,7 +9,7 @@ import dotenv from 'dotenv'
 import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import * as CANNON from 'cannon-es'
-import type { ServerDiceState } from '../../src/lib/server-dice'
+import type { ServerDiceState } from '../../shared/types'
 
 // Load environment variables
 dotenv.config({ path: '.env.local', quiet: true })

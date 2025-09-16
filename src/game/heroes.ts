@@ -8,7 +8,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Bard,
     description: 'Draw 2 cards.',
-    requirement: 6,
+    requirement: { type: 'point', value: 6 },
     effect: [{
       action: 'DRAW',
       amount: 2,
@@ -21,7 +21,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Bard,
     description: 'Exchange cards with another player.',
-    requirement: 5,
+    requirement: { type: 'point', value: 5 },
     effect: [{
       action: 'EXCHANGE',
       amount: 1,
@@ -34,7 +34,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Bard,
     description: 'Peaceful ability.',
-    requirement: 4,
+    requirement: { type: 'point', value: 4 },
     effect: [{
       action: 'CALM',
       amount: 1,
@@ -47,7 +47,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Bard,
     description: 'Random card effect.',
-    requirement: 6,
+    requirement: { type: 'point', value: 6 },
     effect: [{
       action: 'RANDOM',
       amount: 1,
@@ -60,7 +60,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Magic spell effect.',
-    requirement: 7,
+    requirement: { type: 'point', value: 7 },
     effect: [{
       action: 'SPELL',
       amount: 1,
@@ -73,7 +73,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Teleportation magic.',
-    requirement: 6,
+    requirement: { type: 'point', value: 6 },
     effect: [{
       action: 'TELEPORT',
       amount: 1,
@@ -86,7 +86,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Jump between dimensions.',
-    requirement: 8,
+    requirement: { type: 'point', value: 8 },
     effect: [{
       action: 'DIMENSION_JUMP',
       amount: 1,
@@ -99,7 +99,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Ice magic ability.',
-    requirement: 5,
+    requirement: { type: 'point', value: 5 },
     effect: [{
       action: 'FREEZE',
       amount: 1,
@@ -112,7 +112,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Dark magic spell.',
-    requirement: 7,
+    requirement: { type: 'point', value: 7 },
     effect: [{
       action: 'DARK_MAGIC',
       amount: 1,
@@ -125,7 +125,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Wizard,
     description: 'Transform magic.',
-    requirement: 6,
+    requirement: { type: 'point', value: 6 },
     effect: [{
       action: 'TRANSFORM',
       amount: 1,
@@ -139,7 +139,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Fighter,
     description: 'Destroy a Hero card.',
-    requirement: 8,
+    requirement: { type: 'point', value: 8 },
     effect: [{
       action: 'DESTROY',
       amount: 1,
@@ -152,7 +152,7 @@ export const heroRegistry: Card[] = [
     type: CardType.Hero,
     class: HeroClass.Thief,
     description: 'Steal a Hero card.',
-    requirement: 7,
+    requirement: { type: 'point', value: 7 },
     effect: [{
       action: 'STEAL',
       amount: 1,

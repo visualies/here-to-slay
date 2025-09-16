@@ -1,0 +1,15 @@
+{
+  "name": "@here-to-slay/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./types": "./types/index.ts",
+    "./types/*": "./types/*.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "types": ["./types/index.ts"],
+      "types/*": ["./types/*.ts"]
+    }
+  }
+}
