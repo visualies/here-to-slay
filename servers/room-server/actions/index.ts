@@ -12,7 +12,6 @@ import './place-card';
 import './play-card';
 import './end-turn';
 import './end-move';
-import './trade-hands';
 import './pick-card';
 
 // Re-export the registry for convenience

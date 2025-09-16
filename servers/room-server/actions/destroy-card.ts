@@ -1,18 +1,24 @@
-import type { ActionContext, ActionResult } from '../../../shared/types';
+import type { ActionContext, ActionResult, ActionParams } from '../../../shared/types';
+import { Location, Amount } from '../../../shared/types';
 import { registerAction } from './action-registry';
+import { getParam } from './action-utils';
 
-export function run(context: ActionContext): ActionResult {
+export function run(context: ActionContext, params?: ActionParams): ActionResult {
   const { playerId } = context;
 
-  console.log(`💥 Internal: Destroying card for player ${playerId}`);
+  const target = getParam<Location>(params, 'target');
+  const amount = getParam<Amount>(params, 'amount');
 
-  // TODO: Implement card destruction logic
+
+  console.log(`💥 Internal: Destroying ${amount} cards from ${target} for player ${playerId}`);
+
+  // TODO: Implement card destruction logic based on target and amount
   console.log('Card destroy action executed');
 
   return {
     success: true,
-    message: 'Card destroyed successfully',
-    data: { playerId }
+    message: `Destroyed ${amount} card(s) from ${target}`,
+    data: { playerId, target, amount }
   };
 }
 

@@ -1,7 +1,7 @@
-import type { ActionContext, ActionResult } from '../../../shared/types';
+import type { ActionContext, ActionResult, ActionParams } from '../../../shared/types';
 
 export interface ActionHandler {
-  run: (context: ActionContext, ...args: unknown[]) => ActionResult;
+  run: (context: ActionContext, params?: ActionParams) => ActionResult;
 }
 
 class ActionRegistry {

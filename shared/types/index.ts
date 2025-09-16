@@ -1,13 +1,20 @@
 // Core game types
 export type { Player } from './player';
-export type { Card, Action, Requirement } from './card';
-export { CardType, HeroClass } from './card';
+export type { Card } from './card';
 export type { GameState } from './game-state';
 export type { Room } from './room';
 export type { DicePosition } from './multiplayer';
+export type { Action } from './action';
 
-// Action types
-export type { ActionParams } from './action';
+// Shared enums and types
+export { CardType } from './card-type';
+export { HeroClass } from './hero-class';
+export type { Requirement } from './requirement';
+
+// Action parameter enums
+export { Location } from './location';
+export { Amount } from './amount';
+export type { ActionParameter, ActionParams } from './action-parameter';
 
 // Dice physics types
 export type { ServerDiceState, ServerDiceStates, CoordinateTransformer } from './dice';
