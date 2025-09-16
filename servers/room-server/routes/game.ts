@@ -2,100 +2,13 @@ import { Hono } from 'hono'
 import type RoomDatabase from '../../../src/lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
-import { initializeGame, advanceTurn as advanceTurnFn, addPlayerToGame } from '../lib/game-logic.js'
+import { initializeGame, addPlayerToGame } from '../lib/game-logic.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
-import {
-  actionRegistry
-} from '../actions/action-service.js'
-import type { ActionContext, Player } from '../../../shared/types'
-
-// Common payload structure for all game actions
-interface GameActionRequest {
-  playerId: string;
-  roomId: string;
-  // Optional fields used by specific actions
-  cardId?: string;           // For play-hero-to-party
-  monsterId?: string;        // For attack-monster
-  diceResult?: number;       // For actions requiring dice (attack-monster, hero effects)
-}
+import type { Player } from '../../../shared/types'
 
 export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const router = new Hono()
 
-  // Helper function to validate player action
-  function validatePlayerAction(
-    playerId: string,
-    roomId: string,
-    requiresActionPoints = true
-  ): { valid: boolean; context?: ActionContext; player?: Player; error?: string } {
-    const ydoc = getYDoc(roomId)
-    if (!ydoc) {
-      return { valid: false, error: 'Room not found' }
-    }
-
-    const playersMap = ydoc.getMap('players')
-    const gameStateMap = ydoc.getMap('gameState')
-    const player = playersMap.get(playerId) as Player
-
-    if (!player) {
-      return { valid: false, error: 'Player not found' }
-    }
-
-    // Check if it's the player's turn
-    const currentTurn = gameStateMap.get('currentTurn') as string
-    if (currentTurn !== playerId) {
-      return { valid: false, error: 'Not your turn' }
-    }
-
-    // Check action points if required
-    if (requiresActionPoints && player.actionPoints <= 0) {
-      return { valid: false, error: 'No action points remaining' }
-    }
-
-    const context: ActionContext = {
-      roomId,
-      playerId,
-      diceResult: 0,
-      playersMap,
-      gameStateMap
-    }
-
-    return { valid: true, context, player }
-  }
-
-  // Helper function to handle action point deduction and turn advancement
-  function handleTurnLogic(
-    context: ActionContext,
-    player: Player,
-    deductActionPoint = true
-  ): void {
-    if (deductActionPoint) {
-      // Get the current player state from the map (might have been updated by actions)
-      const currentPlayer = (context.playersMap.get(context.playerId) as Player) || player
-      const newActionPoints = Math.max(0, currentPlayer.actionPoints - 1)
-
-      // Use current player state, not the stale player parameter
-      context.playersMap.set(context.playerId, { ...currentPlayer, actionPoints: newActionPoints })
-
-      console.log(`🔄 Player ${context.playerId} has ${newActionPoints} action points remaining`)
-
-      // Advance turn if no action points left
-      if (newActionPoints === 0) {
-        const currentPlayers = Array.from(context.playersMap.values()) as Player[]
-        const currentTurn = context.gameStateMap.get('currentTurn') as string
-        console.log(`🔄 Advancing turn from player ${context.playerId}`)
-        advanceTurnFn(context.playersMap, context.gameStateMap, currentPlayers, currentTurn)
-        
-        // Save the updated game state after turn advancement
-        const ydoc = getYDoc(context.roomId)
-        try {
-          db.saveRoomState(context.roomId, ydoc)
-        } catch (error) {
-          console.error('Error saving game state after turn advance:', error)
-        }
-      }
-    }
-  }
 
   // Helper function to get existing Yjs document from shared map, or create if needed
   function getYDoc(roomId: string) {
@@ -345,117 +258,27 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     }
   })
 
-  // Game Actions
 
-  // Draw Card
-  router.post('/draw-card', async (c) => {
+  // Play Card - unified endpoint for all card actions
+  router.post('/play-card', async (c) => {
     try {
-      const { playerId, roomId }: GameActionRequest = await c.req.json()
-      console.log(`🎮 API: Draw card request from player ${playerId}`)
+      const { playerId, roomId, cardId } = await c.req.json()
+      console.log(`🎮 API: Play card request from player ${playerId} - card ${cardId} in room ${roomId}`)
 
-      const validation = validatePlayerAction(playerId, roomId, true)
-      if (!validation.valid) {
-        return c.json({ success: false, message: validation.error }, 400)
+      if (!playerId || !roomId || !cardId) {
+        return c.json({ success: false, message: 'playerId, roomId, and cardId are required' }, 400)
       }
 
-      const drawCardAction = actionRegistry.get('drawCard')!
-      const result = drawCardAction.run(validation.context!)
+      // TODO: Implement card playing logic
+      console.log('Card play action logged')
 
-      if (result.success && validation.player) {
-        handleTurnLogic(validation.context!, validation.player, true)
-      }
-
-      return c.json(result)
+      return c.json({
+        success: true,
+        message: `Card ${cardId} played by player ${playerId}`,
+        data: { playerId, roomId, cardId }
+      })
     } catch (error) {
-      console.error('❌ Draw card error:', error)
-      return c.json({ success: false, message: 'Internal server error' }, 500)
-    }
-  })
-
-  // Play Hero to Party
-  router.post('/play-hero-to-party', async (c) => {
-    try {
-      const { playerId, roomId, cardId }: GameActionRequest = await c.req.json()
-      console.log(`🎮 API: Play hero to party request from player ${playerId} - card ${cardId}`)
-
-      if (!cardId) {
-        return c.json({ success: false, message: 'Card ID required' }, 400)
-      }
-
-      const validation = validatePlayerAction(playerId, roomId, true)
-      if (!validation.valid) {
-        return c.json({ success: false, message: validation.error }, 400)
-      }
-
-      const playHeroAction = actionRegistry.get('playHeroToParty')!
-      const result = playHeroAction.run(validation.context!, cardId)
-
-      if (result.success && validation.player) {
-        handleTurnLogic(validation.context!, validation.player, true)
-      }
-
-      return c.json(result)
-    } catch (error) {
-      console.error('❌ Play hero to party error:', error)
-      return c.json({ success: false, message: 'Internal server error' }, 500)
-    }
-  })
-
-  // Attack Monster
-  router.post('/attack-monster', async (c) => {
-    try {
-      const { playerId, roomId, monsterId, diceResult }: GameActionRequest = await c.req.json()
-      console.log(`🎮 API: Attack monster request from player ${playerId} - monster ${monsterId}, dice: ${diceResult}`)
-
-      if (!monsterId) {
-        return c.json({ success: false, message: 'Monster ID required' }, 400)
-      }
-
-      if (diceResult === undefined || diceResult === null) {
-        return c.json({ success: false, message: 'Dice result required (include diceResult in payload)' }, 400)
-      }
-
-      const validation = validatePlayerAction(playerId, roomId, true)
-      if (!validation.valid) {
-        return c.json({ success: false, message: validation.error }, 400)
-      }
-
-      const attackAction = actionRegistry.get('attackMonster')!
-      const result = attackAction.run(validation.context!, monsterId, diceResult)
-
-      // Always deduct action point and handle turn logic for completed action
-      if (result.success !== undefined && validation.player) { // Action completed (success or failure)
-        handleTurnLogic(validation.context!, validation.player, true)
-      }
-
-      return c.json(result)
-    } catch (error) {
-      console.error('❌ Attack monster error:', error)
-      return c.json({ success: false, message: 'Internal server error' }, 500)
-    }
-  })
-
-  // Discard All and Redraw
-  router.post('/discard-hand-redraw', async (c) => {
-    try {
-      const { playerId, roomId }: GameActionRequest = await c.req.json()
-      console.log(`🎮 API: Discard hand redraw request from player ${playerId}`)
-
-      const validation = validatePlayerAction(playerId, roomId, true)
-      if (!validation.valid) {
-        return c.json({ success: false, message: validation.error }, 400)
-      }
-
-      const discardAction = actionRegistry.get('discardAllAndRedraw')!
-      const result = discardAction.run(validation.context!)
-
-      if (result.success) {
-        handleTurnLogic(validation.context!, validation.player!, true)
-      }
-
-      return c.json(result)
-    } catch (error) {
-      console.error('❌ Discard hand redraw error:', error)
+      console.error('❌ Play card error:', error)
       return c.json({ success: false, message: 'Internal server error' }, 500)
     }
   })
