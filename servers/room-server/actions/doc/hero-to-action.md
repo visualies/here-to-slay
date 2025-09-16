@@ -43,7 +43,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `discard-card.ts` target: other-hands, destination: cache, amount 1
-- `draw-card.ts` target: cache, destination: hand, amount: 1
+- `draw-card.ts` target: cache, destination: own-hand, amount: 1
 - `discard-card.ts` target: cache, destination: discard-pile, amount: all
 
 ### Lucky Bucky
@@ -59,7 +59,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `end-move.ts`
 - `steal-card.ts` target: any-hand, destination: cache, amount: 1
 - `play-card.ts` target: cache, type: hero
-- `draw-card.ts` target: cache, destination: hand, amount: all
+- `draw-card.ts` target: cache, destination: own-hand, amount: all
 
 ### Mellow Dee
 **ID:** `hero-005`
@@ -74,7 +74,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `end-move.ts`
 - `draw-card.ts` target: support-deck, destination: cache, amount: 1
 - `play-card.ts` target: cache, type: hero
-- `draw-card.ts` target: cache, destination: hand, amount: all
+- `draw-card.ts` target: cache, destination: own-hand, amount: all
 
 ### Napping Nibbles
 **ID:** `hero-006`
@@ -111,8 +111,8 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `steal-card.ts`selection: input, target: any-party, destination: your-party, amount: 1
-- `move-card.ts` selection: last-selection, target: your-party, destination: last-target, amount: 1 (NOT IMPLEMENTED YET)
+- `steal-card.ts`selection: input, target: any-party, destination: own-party, amount: 1
+- `move-card.ts` selection: last-selection, target: own-party, destination: last-target, amount: 1 (NOT IMPLEMENTED YET)
 
 ## Fighters
 
@@ -156,7 +156,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `discard-card.ts` target: other-hands, destination: cache, amount: 1
-- `pick-card.ts` target: cache, destination: your-hand, amount: 1, type: any
+- `pick-card.ts` target: cache, destination: own-hand, amount: 1, type: any
 - `discard-card.ts` target: cache, destination: discard-pile, amount: all
 
 ### Fury Knuckle
@@ -257,7 +257,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: discard-pile, destination: hand, type: hero
+- `pick-card.ts` target: discard-pile, destination: own-hand, type: hero
 
 ### Holy Curselifter
 **ID:** `hero-019`
@@ -270,7 +270,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: your-party, destination: hand, type: item
+- `pick-card.ts` target: own-party, destination: own-hand, type: item
 
 ### Iron Resolve
 **ID:** `hero-020`
@@ -314,7 +314,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `radiant-blast.ts`
-- `pick-card.ts` target: discard-pile, destination: hand, type: modifier
+- `pick-card.ts` target: discard-pile, destination: own-hand, type: modifier
 
 ### Vibrant Glow
 **ID:** `hero-023`
@@ -360,7 +360,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `draw-card.ts` target: support-deck, destination: cache, amount: 3
-- `pick-card.ts` target: cache, destination: hand, type: any, amount 1
+- `pick-card.ts` target: cache, destination: own-hand, type: any, amount 1
 - `pick-card.ts` target: cache, destination: support-deck, type: any, amount 2
 
 ### Hook
@@ -374,8 +374,8 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `play-card.ts` target: hand, type: item
-- `draw-card.ts` target: support-deck, destination: hand
+- `play-card.ts` target: own-hand, type: item
+- `draw-card.ts` target: support-deck, destination: own-hand
 
 ### Lookie Rookie
 **ID:** `hero-027`
@@ -388,7 +388,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: discard-pile, destination: hand, type: item
+- `pick-card.ts` target: discard-pile, destination: own-hand, type: item
 
 ### Quick Draw
 **ID:** `hero-028`
@@ -417,7 +417,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `destroy-card.ts` destination: any-party, amount: 1
-- `draw-card.ts` target: support-deck, destination: hand, amount: 1
+- `draw-card.ts` target: support-deck, destination: own-hand, amount: 1
 
 ### Sharp Fox
 **ID:** `hero-030`
@@ -430,7 +430,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: any-player, destination: cache, amount: 0
+- `pick-card.ts` target: any-hand, destination: cache, amount: 0
 
 ### Wildshot
 **ID:** `hero-031`
@@ -443,8 +443,8 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `draw-card.ts` target: support-deck, destination: hand, amount: 3
-- `discard-card.ts` target: hand, destination: discard-pile, amount: 1
+- `draw-card.ts` target: support-deck, destination: own-hand, amount: 3
+- `discard-card.ts` target: own-hand, destination: discard-pile, amount: 1
 
 ### Wily Red
 **ID:** `hero-032`
@@ -475,7 +475,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `steal-card.ts` target: any-party, destination: party, amount: 1
+- `steal-card.ts` target: any-party, destination: own-party, amount: 1
 
 ### Meowzio
 **ID:** `hero-034`
@@ -488,7 +488,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `steal-card.ts` target: any-party, destination: party, amount: 1 
+- `steal-card.ts` target: any-party, destination: own-party, amount: 1 
 - `draw-card.ts` target: last-target, ?? (WILL NOT WORK SINCE WE NEED THE PLAYERS HAND)
 
 ### Plundering Puma
@@ -502,7 +502,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `draw-card.ts` target: any-hand, destination: hand, amount: 2
+- `draw-card.ts` target: any-hand, destination: own-hand, amount: 2
 - `draw-card.ts` target: support-deck, destination: last-target, amount: 1
 
 ### Shurikitty
@@ -530,7 +530,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: any-hand, destination: hand, type: all, amount: 1
+- `pick-card.ts` target: any-hand, destination: own-hand, type: all, amount: 1
 
 ### Slippery Paws
 **ID:** `hero-038`
@@ -544,7 +544,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `draw-card.ts` target: any-hand, destination: cache, amount: 2
-- `pick-card.ts` target: cache, destination: hand, amount: 1, type: all
+- `pick-card.ts` target: cache, destination: own-hand, amount: 1, type: all
 - `dicard-card.ts` target: cache, destination: discard-pile, amount: all
 
 ### Sly Pickings
@@ -560,7 +560,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `end-move.ts`
 - `draw-card.ts` target: any-hand, destination: cache, amount: 1
 - `play-card.ts` target: cache, type: item
-- `draw-card.ts` target: cache, destination: hand, amount: all
+- `draw-card.ts` target: cache, destination: own-hand, amount: all
 
 ### Smooth Mimimeow
 **ID:** `hero-040`
@@ -573,7 +573,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `draw-card.ts` target: other-parties-with-thief, destination: hand, amount: 1
+- `draw-card.ts` target: other-parties-with-thief, destination: own-hand, amount: 1
 
 ## Wizards
 
@@ -588,7 +588,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `pick-card.ts` target: discard-pile, destination: hand, type: magic, amount: 1
+- `pick-card.ts` target: discard-pile, destination: own-hand, type: magic, amount: 1
 
 ### Buttons
 **ID:** `hero-042`
@@ -603,7 +603,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `end-move.ts`
 - `draw-card.ts` target: any-hand, destination: cache, amount: 1
 - `play-card.ts` target: cache, type: magic
-- `draw-card.ts` target: cache, destination: hand, amount: all
+- `draw-card.ts` target: cache, destination: own-hand, amount: all
 
 ### Fluffy
 **ID:** `hero-043`
@@ -671,7 +671,7 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-dice.ts`
 - `capture-modifier.ts`
 - `end-move.ts`
-- `steal-card.ts` target: any-party, destination: hand, amount: 1
+- `steal-card.ts` target: any-party, destination: own-hand, amount: 1
 - `destroy-card.ts` target: any-party, amount: 1
 - 
 ### Wiggles
@@ -710,4 +710,62 @@ Current action files in`/servers/room-server/actions/`:
 
 ## Action Files Overview
 
-This template now includes all heroes with Lorem ipsum placeholder text that can be easily replaced with actual hero descriptions and effects. Each hero has been assigned unique IDs and thematic action files that correspond to their abilities. 
+This template now includes all heroes with Lorem ipsum placeholder text that can be easily replaced with actual hero descriptions and effects. Each hero has been assigned unique IDs and thematic action files that correspond to their abilities.
+
+## Complete Actions and Parameters Analysis
+
+### All Actions Used
+- `capture-challenge.ts`
+- `capture-dice.ts`
+- `capture-modifier.ts`
+- `deduct-point.ts`
+- `destroy-card.ts`
+- `discard-card.ts`
+- `draw-card.ts`
+- `end-move.ts`
+- `move-card.ts`
+- `pick-card.ts`
+- `place-card.ts`
+- `play-card.ts`
+- `sacrifice-card.ts`
+- `steal-card.ts`
+- `trade-hands.ts`
+
+### Parameters by Data Type
+
+#### LOCATION (target, destination):
+- `any-hand`
+- `other-hands`
+- `own-hand`
+
+- `any-party`
+- `other-parties`
+- `own-party`
+
+- `other-parties-with-fighter`
+- `other-parties-with-thief`
+
+- `cache`
+- `discard-pile`
+- `support-deck`
+
+- `last-target`
+
+#### NUMBER (amount):
+- `0`
+- `1`
+- `2`
+- `3`
+- `all`
+
+#### CARD_TYPE (type):
+- `all`
+- `any`
+- `hero`
+- `item`
+- `magic`
+- `modifier`
+
+#### SELECTION_MODE (selection):
+- `input`
+- `last-selection` 
