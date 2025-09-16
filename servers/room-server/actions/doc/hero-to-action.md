@@ -7,9 +7,8 @@ This document explains how each hero maps to a list of actions and their corresp
 ### Dodgy Dealer
 **ID:** `hero-001`
 **Requirement:** 5
-**Effect:** Exchange cards with another player.
+**Effect:** [Effect removed - no longer supported]
 **Actions:**
-- `trade-hands.ts`
 - `deduct-point.ts`
 - `place-card.ts`
 - `capture-challenge.ts`
@@ -103,7 +102,7 @@ This document explains how each hero maps to a list of actions and their corresp
 ### Tipsy Tootie
 **ID:** `hero-008`
 **Requirement:** 6
-**Effect:** Choose a player. STEAL a Hero card from that player's Party and move Tipsy Tootie to that player's Party.
+**Effect:** Choose a player. STEAL a Hero card from that player's Party.
 **Actions:**
 - `deduct-point.ts`
 - `place-card.ts`
@@ -112,7 +111,6 @@ This document explains how each hero maps to a list of actions and their corresp
 - `capture-modifier.ts`
 - `end-move.ts`
 - `steal-card.ts`selection: input, target: any-party, destination: own-party, amount: 1
-- `move-card.ts` selection: last-selection, target: own-party, destination: last-target, amount: 1 (NOT IMPLEMENTED YET)
 
 ## Fighters
 
@@ -706,7 +704,6 @@ Current action files in`/servers/room-server/actions/`:
 - `play-card.ts`
 - `end-turn.ts`
 - `end-move.ts`
-- `trade-hands.ts`
 
 ## Action Files Overview
 

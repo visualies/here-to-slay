@@ -131,18 +131,20 @@ export async function playCard(
 }
 
 /**
- * Move cards between locations with simplified selection mode
+ * Move cards between locations with configurable selection mode
  * @param context - Action context containing players and game state
  * @param target - Source location to move cards from
  * @param destination - Destination location to move cards to
  * @param amount - Number of cards to move
+ * @param selection - Selection mode for choosing cards when multiple targets available
  * @returns ActionResult with success status and data
  */
 export function moveCard(
   context: ActionContext, 
   target: Location, 
   destination: Location, 
-  amount: Amount
+  amount: Amount,
+  selection: SelectionMode = SelectionMode.First
 ): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
@@ -150,14 +152,11 @@ export function moveCard(
     return { success: false, message: 'target, destination, and amount parameters are required' };
   }
 
-  // Always use 'first' selection mode for now
-  const selectionMode = SelectionMode.First;
-
   // Only support 'first' selection mode for now
-  if (selectionMode !== SelectionMode.First) {
+  if (selection !== SelectionMode.First) {
     return { 
       success: false, 
-      message: `Selection mode '${selectionMode}' is not yet implemented. Only 'first' is supported.` 
+      message: `Selection mode '${selection}' is not yet implemented. Only 'first' is supported.` 
     };
   }
 

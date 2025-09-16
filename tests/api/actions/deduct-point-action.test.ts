@@ -330,4 +330,311 @@ test.describe('API: Deduct Point Action', () => {
 
     expect(finalTurn.action_points).toBe(3) // Should remain unchanged
   })
+
+  test('should work with string amount parameter', async ({ request }) => {
+    // 1. Create test card with string amount
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '2' }
+        ],
+        cardName: 'Deduct String Amount',
+        cardDescription: 'Deduct 2 action points using string amount'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Get initial action points
+    const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+    const initialRoomData = await initialRoomResponse.json()
+    const initialTurn = initialRoomData.gameState.currentTurn
+
+    expect(initialTurn.action_points).toBe(3)
+
+    // 3. Play the card
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(200)
+    const playCardBody = await playCardResponse.json()
+    expect(playCardBody.success).toBe(true)
+
+    // 4. Verify 2 action points were deducted
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(1) // 3 - 2 = 1
+  })
+
+  test('should handle negative amount parameter (current behavior)', async ({ request }) => {
+    // 1. Create test card with negative amount
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '-1' }
+        ],
+        cardName: 'Deduct Negative Points',
+        cardDescription: 'Try to deduct negative action points'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Play the card - currently succeeds (behavior may need fixing)
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(200)
+    const playCardBody = await playCardResponse.json()
+    expect(playCardBody.success).toBe(true)
+    expect(playCardBody.message).toBe('Card Deduct Negative Points played successfully')
+
+    // 3. Verify action points increased (negative amount actually adds points)
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(4) // 3 - (-1) = 4 (negative amount adds points)
+  })
+
+  test('should handle invalid amount parameter (current behavior)', async ({ request }) => {
+    // 1. Create test card with invalid amount (non-numeric string)
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: 'invalid' }
+        ],
+        cardName: 'Deduct Invalid Amount',
+        cardDescription: 'Try to deduct with invalid amount'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Play the card - currently succeeds (behavior may need fixing)
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(200)
+    const playCardBody = await playCardResponse.json()
+    expect(playCardBody.success).toBe(true)
+    expect(playCardBody.message).toBe('Card Deduct Invalid Amount played successfully')
+
+    // 3. Verify action points deducted by 1 (invalid amount defaults to 1)
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(2) // 3 - 1 = 2 (invalid amount defaults to 1)
+  })
+
+  test('should handle decimal amount parameter (current behavior)', async ({ request }) => {
+    // 1. Create test card with decimal amount
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '1.5' }
+        ],
+        cardName: 'Deduct Decimal Points',
+        cardDescription: 'Try to deduct decimal action points'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Play the card - currently succeeds (behavior may need fixing)
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(200)
+    const playCardBody = await playCardResponse.json()
+    expect(playCardBody.success).toBe(true)
+    expect(playCardBody.message).toBe('Card Deduct Decimal Points played successfully')
+
+    // 3. Verify action points deducted by 1.5 (decimal amounts are allowed)
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(1.5) // 3 - 1.5 = 1.5 (decimal amounts are allowed)
+  })
+
+  test('should fail with very large amount parameter', async ({ request }) => {
+    // 1. Create test card with very large amount
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '999999' }
+        ],
+        cardName: 'Deduct Huge Amount',
+        cardDescription: 'Try to deduct huge amount of action points'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Try to play the card - should fail
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(400)
+    const playCardBody = await playCardResponse.json()
+    expect(playCardBody.success).toBe(false)
+    expect(playCardBody.message).toContain('Not enough action points')
+
+    // 3. Verify action points unchanged
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(3) // Should remain unchanged
+  })
+
+  test('should verify response data structure', async ({ request }) => {
+    // 1. Create test card with deduct 1 point action
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '1' }
+        ],
+        cardName: 'Verify Response Data',
+        cardDescription: 'Test response data structure'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Play the card
+    const playCardResponse = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCardResponse.status()).toBe(200)
+    const playCardBody = await playCardResponse.json()
+
+    // 3. Verify response structure
+    expect(playCardBody.success).toBe(true)
+    expect(playCardBody.message).toBe('Card Verify Response Data played successfully')
+    expect(playCardBody.data).toBeDefined()
+    expect(playCardBody.data.playerId).toBe(playerId)
+    expect(playCardBody.data.roomId).toBe(roomId)
+    expect(playCardBody.data.cardId).toBe(testCardId)
+    expect(playCardBody.data.cardName).toBe('Verify Response Data')
+    expect(playCardBody.data.cardType).toBe('Test')
+    expect(playCardBody.data.actionsProcessed).toBe(1)
+  })
+
+  test('should handle multiple deduct point actions in sequence', async ({ request }) => {
+    // 1. Create test card with deduct 1 point action
+    const createCardResponse = await request.post('/api/cards/test-card', {
+      data: {
+        action: 'deductPoint',
+        parameters: [
+          { name: 'amount', type: 'AMOUNT', value: '1' }
+        ],
+        cardName: 'Deduct 1 Point Sequential',
+        cardDescription: 'Deduct 1 action point for sequential testing'
+      }
+    })
+
+    expect(createCardResponse.status()).toBe(200)
+    const createCardBody = await createCardResponse.json()
+    testCardId = createCardBody.data.id
+
+    // 2. Get initial action points
+    const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+    const initialRoomData = await initialRoomResponse.json()
+    const initialTurn = initialRoomData.gameState.currentTurn
+
+    expect(initialTurn.action_points).toBe(3)
+
+    // 3. Play the card first time
+    const playCard1Response = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCard1Response.status()).toBe(200)
+    const playCard1Body = await playCard1Response.json()
+    expect(playCard1Body.success).toBe(true)
+
+    // 4. Verify first deduction
+    const afterFirstRoomResponse = await request.get(`/api/room/${roomId}`)
+    const afterFirstRoomData = await afterFirstRoomResponse.json()
+    const afterFirstTurn = afterFirstRoomData.gameState.currentTurn
+
+    expect(afterFirstTurn.action_points).toBe(2) // 3 - 1 = 2
+
+    // 5. Play the card second time
+    const playCard2Response = await request.post('/api/game/play-card', {
+      data: {
+        roomId,
+        playerId,
+        cardId: testCardId
+      }
+    })
+
+    expect(playCard2Response.status()).toBe(200)
+    const playCard2Body = await playCard2Response.json()
+    expect(playCard2Body.success).toBe(true)
+
+    // 6. Verify second deduction
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalTurn = finalRoomData.gameState.currentTurn
+
+    expect(finalTurn.action_points).toBe(1) // 2 - 1 = 1
+  })
 })

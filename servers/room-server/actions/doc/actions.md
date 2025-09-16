@@ -117,9 +117,6 @@ with the sacrifice action the target picks the card
 **Purpose:** Take a card from another player
 **Notes:**
 
-#### `trade-hands.ts`
-**Purpose:** Exchange entire hands between players
-**Notes:**
 
 ### Turn Management Actions
 
