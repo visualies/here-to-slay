@@ -734,38 +734,38 @@ This template now includes all heroes with Lorem ipsum placeholder text that can
 ### Parameters by Data Type
 
 #### LOCATION (target, destination):
-- `any-hand`
-- `other-hands`
-- `own-hand`
+- `any-hand` (10)
+- `other-hands` (3)
+- `own-hand` (23)
 
-- `any-party`
-- `other-parties`
-- `own-party`
+- `any-party` (11)
+- `other-parties` (6)
+- `own-party` (6)
 
-- `other-parties-with-fighter`
-- `other-parties-with-thief`
+- `other-parties-with-fighter` (2)
+- `other-parties-with-thief` (2)
 
-- `cache`
-- `discard-pile`
-- `support-deck`
+- `cache` (29)
+- `discard-pile` (11)
+- `support-deck` (8)
 
-- `last-target`
+- `last-target` (4)
 
 #### NUMBER (amount):
-- `0`
-- `1`
-- `2`
-- `3`
-- `all`
+- `0` (1)
+- `1` (27)
+- `2` (5)
+- `3` (2)
+- `all` (7)
 
 #### CARD_TYPE (type):
-- `all`
-- `any`
-- `hero`
-- `item`
-- `magic`
-- `modifier`
+- `all` (2)
+- `any` (3)
+- `hero` (6)
+- `item` (4)
+- `magic` (2)
+- `modifier` (1)
 
 #### SELECTION_MODE (selection):
-- `input`
-- `last-selection` 
+- `input` (1)
+- `last-selection` (1) 
