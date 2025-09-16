@@ -226,4 +226,258 @@ test('should handle card playing via API', async () => {
 });
 ```
 
+## Testing Room Action Server Actions
+
+The room action server contains various game actions that can be tested. Each action follows a consistent pattern and should be thoroughly tested.
+
+### Available Actions
+
+The following actions are available in the room action server:
+
+- **`drawCard`** - Move cards between locations (hand, deck, etc.)
+- **`captureDice`** - Capture dice from other players
+- **`captureModifier`** - Capture modifiers from other players  
+- **`captureChallenge`** - Capture challenge cards
+- **`discardCard`** - Discard cards from hand
+- **`deductPoint`** - Deduct action points from current player
+- **`stealCard`** - Steal cards from other players
+- **`destroyCard`** - Destroy cards in play
+- **`sacrificeCard`** - Sacrifice own cards
+- **`placeCard`** - Place cards in play areas
+- **`playCard`** - Play cards (general action)
+- **`endTurn`** - End current player's turn
+- **`endMove`** - End current move/action
+- **`pickCard`** - Pick/select cards
+
+### Standard Action Test Structure
+
+Every action test should follow this consistent structure:
+
+```typescript
+import { test, expect } from '@playwright/test'
+
+test.describe('API: [ActionName] Action', () => {
+  let roomId: string
+  let playerId: string
+  let testCardId: string
+
+  test.beforeEach(async ({ request }) => {
+    // 1. Create room
+    const createResponse = await request.post('/api/create-room', {
+      data: { name: '[ActionName] Test Room', maxPlayers: 4 }
+    })
+    const createBody = await createResponse.json()
+    roomId = createBody.roomId
+
+    // 2. Add player
+    playerId = 'test-player-1'
+    const joinResponse = await request.post('/api/join-room', {
+      data: {
+        roomId,
+        playerId,
+        playerName: 'Test Player',
+        playerColor: 'red'
+      }
+    })
+    expect(joinResponse.status()).toBe(200)
+
+    // 3. Start game
+    const startResponse = await request.post('/api/game/start', {
+      data: { roomId }
+    })
+    expect(startResponse.status()).toBe(200)
+  })
+
+  test.afterEach(async ({ request }) => {
+    // Clean up test card
+    if (testCardId) {
+      await request.delete(`/api/cards/test-card/${testCardId}`)
+    }
+  })
+
+  // Test cases go here...
+})
+```
+
+### Action Test Categories
+
+For each action, you should test these categories:
+
+#### 1. **Basic Functionality Tests**
+- Test the action with default parameters
+- Test the action with different parameter values
+
+#### 2. **Parameter Validation Tests**
+- Test with valid parameter combinations
+- Test with invalid parameter combinations
+- Test with missing required parameters
+- Test with edge case values (0, negative numbers, etc.)
+
+#### 3. **Game State Tests**
+- Test action effects on game state
+- Test action effects on player state
+- Test action effects on other players
+- Test action effects on turn progression
+
+#### 4. **Error Scenario Tests**
+- Test when action is not allowed (wrong turn, insufficient resources, etc.)
+- Test when parameters are invalid
+- Test when game state doesn't support the action
+- Test when required conditions aren't met
+
+#### 5. **Edge Case Tests**
+- Test with minimum/maximum values
+- Test with empty collections
+- Test with single vs multiple players
+- Test circular operations (e.g., hand to hand)
+
+### Parameter Testing Patterns
+
+#### Testing Location Parameters
+```typescript
+// Test all valid source locations
+const validSources = ['support-deck', 'own-hand', 'other-hands']
+const validDestinations = ['own-hand', 'support-deck']
+
+for (const source of validSources) {
+  for (const destination of validDestinations) {
+    test(`should work with ${source} → ${destination}`, async ({ request }) => {
+      // Test implementation
+    })
+  }
+}
+
+// Test invalid locations
+const invalidLocations = ['cache', 'discard-pile', 'invalid-location']
+for (const location of invalidLocations) {
+  test(`should fail with invalid location: ${location}`, async ({ request }) => {
+    // Test implementation
+  })
+}
+```
+
+#### Testing Amount Parameters
+```typescript
+// Test different amount values
+const amounts = ['0', '1', '2', '5', 'all']
+for (const amount of amounts) {
+  test(`should work with amount: ${amount}`, async ({ request }) => {
+    // Test implementation
+  })
+}
+
+// Test edge cases
+test('should fail with negative amount', async ({ request }) => {
+  // Test implementation
+})
+
+test('should fail with amount exceeding available resources', async ({ request }) => {
+  // Test implementation
+})
+```
+
+### Common Test Patterns
+
+#### 1. **State Verification Pattern**
+```typescript
+test('should modify game state correctly', async ({ request }) => {
+  // 1. Get initial state
+  const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+  const initialRoomData = await initialRoomResponse.json()
+  const initialPlayer = initialRoomData.players[playerId]
+  
+  // 2. Perform action
+  const actionResponse = await request.post('/api/game/play-card', {
+    data: { roomId, playerId, cardId: testCardId }
+  })
+  expect(actionResponse.status()).toBe(200)
+  
+  // 3. Verify final state
+  const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+  const finalRoomData = await finalRoomResponse.json()
+  const finalPlayer = finalRoomData.players[playerId]
+  
+  // Assert expected changes
+  expect(finalPlayer.hand.length).toBe(initialPlayer.hand.length + 1)
+})
+```
+
+#### 2. **Multi-Player Test Pattern**
+```typescript
+test('should work with multiple players', async ({ request }) => {
+  // Add second player
+  const player2Id = 'test-player-2'
+  await request.post('/api/join-room', {
+    data: {
+      roomId,
+      playerId: player2Id,
+      playerName: 'Player 2',
+      playerColor: 'blue'
+    }
+  })
+  
+  // Add player to game
+  await request.post('/api/game/add-player-to-game', {
+    data: { roomId, playerId: player2Id }
+  })
+  
+  // Test action affects both players
+  // ... test implementation
+})
+```
+
+#### 3. **Error Handling Pattern**
+```typescript
+test('should fail with appropriate error message', async ({ request }) => {
+  const response = await request.post('/api/game/play-card', {
+    data: { roomId, playerId, cardId: testCardId }
+  })
+  
+  expect(response.status()).toBe(400)
+  const responseBody = await response.json()
+  expect(responseBody.success).toBe(false)
+  expect(responseBody.message).toContain('Expected error message')
+})
+```
+
+### Test File Organization
+
+Create separate test files for each action:
+```
+tests/api/actions/
+├── draw-card-action.test.ts
+├── deduct-point-action.test.ts
+├── capture-dice-action.test.ts
+├── capture-modifier-action.test.ts
+├── capture-challenge-action.test.ts
+├── discard-card-action.test.ts
+├── steal-card-action.test.ts
+├── destroy-card-action.test.ts
+├── sacrifice-card-action.test.ts
+├── place-card-action.test.ts
+├── play-card-action.test.ts
+├── end-turn-action.test.ts
+├── end-move-action.test.ts
+└── pick-card-action.test.ts
+```
+
+### Running Action Tests
+
+```bash
+# Run all action tests
+npm run test:api -- --grep "Action"
+
+# Run specific action test
+npm run test:api -- --grep "drawCard"
+
+# Run with verbose output
+npm run test:api -- --grep "Action" --reporter=line
+
+# Run all API tests (includes action tests)
+npm run test:api
+
+# Run tests with HTML report
+npm run test:report
+```
+
 Remember: **Always use `data-testid` attributes for reliable, maintainable tests!** 🎯

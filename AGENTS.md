@@ -6,4 +6,4 @@ For each change implemented, you MUST run the API tests afterwards with `npm run
 
 The dev server must only ever be started by the user - never run `npm run dev` yourself.
 
-If implementing tests, the existing testing file must be read to understand the testing patterns and conventions.
+If implementing tests, the existing TESTING.md file must be read to understand the testing patterns and conventions.
