@@ -125,6 +125,32 @@ await apiHelper.joinRoom(roomId, playerId, 'PlayerName', '#FF6B6B');
 await apiHelper.verifyPlayerCount(roomId, 1);
 ```
 
+## Unit Testing with Jest
+
+Jest is used for unit testing individual functions, components, or modules in isolation. It provides a fast and efficient way to verify the correctness of small, isolated pieces of code.
+
+### Running Jest Tests
+
+```bash
+# Run all Jest tests
+npm run test:unit
+
+# Run specific Jest test file
+npm run test:unit -- path/to/your/test-file.test.ts
+```
+
+### Example Jest Test
+
+```typescript
+import { sum } from '../src/utils/math';
+
+describe('sum function', () => {
+  test('adds 1 + 2 to equal 3', () => {
+    expect(sum(1, 2)).toBe(3);
+  });
+});
+```
+
 ## Test Categories
 
 ### UI Tests (`tests/e2e/game-flow.spec.ts`, `tests/e2e/simple-game-flow.spec.ts`)
