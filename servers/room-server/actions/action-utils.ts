@@ -121,6 +121,12 @@ export function determineSelectionMode(context: ActionContext, target: Location,
     numAmount = 1; // Default fallback
   }
 
+  // Special case: For support deck, always use First mode (auto-select) for draw card actions
+  //TODO make this differentiate between location types (stack, fan)
+  if (target === Location.SupportDeck) {
+    return SelectionMode.First;
+  }
+
   // If we need more cards than available, or equal, use First mode (auto-select all)
   if (numAmount >= totalAvailableCards) {
     return SelectionMode.First;

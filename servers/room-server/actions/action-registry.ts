@@ -19,6 +19,10 @@ class ActionRegistry {
   getAll(): Map<string, ActionHandler> {
     return new Map(this.actions);
   }
+
+  listActions(): string[] {
+    return Array.from(this.actions.keys());
+  }
 }
 
 export const actionRegistry = new ActionRegistry();

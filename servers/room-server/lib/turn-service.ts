@@ -1,8 +1,11 @@
 import * as Y from 'yjs';
 import type { Action, ActionContext, ActionResult, Turn, Player } from '../../../shared/types';
 import { ActionState } from '../../../shared/types';
-import { actionRegistry } from '../actions/action-service';
+import { actionRegistry } from '../actions/action-registry';
 import { advanceTurn } from './game-service';
+
+// Import actions to register them
+import '../actions/index';
 
 /**
  * Turn Service - Manages action queue processing for turns
@@ -235,7 +238,9 @@ export function processActionQueue(
       result = actionHandler.callback(context, userInput.value);
     } else {
       console.log(`🎮 Turn Service: Executing initial run for action ${nextAction.action}`);
+      console.log(`🎮 Turn Service: Action parameters:`, nextAction.parameters);
       result = actionHandler.run(context, { parameters: nextAction.parameters });
+      console.log(`🎮 Turn Service: Action result:`, result);
     }
 
     results.push(result);

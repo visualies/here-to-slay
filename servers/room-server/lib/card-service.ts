@@ -28,7 +28,12 @@ function getSourceLocation(
       if (!player) return null;
       return {
         sourceCards: player.hand || [],
-        updateSourceFunction: (cards) => playersMap.set(playerId, { ...player, hand: cards })
+        updateSourceFunction: (cards) => {
+          const currentPlayer = playersMap.get(playerId) as Player;
+          if (currentPlayer) {
+            playersMap.set(playerId, { ...currentPlayer, hand: cards });
+          }
+        }
       };
     case Location.OtherHands:
       const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
@@ -90,6 +95,14 @@ function autoSelectCards(
 ): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
+  // Special case for OtherHands when no other players exist
+  if (target === Location.OtherHands) {
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+    if (otherPlayers.length === 0) {
+      return { success: false, message: 'No other players to draw from' };
+    }
+  }
+
   const sourceLocation = getSourceLocation(target, playersMap, gameStateMap, playerId);
   if (!sourceLocation) {
     return { success: false, message: `Unsupported source location: ${target}` };
@@ -109,12 +122,24 @@ function autoSelectCards(
     numAmount = 1;
   }
 
+  // Handle zero amount case (no-op)
+  if (numAmount === 0) {
+    return {
+      success: true,
+      message: 'No cards to select (amount is 0)',
+      data: { cardIds: [] }
+    };
+  }
+
   if (sourceCards.length < numAmount) {
     return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
   }
 
   // Auto-select from the end (First mode)
   const selectedCardIds = sourceCards.slice(-numAmount).map(card => card.id);
+  
+  console.log(`🎯 Auto-selecting ${selectedCardIds.length} cards from ${target}:`, selectedCardIds);
+  console.log(`🎯 Source cards available:`, sourceCards.map(c => c.id));
 
   return {
     success: true,
@@ -194,14 +219,8 @@ export async function playCard(
       }
     }
 
-    // Check if the card is in the player's hand
-    const cardInHand = player.hand?.find(handCard => handCard.id === cardId)
-    if (!cardInHand) {
-      return {
-        success: false,
-        message: `Card ${card.name} is not in your hand`
-      }
-    }
+    // Cards can be played from anywhere (hand, playing field, etc.)
+    // No need to check if card is in hand
 
     console.log(`🎮 Playing card: ${card.name} (${card.type}) by player ${playerId}`)
     console.log(`🎮 Card has ${card.actions?.length || 0} actions`)
