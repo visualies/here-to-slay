@@ -1,16 +1,58 @@
-import type { ActionContext, ActionResult, ActionParams } from '../../../shared/types';
+import type { ActionContext, ActionResult, ActionParams, Turn } from '../../../shared/types';
 import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
-import { getParam } from './action-utils';
-import { moveCard } from '../lib/card-service';
+import { getParam, determineSelectionMode } from './action-utils';
+import { selectCards, moveCard } from '../lib/card-service';
+
 
 export function run(context: ActionContext, params?: ActionParams): ActionResult {
   const target = getParam<Location>(params, 'target');
   const destination = getParam<Location>(params, 'destination');
   const amount = getParam<Amount>(params, 'amount');
-  const selection = SelectionMode.First;
 
-  return moveCard(context, target, destination, amount, selection);
+  // Determine selection mode based on target card count
+  const selectionMode = determineSelectionMode(context, target, amount);
+
+  // Step 1: Try to select cards
+  const selection = selectCards(context, target, amount, selectionMode);
+
+  if (selection.needsInput) {
+    // Need user input - return early and wait for user selection
+    return selection.needsInput;
+  }
+
+  if (!selection.selectedCardIds || selection.selectedCardIds.length === 0) {
+    return {
+      success: false,
+      message: 'No cards were selected'
+    };
+  }
+
+  // Step 2: Move the selected cards
+  return moveCard(context, target, destination, selection.selectedCardIds);
 }
 
-registerAction('drawCard', { run });
+export function callback(context: ActionContext, userInput: string[]): ActionResult {
+  // Get the current action to retrieve original parameters
+  // TODO can we make it so the callback retrieves the same context as before just now populated with the response
+  const { gameStateMap } = context;
+  const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
+
+  if (!currentTurn || !currentTurn.action_queue || currentTurn.action_queue.length === 0) {
+    return {
+      success: false,
+      message: 'No current action found for callback'
+    };
+  }
+
+  const currentAction = currentTurn.action_queue[0];
+
+  // Extract original parameters
+  const target = getParam<Location>({ parameters: currentAction.parameters }, 'target');
+  const destination = getParam<Location>({ parameters: currentAction.parameters }, 'destination');
+
+  // Move the user-selected cards
+  return moveCard(context, target, destination, userInput);
+}
+
+registerAction('drawCard', { run, callback });

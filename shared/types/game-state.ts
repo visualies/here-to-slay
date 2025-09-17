@@ -8,4 +8,13 @@ export type GameState = {
   supportStack: Card[];
   monsters: Card[];
   phase: 'waiting' | 'playing' | 'ended';
+  waitingForAction?: {
+    actionId: string;
+    playerId: string;
+    type: 'target' | 'destination' | 'choice';
+    prompt?: string;
+    options?: any[];
+    timeoutAt: number; // Timestamp when action times out
+    timeRemaining?: number; // Calculated time remaining in ms
+  };
 };

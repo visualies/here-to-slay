@@ -1,4 +1,4 @@
-import type { ActionParams } from '../../../shared/types';
+import type { ActionParams, ActionContext, Player, Card } from '../../../shared/types';
 import {
   Location,
   Amount,
@@ -69,5 +69,64 @@ function isCardType(value: unknown): value is CardType {
 
 function isSelectionMode(value: unknown): value is SelectionMode {
   return typeof value === 'string' && Object.values(SelectionMode).includes(value as SelectionMode);
+}
+
+/**
+ * Determine the appropriate selection mode based on available cards vs needed amount
+ * @param context - Action context with game state
+ * @param target - Location to draw cards from
+ * @param amount - Amount of cards needed
+ * @returns SelectionMode.First for auto-selection, DestinationOwner for user choice
+ */
+export function determineSelectionMode(context: ActionContext, target: Location, amount: Amount): SelectionMode {
+  const { playersMap, gameStateMap, playerId } = context;
+
+  // Get available cards from the target location
+  let totalAvailableCards = 0;
+
+  switch (target) {
+    case Location.SupportDeck:
+      const supportStack = gameStateMap.get('supportStack') as Card[] || [];
+      totalAvailableCards = supportStack.length;
+      break;
+    case Location.OwnHand:
+      const player = playersMap.get(playerId) as Player;
+      totalAvailableCards = player?.hand?.length || 0;
+      break;
+    case Location.OtherHands:
+      const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      totalAvailableCards = otherPlayers.reduce((total, player) => {
+        return total + (player.hand?.length || 0);
+      }, 0);
+      break;
+    case Location.OwnParty:
+      const ownPlayer = playersMap.get(playerId) as Player;
+      totalAvailableCards = ownPlayer?.party?.heroes?.filter(hero => hero !== null).length || 0;
+      break;
+    // Add more cases as needed for other locations like discard pile, cache, etc.
+    default:
+      // For unknown locations, default to First mode
+      return SelectionMode.First;
+  }
+
+  // Convert amount to number
+  let numAmount: number;
+  if (amount === Amount.All) {
+    numAmount = totalAvailableCards;
+  } else if (typeof amount === 'number') {
+    numAmount = amount;
+  } else if (typeof amount === 'string' && !isNaN(Number(amount))) {
+    numAmount = Number(amount);
+  } else {
+    numAmount = 1; // Default fallback
+  }
+
+  // If we need more cards than available, or equal, use First mode (auto-select all)
+  if (numAmount >= totalAvailableCards) {
+    return SelectionMode.First;
+  } else {
+    // More cards available than needed - destination owner (current player) should choose
+    return SelectionMode.DestinationOwner;
+  }
 }
 

@@ -2,11 +2,132 @@ import { db } from '../db/client';
 import { eq } from 'drizzle-orm';
 import { cards } from '../db/schema';
 import type { Card, Turn, Action, ActionContext, ActionResult, ActionParams, Player } from '../../../shared/types';
-import { Location, Amount, SelectionMode } from '../../../shared/types';
+import { Location, Amount, SelectionMode, ActionState } from '../../../shared/types';
 import * as Y from 'yjs';
-import { addActionsToQueue } from './turn-service';
+import { addActionsToQueue, processActionQueue } from './turn-service';
 import { addCardToPlayerHand } from '../../../src/lib/players';
 
+/**
+ * Helper function to get source cards and update function for a location
+ */
+function getSourceLocation(
+  target: Location,
+  playersMap: Y.Map<unknown>,
+  gameStateMap: Y.Map<unknown>,
+  playerId: string
+): { sourceCards: Card[], updateSourceFunction: (cards: Card[]) => void } | null {
+  switch (target) {
+    case Location.SupportDeck:
+      const supportStack = gameStateMap.get('supportStack') as Card[] || [];
+      return {
+        sourceCards: supportStack,
+        updateSourceFunction: (cards) => gameStateMap.set('supportStack', cards)
+      };
+    case Location.OwnHand:
+      const player = playersMap.get(playerId) as Player;
+      if (!player) return null;
+      return {
+        sourceCards: player.hand || [],
+        updateSourceFunction: (cards) => playersMap.set(playerId, { ...player, hand: cards })
+      };
+    case Location.OtherHands:
+      const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (otherPlayers.length === 0) return null;
+
+      // For 'first' selection mode, take from the first other player
+      const firstOtherPlayer = otherPlayers[0];
+      return {
+        sourceCards: firstOtherPlayer.hand || [],
+        updateSourceFunction: (cards) => playersMap.set(firstOtherPlayer.id, { ...firstOtherPlayer, hand: cards })
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Select cards from a target location based on selection mode
+ * Returns either the selected card IDs or a request for user input
+ */
+export function selectCards(
+  context: ActionContext,
+  target: Location,
+  amount: Amount,
+  selection: SelectionMode
+): { selectedCardIds?: string[], needsInput?: ActionResult } {
+
+  // For First selection mode, auto-select cards
+  if (selection === SelectionMode.First) {
+    const autoSelected = autoSelectCards(context, target, amount);
+    if (!autoSelected.success) {
+      return { needsInput: autoSelected };
+    }
+    return { selectedCardIds: (autoSelected.data as any)?.cardIds || [] };
+  }
+
+  // For user selection modes, return a generic user input request
+  // The specific UI will be determined by the frontend based on target location and selection mode
+  return {
+    needsInput: {
+      success: false,
+      waitingForInput: {
+        type: 'choice',
+        prompt: `Choose cards to ${selection === SelectionMode.TargetOwner ? 'give up' : 'take'}`,
+        timeoutMs: 30000,
+        // Target owner will be determined by frontend
+      }
+    }
+  };
+}
+
+/**
+ * Auto-select cards using First selection mode
+ */
+function autoSelectCards(
+  context: ActionContext,
+  target: Location,
+  amount: Amount
+): ActionResult {
+  const { playersMap, gameStateMap, playerId } = context;
+
+  const sourceLocation = getSourceLocation(target, playersMap, gameStateMap, playerId);
+  if (!sourceLocation) {
+    return { success: false, message: `Unsupported source location: ${target}` };
+  }
+
+  const { sourceCards } = sourceLocation;
+
+  // Calculate how many cards to select
+  let numAmount: number;
+  if (amount === Amount.All) {
+    numAmount = sourceCards.length;
+  } else if (typeof amount === 'number') {
+    numAmount = amount;
+  } else if (typeof amount === 'string' && !isNaN(Number(amount))) {
+    numAmount = Number(amount);
+  } else {
+    numAmount = 1;
+  }
+
+  if (sourceCards.length < numAmount) {
+    return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
+  }
+
+  // Auto-select from the end (First mode)
+  const selectedCardIds = sourceCards.slice(-numAmount).map(card => card.id);
+
+  return {
+    success: true,
+    message: `Auto-selected ${selectedCardIds.length} cards`,
+    data: { cardIds: selectedCardIds }
+  };
+}
+
+
+
+/**
+ * Direct card move without user input - renamed from original moveCard logic
+ */
 /**
  * Card service for retrieving card data and handling card actions
  */
@@ -87,9 +208,11 @@ export async function playCard(
 
     // Convert card actions to Action format for the turn queue
     const cardActions: Action[] = (card.actions || []).map(action => ({
+      id: `${cardId}-${action.action}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       action: action.action,
       parameters: action.params || [],
-      cardId: cardId
+      cardId: cardId,
+      state: ActionState.Pending
     }))
 
     if (cardActions.length === 0) {
@@ -152,127 +275,78 @@ export async function playCard(
  * @param specificCardId - Optional specific card ID to move (overrides selection mode)
  * @returns ActionResult with success status and data
  */
+/**
+ * Move specific cards from target to destination
+ * This function only handles the actual movement - card selection should be done beforehand
+ */
 export function moveCard(
-  context: ActionContext, 
-  target: Location, 
-  destination: Location, 
-  amount: Amount,
-  selection: SelectionMode = SelectionMode.First,
-  specificCardId?: string
+  context: ActionContext,
+  target: Location,
+  destination: Location,
+  selectedCardIds: string[]
 ): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
-  if (!target || !destination || !amount) {
-    return { success: false, message: 'target, destination, and amount parameters are required' };
+  if (!target || !destination) {
+    return { success: false, message: 'target and destination are required' };
   }
 
-  // Only support 'first' selection mode for now
-  if (selection !== SelectionMode.First) {
-    return { 
-      success: false, 
-      message: `Selection mode '${selection}' is not yet implemented. Only 'first' is supported.` 
-    };
+  if (!selectedCardIds || selectedCardIds.length === 0) {
+    return { success: false, message: 'selectedCardIds is required and must not be empty' };
   }
 
-  console.log(`🎯 Card Service: Moving ${amount} card(s) from ${target} to ${destination} for player ${playerId}`);
+  console.log(`🎯 Card Service: Moving ${selectedCardIds.length} specific card(s) from ${target} to ${destination} for player ${playerId}`);
 
-  // Handle different source locations
-  let sourceCards: Card[] = [];
-  let updateSourceFunction: (cards: Card[]) => void;
-
-  switch (target) {
-    case Location.SupportDeck:
-      sourceCards = gameStateMap.get('supportStack') as Card[] || [];
-      updateSourceFunction = (cards) => gameStateMap.set('supportStack', cards);
-      break;
-    case Location.OwnHand:
-      const player = playersMap.get(playerId) as Player;
-      sourceCards = player?.hand || [];
-      updateSourceFunction = (cards) => {
-        if (player) {
-          playersMap.set(playerId, { ...player, hand: cards });
-        }
-      };
-      break;
-    case Location.OtherHands:
-      // Get all other players' hands combined
-      const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
-
-      if (otherPlayers.length === 0) {
-        return { success: false, message: 'No other players to draw from' };
-      }
-
-      // For 'first' selection mode, take from the first other player
-      const firstOtherPlayer = otherPlayers[0];
-      sourceCards = firstOtherPlayer.hand || [];
-
-      updateSourceFunction = (remainingCards) => {
-        playersMap.set(firstOtherPlayer.id, { ...firstOtherPlayer, hand: remainingCards });
-      };
-      break;
-    default:
-      return { success: false, message: `Unsupported source location: ${target}` };
-  }
-
-  // Check if source has enough cards
-  let numAmount: number;
-  if (amount === Amount.All) {
-    numAmount = sourceCards.length;
-  } else if (typeof amount === 'number') {
-    numAmount = amount;
-  } else if (typeof amount === 'string' && !isNaN(Number(amount))) {
-    numAmount = Number(amount);
-  } else {
-    numAmount = 1; // Default fallback
-  }
-
-  // Handle special case of drawing 0 cards (no-op)
-  if (numAmount === 0) {
-    console.log(`✅ Card Service: No-op - moving 0 cards from ${target} to ${destination} for player ${playerId}`);
-    return {
-      success: true,
-      message: `No-op: moved 0 cards from ${target} to ${destination}`,
-      data: {
-        cards: [],
-        target,
-        destination,
-        amount: 0
-      }
-    };
-  }
-
-  if (sourceCards.length < numAmount) {
-    return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
-  }
-
-  // Draw cards from source
-  const newSourceCards = [...sourceCards];
   const drawnCards: Card[] = [];
 
-  if (specificCardId) {
-    // Find and move the specific card
-    const cardIndex = newSourceCards.findIndex(card => card.id === specificCardId);
-    if (cardIndex === -1) {
-      return { success: false, message: `Card ${specificCardId} not found in ${target}` };
-    }
-    const card = newSourceCards.splice(cardIndex, 1)[0];
-    drawnCards.push(card);
-  } else {
-    // Use selection mode to choose cards
-    for (let i = 0; i < numAmount; i++) {
-      const card = newSourceCards.pop();
-      if (card) {
-        drawnCards.push(card);
+  // Handle card movement based on target location
+  if (target === Location.OtherHands) {
+    // For OtherHands, find cards across all other players
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+
+    for (const cardId of selectedCardIds) {
+      let found = false;
+      for (const otherPlayer of otherPlayers) {
+        const cardIndex = (otherPlayer.hand || []).findIndex(card => card.id === cardId);
+        if (cardIndex !== -1) {
+          const newHand = [...(otherPlayer.hand || [])];
+          const [removedCard] = newHand.splice(cardIndex, 1);
+          drawnCards.push(removedCard);
+
+          // Update the player's hand
+          playersMap.set(otherPlayer.id, { ...otherPlayer, hand: newHand });
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return { success: false, message: `Card ${cardId} not found in any other player's hand` };
       }
     }
+  } else {
+    // For other locations, handle normally
+    const sourceLocation = getSourceLocation(target, playersMap, gameStateMap, playerId);
+    if (!sourceLocation) {
+      return { success: false, message: `Unsupported source location: ${target}` };
+    }
+
+    const { sourceCards, updateSourceFunction } = sourceLocation;
+    const newSourceCards = [...sourceCards];
+
+    for (const cardId of selectedCardIds) {
+      const cardIndex = newSourceCards.findIndex(card => card.id === cardId);
+      if (cardIndex === -1) {
+        return { success: false, message: `Card ${cardId} not found in ${target}` };
+      }
+      const [removedCard] = newSourceCards.splice(cardIndex, 1);
+      drawnCards.push(removedCard);
+    }
+    updateSourceFunction(newSourceCards);
   }
 
   if (drawnCards.length === 0) {
-    return { success: false, message: `Failed to draw cards from ${target}` };
+    return { success: false, message: `Failed to move cards from ${target}` };
   }
-
-  // Update source
-  updateSourceFunction(newSourceCards);
 
   // Handle different destination locations
   switch (destination) {
@@ -331,4 +405,139 @@ export function moveCard(
       amount: drawnCards.length
     }
   };
+}
+
+
+/**
+ * Provide user input for an action that's waiting for feedback
+ */
+export async function provideActionInput(
+  playerId: string,
+  roomId: string,
+  actionId: string,
+  input: any,
+  ydoc: Y.Doc
+): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    console.log(`🎮 Providing input for action ${actionId} from player ${playerId}: ${JSON.stringify(input)}`);
+
+    // Get current turn from Yjs document
+    const gameStateMap = ydoc.getMap('gameState');
+    const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
+
+    if (!currentTurn) {
+      return {
+        success: false,
+        message: 'No active turn found'
+      };
+    }
+
+    // For normal actions, check if it's the player's turn
+    // For target owner selection, allow the target player to respond even if it's not their turn
+    const action = currentTurn.action_queue.find(a => a.id === actionId);
+    if (!action) {
+      return {
+        success: false,
+        message: `Action ${actionId} not found in queue`
+      };
+    }
+
+    // Check player authorization
+    const isPlayersTurn = currentTurn.player_id === playerId;
+
+    if (!isPlayersTurn) {
+      return {
+        success: false,
+        message: `Only player ${currentTurn.player_id} can provide input for this action`
+      };
+    }
+
+    // Find the action index in the queue
+    const actionIndex = currentTurn.action_queue.findIndex(a => a.id === actionId);
+
+    // Check if action is waiting for input
+    if (action.state !== ActionState.WaitingForInput) {
+      return {
+        success: false,
+        message: `Action ${actionId} is not waiting for input (current state: ${action.state})`
+      };
+    }
+
+    // Check if action has timed out
+    if (action.timeoutAt && Date.now() > action.timeoutAt) {
+      return {
+        success: false,
+        message: `Action ${actionId} has timed out`
+      };
+    }
+
+    console.log(`🎮 Applying input ${JSON.stringify(input)} to action ${action.action}`);
+
+    // Add the input to action parameters
+    const updatedAction: Action = {
+      ...action,
+      state: ActionState.Pending, // Reset to pending so it can be processed
+      parameters: [
+        ...action.parameters,
+        {
+          name: 'user_input',
+          type: 'string',
+          value: input
+        }
+      ],
+      // Clear waiting state
+      timeoutAt: undefined,
+      awaitingInput: undefined
+    };
+
+    // Update the action in the queue
+    const updatedQueue = [...currentTurn.action_queue];
+    updatedQueue[actionIndex] = updatedAction;
+
+    const updatedTurn: Turn = {
+      ...currentTurn,
+      action_queue: updatedQueue
+    };
+
+    // Update the turn
+    gameStateMap.set('currentTurn', updatedTurn);
+
+    // Clear waiting status from game state
+    const waitingAction = gameStateMap.get('waitingForAction');
+    if (waitingAction && (waitingAction as any).actionId === actionId) {
+      console.log(`🎮 Clearing waiting status for action ${actionId}`);
+      gameStateMap.delete('waitingForAction');
+    }
+
+    // Get players map for processing
+    const playersMap = ydoc.getMap('players');
+
+    // Resume processing the action queue
+    const result = processActionQueue(playersMap, gameStateMap, playerId, roomId);
+
+    if (!result.success) {
+      return {
+        success: false,
+        message: `Failed to process action after input: ${result.message}`
+      };
+    }
+
+    console.log(`🎮 Successfully provided input for action ${actionId} and resumed processing`);
+
+    return {
+      success: true,
+      message: `Input provided for action ${actionId}`,
+      data: {
+        actionId,
+        input,
+        turnServiceResult: result
+      }
+    };
+  } catch (error) {
+    console.error('Error providing action input:', error);
+    return {
+      success: false,
+      message: 'Failed to provide action input due to server error'
+    };
+  }
 }

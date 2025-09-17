@@ -2,6 +2,7 @@ import type { ActionContext, ActionResult, ActionParams } from '../../../shared/
 
 export interface ActionHandler {
   run: (context: ActionContext, params?: ActionParams) => ActionResult;
+  callback?: (context: ActionContext, userInput: any) => ActionResult;
 }
 
 class ActionRegistry {

@@ -4,7 +4,7 @@ import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, addPlayerToGame } from '../lib/game-service.js'
 import { getActivePlayers } from '../../../src/lib/players.js'
-import { playCard } from '../lib/card-service.js'
+import { playCard, provideActionInput } from '../lib/card-service.js'
 import type { Player } from '../../../shared/types'
 
 export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
@@ -290,6 +290,35 @@ export function createGameRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
       }
     } catch (error) {
       console.error('❌ Play card error:', error)
+      return c.json({ success: false, message: 'Internal server error' }, 500)
+    }
+  })
+
+  // Provide action input - for actions waiting for user feedback
+  router.post('/provide-action-input', async (c) => {
+    try {
+      const { playerId, roomId, actionId, input } = await c.req.json()
+      console.log(`🎮 API: Provide action input from player ${playerId} - action ${actionId} in room ${roomId}`)
+
+      if (!playerId || !roomId || !actionId || input === undefined) {
+        return c.json({ success: false, message: 'playerId, roomId, actionId, and input are required' }, 400)
+      }
+
+      // Get the Yjs document for the room
+      const ydoc = getYDoc(roomId)
+      if (!ydoc) {
+        return c.json({ success: false, message: 'Failed to get room document' }, 500)
+      }
+
+      const result = await provideActionInput(playerId, roomId, actionId, input, ydoc)
+
+      if (result.success) {
+        return c.json(result)
+      } else {
+        return c.json(result, 400)
+      }
+    } catch (error) {
+      console.error('❌ Provide action input error:', error)
       return c.json({ success: false, message: 'Internal server error' }, 500)
     }
   })

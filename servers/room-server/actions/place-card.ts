@@ -54,7 +54,7 @@ export function run(context: ActionContext): ActionResult {
   const amount = Amount.One;
   const selection = SelectionMode.First; // Use first selection mode, specificCardId will override
 
-  return moveCard(context, target, destination, amount, selection, cardId);
+  return moveCard(context, target, destination, [cardId]);
 }
 
 registerAction('placeCard', { run });

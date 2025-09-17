@@ -5,8 +5,10 @@
 export enum SelectionMode {
   // Server-side automatic selection
   First = 'first',
-  
-  // Future implementations (not yet supported)
-  Target = 'target',
-  Destination = 'destination',
+
+  // User input required - target owner chooses
+  TargetOwner = 'target_owner',
+
+  // User input required - destination owner chooses
+  DestinationOwner = 'destination_owner',
 }
