@@ -4,6 +4,7 @@ import * as Y from 'yjs';
 export interface ActionContext {
   roomId: string;
   playerId: string;
+  cardId?: string; // ID of the card that triggered this action
   diceResult: number;
   playersMap: Y.Map<unknown>;
   gameStateMap: Y.Map<unknown>;

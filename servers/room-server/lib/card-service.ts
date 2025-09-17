@@ -62,16 +62,34 @@ export async function playCard(
       }
     }
 
-    console.log(`🎮 Playing card: ${card.name} (${card.type}) by player ${playerId}`)
-    console.log(`🎮 Card has ${card.actions?.length || 0} actions`)
-
     // Get players map from the Yjs document
     const playersMap = ydoc.getMap('players')
+    const player = playersMap.get(playerId) as Player
+
+    if (!player) {
+      return {
+        success: false,
+        message: 'Player not found'
+      }
+    }
+
+    // Check if the card is in the player's hand
+    const cardInHand = player.hand?.find(handCard => handCard.id === cardId)
+    if (!cardInHand) {
+      return {
+        success: false,
+        message: `Card ${card.name} is not in your hand`
+      }
+    }
+
+    console.log(`🎮 Playing card: ${card.name} (${card.type}) by player ${playerId}`)
+    console.log(`🎮 Card has ${card.actions?.length || 0} actions`)
 
     // Convert card actions to Action format for the turn queue
     const cardActions: Action[] = (card.actions || []).map(action => ({
       action: action.action,
-      parameters: action.params || []
+      parameters: action.params || [],
+      cardId: cardId
     }))
 
     if (cardActions.length === 0) {
@@ -137,6 +155,7 @@ export async function playCard(
  * @param destination - Destination location to move cards to
  * @param amount - Number of cards to move
  * @param selection - Selection mode for choosing cards when multiple targets available
+ * @param specificCardId - Optional specific card ID to move (overrides selection mode)
  * @returns ActionResult with success status and data
  */
 export function moveCard(
@@ -144,7 +163,8 @@ export function moveCard(
   target: Location, 
   destination: Location, 
   amount: Amount,
-  selection: SelectionMode = SelectionMode.First
+  selection: SelectionMode = SelectionMode.First,
+  specificCardId?: string
 ): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
@@ -235,10 +255,21 @@ export function moveCard(
   const newSourceCards = [...sourceCards];
   const drawnCards: Card[] = [];
 
-  for (let i = 0; i < numAmount; i++) {
-    const card = newSourceCards.pop();
-    if (card) {
-      drawnCards.push(card);
+  if (specificCardId) {
+    // Find and move the specific card
+    const cardIndex = newSourceCards.findIndex(card => card.id === specificCardId);
+    if (cardIndex === -1) {
+      return { success: false, message: `Card ${specificCardId} not found in ${target}` };
+    }
+    const card = newSourceCards.splice(cardIndex, 1)[0];
+    drawnCards.push(card);
+  } else {
+    // Use selection mode to choose cards
+    for (let i = 0; i < numAmount; i++) {
+      const card = newSourceCards.pop();
+      if (card) {
+        drawnCards.push(card);
+      }
     }
   }
 
@@ -256,6 +287,33 @@ export function moveCard(
       drawnCards.forEach(card => {
         addCardToPlayerHand(playersMap, playerId, card);
       });
+      break;
+    case Location.OwnParty:
+      // Add cards to player party (heroes array)
+      const player = playersMap.get(playerId) as Player;
+      if (player) {
+        const currentParty = player.party;
+        const newHeroes = [...currentParty.heroes];
+        
+        // Add cards to the first available hero slot
+        drawnCards.forEach(card => {
+          const emptySlotIndex = newHeroes.findIndex(hero => hero === null);
+          if (emptySlotIndex !== -1) {
+            newHeroes[emptySlotIndex] = card;
+          } else {
+            // If no empty slots, add to the end (this might need game logic validation)
+            newHeroes.push(card);
+          }
+        });
+        
+        playersMap.set(playerId, {
+          ...player,
+          party: {
+            ...currentParty,
+            heroes: newHeroes
+          }
+        });
+      }
       break;
     case Location.SupportDeck:
       // Add cards back to support stack

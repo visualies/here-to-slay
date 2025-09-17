@@ -108,6 +108,7 @@ export function processActionQueue(
       gameStateMap,
       playerId,
       roomId,
+      cardId: nextAction.cardId,
       diceResult: 0 // Default value, will be set by dice roll actions
     };
 

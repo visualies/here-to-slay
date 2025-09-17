@@ -188,6 +188,68 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     }
   })
 
+  // POST to room endpoint for direct Yjs document manipulation (testing/dev only)
+  router.post('/room/:roomId', async (c) => {
+    // Only allow in test/development environment
+    if (process.env.NODE_ENV === 'production') {
+      return c.json({ error: 'Room manipulation only available in test/development' }, 403)
+    }
+
+    const roomId = c.req.param('roomId')
+    if (!roomId) {
+      return c.json({ error: 'Room ID required' }, 400)
+    }
+
+    try {
+      const { playerId, cardId } = await c.req.json()
+      console.log(`🧪 Adding card ${cardId} to player ${playerId} hand in room ${roomId}`)
+
+      if (!playerId || !cardId) {
+        return c.json({ error: 'playerId and cardId required' }, 400)
+      }
+
+      // Get or load Yjs document
+      const ydoc = getDoc(roomId)
+      const playersMap = ydoc.getMap('players')
+
+      // Get the card from the database
+      const { getCard } = await import('../lib/card-service.js')
+      const card = await getCard(cardId)
+      if (!card) {
+        return c.json({ error: `Card ${cardId} not found` }, 404)
+      }
+
+      // Get player and add card to hand
+      const player = playersMap.get(playerId) as any
+      if (!player) {
+        return c.json({ error: `Player ${playerId} not found` }, 404)
+      }
+
+      const updatedPlayer = {
+        ...player,
+        hand: [...(player.hand || []), card]
+      }
+
+      playersMap.set(playerId, updatedPlayer)
+
+      return c.json({
+        success: true,
+        message: `Card ${card.name} added to player ${playerId} hand`,
+        data: {
+          playerId,
+          cardId,
+          cardName: card.name,
+          handSize: updatedPlayer.hand.length
+        }
+      })
+    } catch (error) {
+      console.error('❌ Room manipulation error:', error)
+      return c.json({ 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }, 500)
+    }
+  })
+
   // List all active rooms with data from Yjs docs
   router.get('/active-rooms', async (c) => {
     try {

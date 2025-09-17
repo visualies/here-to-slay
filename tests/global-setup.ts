@@ -90,8 +90,15 @@ async function globalSetup(_config: FullConfig) {
   return new Promise<void>((resolve) => {
     server.listen(8234, 'localhost', () => {
       // Store server reference for cleanup
-      (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_SERVER__ = server;
-      (global as typeof globalThis & { __TEST_SERVER__: unknown; __TEST_DB__: unknown }).__TEST_DB__ = db;
+      (global as any).__TEST_SERVER__ = server;
+      (global as any).__TEST_DB__ = db;
+      (global as any).__TEST_DOCS__ = docs;
+      
+      // Also store in process.env for cross-process access
+      process.env.__TEST_DOCS_AVAILABLE__ = 'true'
+      
+      console.log('🧪 Test server started with docs Map available')
+      console.log('🧪 Docs Map size:', docs.size)
       
       resolve()
     })
