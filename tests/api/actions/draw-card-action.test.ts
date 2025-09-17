@@ -42,7 +42,7 @@ test.describe('API: Draw Card Action', () => {
     }
   })
 
-  test('should draw 1 card from support deck to own hand', async ({ request }) => {
+  test('should draw 1 card from support deck to own hand @action:drawCard @target:support-deck @destination:own-hand @amount:1', async ({ request }) => {
     // 1. Create test card with draw 1 card action
     const createCardResponse = await request.post('/api/cards/test-card', {
       data: {
@@ -97,7 +97,7 @@ test.describe('API: Draw Card Action', () => {
     expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
   })
 
-  test('should draw 3 cards from support deck to own hand', async ({ request }) => {
+  test('should draw 3 cards from support deck to own hand @action:drawCard @target:support-deck @destination:own-hand @amount:3', async ({ request }) => {
     // 1. Create test card with draw 3 cards action
     const createCardResponse = await request.post('/api/cards/test-card', {
       data: {
@@ -149,7 +149,7 @@ test.describe('API: Draw Card Action', () => {
     expect(finalSupportStackSize).toBe(initialSupportStackSize - 3)
   })
 
-  test('should draw all available cards when requesting more than available from support deck', async ({ request }) => {
+  test('should draw all available cards when requesting more than available from support deck @action:drawCard @target:support-deck @destination:own-hand @amount:excess @behavior:auto-select-all', async ({ request }) => {
     // 1. Get current support stack size
     const initialRoomResponse = await request.get(`/api/room/${roomId}`)
     const initialRoomData = await initialRoomResponse.json()
@@ -200,7 +200,7 @@ test.describe('API: Draw Card Action', () => {
   })
 
 
-  test('should move all available cards when requesting more than available from hand', async ({ request }) => {
+  test('should move all available cards when requesting more than available from hand @action:drawCard @target:own-hand @destination:support-deck @amount:excess @behavior:auto-select-all', async ({ request }) => {
     // 1. Get current hand size
     const initialRoomResponse = await request.get(`/api/room/${roomId}`)
     const initialRoomData = await initialRoomResponse.json()
@@ -250,7 +250,7 @@ test.describe('API: Draw Card Action', () => {
     expect(finalSupportStackSize).toBe(initialSupportStackSize + handSize) // Support stack should have all hand cards
   })
 
-  test('should fail with unsupported location combinations', async ({ request }) => {
+  test('should fail with unsupported location combinations @action:drawCard @target:invalid-location @destination:own-hand @amount:1 @behavior:error', async ({ request }) => {
     // Test unsupported source location (using a location that doesn't exist)
     const createCardResponse = await request.post('/api/cards/test-card', {
       data: {
@@ -287,7 +287,7 @@ test.describe('API: Draw Card Action', () => {
   // === TARGET TESTS (all targets → own-hand) ===
   test.describe('Target Locations (to own-hand)', () => {
 
-    test('should draw from support-deck to own-hand', async ({ request }) => {
+    test('should draw from support-deck to own-hand @action:drawCard @target:support-deck @destination:own-hand @amount:1', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -332,7 +332,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
     })
 
-    test('should draw from own-hand to own-hand (circular - should work)', async ({ request }) => {
+    test('should draw from own-hand to own-hand (circular - should work) @action:drawCard @target:own-hand @destination:own-hand @amount:1 @behavior:circular', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -375,7 +375,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalPlayer.hand.length).toBe(initialHandSize)
     })
 
-    test('should draw from cache to own-hand (now supported)', async ({ request }) => {
+    test('should draw from cache to own-hand (now supported) @action:drawCard @target:cache @destination:own-hand @amount:1 @selection:first', async ({ request }) => {
       // First, add some cards to cache by moving them from support deck
       const addToCacheResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -442,7 +442,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalCacheSize).toBe(initialCacheSize - 1)
     })
 
-    test('should draw from discard-pile to own-hand (now supported)', async ({ request }) => {
+    test('should draw from discard-pile to own-hand (now supported) @action:drawCard @target:discard-pile @destination:own-hand @amount:1', async ({ request }) => {
       // First, add some cards to discard pile by moving them from support deck
       const addToDiscardResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -508,7 +508,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalDiscardSize).toBe(initialDiscardSize - 1)
     })
 
-    test('should draw from other-hands with first selection', async ({ request }) => {
+    test('should draw from other-hands with first selection @action:drawCard @target:other-hands @destination:own-hand @amount:1 @selection:first', async ({ request }) => {
       // First add a second player so there are "other hands"
       const player2Id = 'test-player-2'
       const joinPlayer2Response = await request.post('/api/join-room', {
@@ -610,7 +610,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalPlayer2Hand).toBe(initialPlayer2Hand - 1)
     })
 
-    test('should draw from other-hands with first selection (multiple players)', async ({ request }) => {
+    test('should draw from other-hands with first selection (multiple players) @action:drawCard @target:other-hands @destination:own-hand @amount:1 @selection:first @players:multiple', async ({ request }) => {
       // Add multiple players to test selection modes
       const player2Id = 'test-player-2'
       const player3Id = 'test-player-3'
@@ -679,7 +679,7 @@ test.describe('API: Draw Card Action', () => {
       expect((await playCardResponse.json()).success).toBe(true)
     })
 
-    test('should fail to draw from other-hands when no other players exist', async ({ request }) => {
+    test('should fail to draw from other-hands when no other players exist @action:drawCard @target:other-hands @destination:own-hand @amount:1 @behavior:error @players:none', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -706,7 +706,7 @@ test.describe('API: Draw Card Action', () => {
       expect(playCardBody.message).toContain('No other players to draw from')
     })
 
-    test('should handle drawing from any-hand with user input (single player restriction)', async ({ request }) => {
+    test('should handle drawing from any-hand with user input (single player restriction) @action:drawCard @target:any-hand @destination:own-hand @amount:2 @selection:destination-owner @behavior:user-input @validation:single-player', async ({ request }) => {
       // First add two more players so there are multiple "other hands"
       const player2Id = 'test-player-2'
       const player3Id = 'test-player-3'
@@ -865,7 +865,7 @@ test.describe('API: Draw Card Action', () => {
       }
     })
 
-    test('should fail when drawing from any-hand with cards from multiple players', async ({ request }) => {
+    test('should fail when drawing from any-hand with cards from multiple players @action:drawCard @target:any-hand @destination:own-hand @amount:2 @selection:destination-owner @behavior:user-input @validation:multi-player-error', async ({ request }) => {
       // First add two more players so there are multiple "other hands"
       const player2Id = 'test-player-2'
       const player3Id = 'test-player-3'
@@ -1001,7 +1001,7 @@ test.describe('API: Draw Card Action', () => {
       expect(inputResponseBody.message).toContain('all selected cards must come from the same player')
     })
 
-    test('should handle user input when drawing from other-hands with destination owner selection', async ({ request }) => {
+    test('should handle user input when drawing from other-hands with destination owner selection @action:drawCard @target:other-hands @destination:own-hand @amount:1 @selection:destination-owner @behavior:user-input', async ({ request }) => {
       // First add a second player so there are "other hands"
       const player2Id = 'test-player-2'
       const joinPlayer2Response = await request.post('/api/join-room', {
@@ -1151,7 +1151,7 @@ test.describe('API: Draw Card Action', () => {
   // === DESTINATION TESTS (support-deck → all destinations) ===
   test.describe('Destination Locations (from support-deck)', () => {
 
-    test('should move from support-deck to own-hand', async ({ request }) => {
+    test('should move from support-deck to own-hand @action:drawCard @target:support-deck @destination:own-hand @amount:1', async ({ request }) => {
       // This is the same as our basic test, but in the destination test group
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -1196,7 +1196,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
     })
 
-    test('should move from support-deck to support-deck (circular - should work)', async ({ request }) => {
+    test('should move from support-deck to support-deck (circular - should work) @action:drawCard @target:support-deck @destination:support-deck @amount:1 @behavior:circular', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1237,7 +1237,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize)
     })
 
-    test('should move from support-deck to cache (now supported)', async ({ request }) => {
+    test('should move from support-deck to cache (now supported) @action:drawCard @target:support-deck @destination:cache @amount:1', async ({ request }) => {
       // Get initial state
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()
@@ -1279,7 +1279,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
     })
 
-    test('should move from support-deck to discard-pile (now supported)', async ({ request }) => {
+    test('should move from support-deck to discard-pile (now supported) @action:drawCard @target:support-deck @destination:discard-pile @amount:1', async ({ request }) => {
       // Get initial state
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()
@@ -1325,7 +1325,7 @@ test.describe('API: Draw Card Action', () => {
   // === AMOUNT TESTS (support-deck → own-hand with different amounts) ===
   test.describe('Amount Variations (support-deck → own-hand)', () => {
 
-    test('should draw 0 cards (no-op)', async ({ request }) => {
+    test('should draw 0 cards (no-op) @action:drawCard @target:support-deck @destination:own-hand @amount:0 @behavior:no-op', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1370,7 +1370,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize)
     })
 
-    test('should draw 2 cards', async ({ request }) => {
+    test('should draw 2 cards @action:drawCard @target:support-deck @destination:own-hand @amount:2', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1414,7 +1414,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
     })
 
-    test('should draw 5 cards (maximum numeric amount)', async ({ request }) => {
+    test('should draw 5 cards (maximum numeric amount) @action:drawCard @target:support-deck @destination:own-hand @amount:5', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1464,7 +1464,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 5)
     })
 
-    test('should draw all available cards with amount "all"', async ({ request }) => {
+    test('should draw all available cards with amount "all" @action:drawCard @target:support-deck @destination:own-hand @amount:all', async ({ request }) => {
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1509,7 +1509,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(0)
     })
 
-    test('should draw all available cards when requesting more than available', async ({ request }) => {
+    test('should draw all available cards when requesting more than available @action:drawCard @target:support-deck @destination:own-hand @amount:excess @behavior:auto-select-all', async ({ request }) => {
       // First check how many cards are available
       const roomResponse = await request.get(`/api/room/${roomId}`)
       const roomData = await roomResponse.json()
@@ -1562,7 +1562,7 @@ test.describe('API: Draw Card Action', () => {
   })
 
   test.describe('Additional Target Locations', () => {
-    test('should draw from cache to own-hand with selection', async ({ request }) => {
+    test('should draw from cache to own-hand with selection @action:drawCard @target:cache @destination:own-hand @amount:2 @selection:destination-owner @behavior:user-input', async ({ request }) => {
       // First, add some cards to cache by moving them from support deck
       const addToCacheResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -1670,7 +1670,7 @@ test.describe('API: Draw Card Action', () => {
       }
     })
 
-    test('should draw from cache to own-hand with auto-selection when fewer cards available', async ({ request }) => {
+    test('should draw from cache to own-hand with auto-selection when fewer cards available @action:drawCard @target:cache @destination:own-hand @amount:excess @behavior:auto-select-all', async ({ request }) => {
       // First, add some cards to cache by moving them from support deck
       const addToCacheResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -1736,7 +1736,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalCacheSize).toBe(0) // Cache should be empty
     })
 
-    test('should draw from discard-pile to own-hand', async ({ request }) => {
+    test('should draw from discard-pile to own-hand @action:drawCard @target:discard-pile @destination:own-hand @amount:1', async ({ request }) => {
       // First, add some cards to discard pile by moving them from support deck
       const addToDiscardResponse = await request.post('/api/cards/test-card', {
         data: {
@@ -1804,7 +1804,7 @@ test.describe('API: Draw Card Action', () => {
   })
 
   test.describe('Additional Destination Locations', () => {
-    test('should draw from support-deck to own-party', async ({ request }) => {
+    test('should draw from support-deck to own-party @action:drawCard @target:support-deck @destination:own-party @amount:1', async ({ request }) => {
       // Get initial state
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()
@@ -1850,7 +1850,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
     })
 
-    test('should draw from support-deck to cache', async ({ request }) => {
+    test('should draw from support-deck to cache @action:drawCard @target:support-deck @destination:cache @amount:1', async ({ request }) => {
       // Get initial state
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()
@@ -1894,7 +1894,7 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
     })
 
-    test('should draw from support-deck to discard-pile', async ({ request }) => {
+    test('should draw from support-deck to discard-pile @action:drawCard @target:support-deck @destination:discard-pile @amount:1', async ({ request }) => {
       // Get initial state
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()

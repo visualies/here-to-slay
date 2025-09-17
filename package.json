@@ -13,6 +13,9 @@
     "dice-server": "tsx servers/dice-server/dice-server.ts",
     "stop": "pkill -f 'tsx servers' && pkill -f 'next dev' && pkill -f 'node.*9323' && lsof -ti:9323 | xargs kill -9 2>/dev/null || true && sleep 1 && lsof -ti:9323 | xargs kill -9 2>/dev/null || true && echo 'All development servers stopped'",
     "test": "playwright test",
+    "test:unit": "jest",
+    "test:unit:watch": "jest --watch",
+    "test:unit:coverage": "jest --coverage",
     "test:api": "playwright test --project=api --reporter=list",
     "test:api:report": "playwright test --project=api --reporter=html && npx playwright show-report",
     "test:api:single": "playwright test --project=api",
@@ -73,6 +76,7 @@
     "jest": "^30.1.3",
     "supertest": "^7.1.4",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.2",
     "tsx": "^4.20.5",
     "typescript": "^5"
   }
