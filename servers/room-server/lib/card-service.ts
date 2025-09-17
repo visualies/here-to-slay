@@ -111,6 +111,170 @@ function getSourceLocation(
         sourceCards: discardPile,
         updateSourceFunction: (cards) => gameStateMap.set('discardPile', cards)
       };
+    case Location.OwnParty:
+      const ownPlayer = playersMap.get(playerId) as Player;
+      if (!ownPlayer) return null;
+
+      // Collect all cards from own party (leader + heroes)
+      const ownPartyCards: Card[] = [];
+      if (ownPlayer.party.leader) {
+        ownPartyCards.push({ ...ownPlayer.party.leader, _partyRole: 'leader' } as Card & { _partyRole: string });
+      }
+      ownPlayer.party.heroes.forEach((hero, index) => {
+        if (hero) {
+          ownPartyCards.push({ ...hero, _partyRole: `hero-${index}` } as Card & { _partyRole: string });
+        }
+      });
+
+      return {
+        sourceCards: ownPartyCards,
+        updateSourceFunction: (remainingCards) => {
+          const currentPlayer = playersMap.get(playerId) as Player;
+          if (!currentPlayer) return;
+
+          // Rebuild party structure from remaining cards
+          let newLeader: Card | null = null;
+          const newHeroes: (Card | null)[] = [null, null, null];
+
+          // Place remaining cards back in their positions
+          remainingCards.forEach(card => {
+            const role = (card as Card & { _partyRole: string })._partyRole;
+            if (role === 'leader') {
+              newLeader = card;
+            } else if (role.startsWith('hero-')) {
+              const heroIndex = parseInt(role.split('-')[1]);
+              newHeroes[heroIndex] = card;
+            }
+          });
+
+          playersMap.set(playerId, {
+            ...currentPlayer,
+            party: {
+              leader: newLeader,
+              heroes: newHeroes
+            }
+          });
+        }
+      };
+    case Location.AnyParty:
+      const anyPartyPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (anyPartyPlayers.length === 0) return null;
+
+      // Collect all cards from all other players' parties for selection
+      // but the user must select all cards from the same player
+      const allOtherPartyCards = anyPartyPlayers.flatMap(player => {
+        const partyCards: (Card & { _playerId: string; _partyRole: string })[] = [];
+        if (player.party.leader) {
+          partyCards.push({ ...player.party.leader, _playerId: player.id, _partyRole: 'leader' });
+        }
+        player.party.heroes.forEach((hero, index) => {
+          if (hero) {
+            partyCards.push({ ...hero, _playerId: player.id, _partyRole: `hero-${index}` });
+          }
+        });
+        return partyCards;
+      });
+
+      return {
+        sourceCards: allOtherPartyCards,
+        updateSourceFunction: (cards) => {
+          // Group cards by player and update each player's party
+          const cardsByPlayer = new Map<string, (Card & { _partyRole: string })[]>();
+          for (const card of cards) {
+            const pid = (card as Card & { _playerId: string })._playerId;
+            if (!cardsByPlayer.has(pid)) {
+              cardsByPlayer.set(pid, []);
+            }
+            cardsByPlayer.get(pid)!.push(card as Card & { _partyRole: string });
+          }
+
+          // Update each player's party
+          for (const [pid, playerCards] of cardsByPlayer) {
+            const player = anyPartyPlayers.find(p => p.id === pid);
+            if (player) {
+              let newLeader = player.party.leader;
+              const newHeroes = [...player.party.heroes];
+
+              // Remove selected cards
+              playerCards.forEach(card => {
+                if (card._partyRole === 'leader') {
+                  newLeader = null;
+                } else if (card._partyRole.startsWith('hero-')) {
+                  const heroIndex = parseInt(card._partyRole.split('-')[1]);
+                  newHeroes[heroIndex] = null;
+                }
+              });
+
+              playersMap.set(pid, {
+                ...player,
+                party: {
+                  leader: newLeader,
+                  heroes: newHeroes
+                }
+              });
+            }
+          }
+        }
+      };
+    case Location.OtherParties:
+      const otherPartyPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (otherPartyPlayers.length === 0) return null;
+
+      // For OtherParties, we can take from any combination of players
+      const allOtherPartiesCards = otherPartyPlayers.flatMap(player => {
+        const partyCards: (Card & { _playerId: string; _partyRole: string })[] = [];
+        if (player.party.leader) {
+          partyCards.push({ ...player.party.leader, _playerId: player.id, _partyRole: 'leader' });
+        }
+        player.party.heroes.forEach((hero, index) => {
+          if (hero) {
+            partyCards.push({ ...hero, _playerId: player.id, _partyRole: `hero-${index}` });
+          }
+        });
+        return partyCards;
+      });
+
+      return {
+        sourceCards: allOtherPartiesCards,
+        updateSourceFunction: (cards) => {
+          // Group cards by player and update each player's party
+          const cardsByPlayer = new Map<string, (Card & { _partyRole: string })[]>();
+          for (const card of cards) {
+            const pid = (card as Card & { _playerId: string })._playerId;
+            if (!cardsByPlayer.has(pid)) {
+              cardsByPlayer.set(pid, []);
+            }
+            cardsByPlayer.get(pid)!.push(card as Card & { _partyRole: string });
+          }
+
+          // Update each player's party
+          for (const [pid, playerCards] of cardsByPlayer) {
+            const player = otherPartyPlayers.find(p => p.id === pid);
+            if (player) {
+              let newLeader = player.party.leader;
+              const newHeroes = [...player.party.heroes];
+
+              // Remove selected cards
+              playerCards.forEach(card => {
+                if (card._partyRole === 'leader') {
+                  newLeader = null;
+                } else if (card._partyRole.startsWith('hero-')) {
+                  const heroIndex = parseInt(card._partyRole.split('-')[1]);
+                  newHeroes[heroIndex] = null;
+                }
+              });
+
+              playersMap.set(pid, {
+                ...player,
+                party: {
+                  leader: newLeader,
+                  heroes: newHeroes
+                }
+              });
+            }
+          }
+        }
+      };
     default:
       return null;
   }
@@ -396,7 +560,7 @@ export function moveCard(
   if (target === Location.AnyHand) {
     const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
     const playerCardMap = new Map<string, string[]>();
-    
+
     // Group selected cards by player
     for (const cardId of selectedCardIds) {
       let found = false;
@@ -415,12 +579,55 @@ export function moveCard(
         return { success: false, message: `Card ${cardId} not found in any other player's hand` };
       }
     }
-    
+
     // Check if all cards come from the same player
     if (playerCardMap.size > 1) {
-      return { 
-        success: false, 
-        message: 'For AnyHand, all selected cards must come from the same player\'s hand' 
+      return {
+        success: false,
+        message: 'For AnyHand, all selected cards must come from the same player\'s hand'
+      };
+    }
+  }
+
+  // Special validation for AnyParty: all selected cards must come from the same player
+  if (target === Location.AnyParty) {
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+    const playerCardMap = new Map<string, string[]>();
+
+    // Group selected cards by player
+    for (const cardId of selectedCardIds) {
+      let found = false;
+      for (const player of otherPlayers) {
+        // Check leader
+        if (player.party.leader && player.party.leader.id === cardId) {
+          if (!playerCardMap.has(player.id)) {
+            playerCardMap.set(player.id, []);
+          }
+          playerCardMap.get(player.id)!.push(cardId);
+          found = true;
+          break;
+        }
+        // Check heroes
+        const heroCard = player.party.heroes.find(hero => hero && hero.id === cardId);
+        if (heroCard) {
+          if (!playerCardMap.has(player.id)) {
+            playerCardMap.set(player.id, []);
+          }
+          playerCardMap.get(player.id)!.push(cardId);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return { success: false, message: `Card ${cardId} not found in any other player's party` };
+      }
+    }
+
+    // Check if all cards come from the same player
+    if (playerCardMap.size > 1) {
+      return {
+        success: false,
+        message: 'For AnyParty, all selected cards must come from the same player\'s party'
       };
     }
   }
@@ -436,7 +643,7 @@ export function moveCard(
       let found = false;
       // Get fresh player data from the map for each card
       const currentOtherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
-      
+
       for (const otherPlayer of currentOtherPlayers) {
         const cardIndex = (otherPlayer.hand || []).findIndex(card => card.id === cardId);
         if (cardIndex !== -1) {
@@ -452,6 +659,52 @@ export function moveCard(
       }
       if (!found) {
         return { success: false, message: `Card ${cardId} not found in any other player's hand` };
+      }
+    }
+  } else if (target === Location.AnyParty || target === Location.OtherParties) {
+    // For AnyParty and OtherParties, find cards across all other players' parties
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+
+    for (const cardId of selectedCardIds) {
+      let found = false;
+      // Get fresh player data from the map for each card
+      const currentOtherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+
+      for (const otherPlayer of currentOtherPlayers) {
+        let removedCard: Card | null = null;
+        let newLeader = otherPlayer.party.leader;
+        const newHeroes = [...otherPlayer.party.heroes];
+
+        // Check if card is the leader
+        if (otherPlayer.party.leader && otherPlayer.party.leader.id === cardId) {
+          removedCard = otherPlayer.party.leader;
+          newLeader = null;
+          found = true;
+        } else {
+          // Check if card is in heroes
+          const heroIndex = otherPlayer.party.heroes.findIndex(hero => hero && hero.id === cardId);
+          if (heroIndex !== -1) {
+            removedCard = otherPlayer.party.heroes[heroIndex];
+            newHeroes[heroIndex] = null;
+            found = true;
+          }
+        }
+
+        if (found && removedCard) {
+          drawnCards.push(removedCard);
+          // Update the player's party
+          playersMap.set(otherPlayer.id, {
+            ...otherPlayer,
+            party: {
+              leader: newLeader,
+              heroes: newHeroes
+            }
+          });
+          break;
+        }
+      }
+      if (!found) {
+        return { success: false, message: `Card ${cardId} not found in any other player's party` };
       }
     }
   } else {
@@ -528,6 +781,94 @@ export function moveCard(
       // Add cards to discard pile
       const currentDiscardPile = gameStateMap.get('discardPile') as Card[] || [];
       gameStateMap.set('discardPile', [...currentDiscardPile, ...drawnCards]);
+      break;
+    case Location.AnyHand:
+      // Add cards to any other player's hand (for simplicity, add to first available player)
+      const availablePlayersForHand = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (availablePlayersForHand.length === 0) {
+        return { success: false, message: 'No other players available to receive cards in hand' };
+      }
+      // Add all cards to the first available player's hand
+      const targetHandPlayer = availablePlayersForHand[0];
+      drawnCards.forEach(card => {
+        addCardToPlayerHand(playersMap, targetHandPlayer.id, card);
+      });
+      break;
+    case Location.OtherHands:
+      // Add cards to other players' hands (distribute evenly)
+      const otherPlayersForHand = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (otherPlayersForHand.length === 0) {
+        return { success: false, message: 'No other players available to receive cards in hand' };
+      }
+      // Distribute cards evenly among other players
+      drawnCards.forEach((card, index) => {
+        const targetPlayer = otherPlayersForHand[index % otherPlayersForHand.length];
+        addCardToPlayerHand(playersMap, targetPlayer.id, card);
+      });
+      break;
+    case Location.AnyParty:
+      // Add cards to any other player's party (for simplicity, add to first available player)
+      const availablePlayersForParty = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (availablePlayersForParty.length === 0) {
+        return { success: false, message: 'No other players available to receive cards in party' };
+      }
+      // Add all cards to the first available player's party
+      const targetPartyPlayer = availablePlayersForParty[0];
+      const targetPlayer = playersMap.get(targetPartyPlayer.id) as Player;
+      if (targetPlayer) {
+        const currentParty = targetPlayer.party;
+        const newHeroes = [...currentParty.heroes];
+
+        drawnCards.forEach(card => {
+          const emptySlotIndex = newHeroes.findIndex(hero => hero === null);
+          if (emptySlotIndex !== -1) {
+            newHeroes[emptySlotIndex] = card;
+          } else {
+            // If no empty slots, add to the end
+            newHeroes.push(card);
+          }
+        });
+
+        playersMap.set(targetPartyPlayer.id, {
+          ...targetPlayer,
+          party: {
+            ...currentParty,
+            heroes: newHeroes
+          }
+        });
+      }
+      break;
+    case Location.OtherParties:
+      // Add cards to other players' parties (distribute evenly)
+      const otherPlayersForParty = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      if (otherPlayersForParty.length === 0) {
+        return { success: false, message: 'No other players available to receive cards in party' };
+      }
+      // Distribute cards evenly among other players' parties
+      drawnCards.forEach((card, index) => {
+        const targetOtherPlayer = otherPlayersForParty[index % otherPlayersForParty.length];
+        const currentPlayer = playersMap.get(targetOtherPlayer.id) as Player;
+        if (currentPlayer) {
+          const currentParty = currentPlayer.party;
+          const newHeroes = [...currentParty.heroes];
+
+          const emptySlotIndex = newHeroes.findIndex(hero => hero === null);
+          if (emptySlotIndex !== -1) {
+            newHeroes[emptySlotIndex] = card;
+          } else {
+            // If no empty slots, add to the end
+            newHeroes.push(card);
+          }
+
+          playersMap.set(targetOtherPlayer.id, {
+            ...currentPlayer,
+            party: {
+              ...currentParty,
+              heroes: newHeroes
+            }
+          });
+        }
+      });
       break;
     default:
       return { success: false, message: `Unsupported destination location: ${destination}` };

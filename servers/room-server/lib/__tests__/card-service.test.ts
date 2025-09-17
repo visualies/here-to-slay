@@ -16,14 +16,16 @@ const createMockCard = (id: string, name: string = `Card ${id}`): Card => ({
 });
 
 // Mock player data
-const createMockPlayer = (id: string, hand: Card[] = [], party: { heroes: (Card | null)[] } = { heroes: [null, null, null] }): Player => ({
+const createMockPlayer = (id: string, hand: Card[] = [], party: { leader: Card | null; heroes: (Card | null)[] } = { leader: null, heroes: [null, null, null] }): Player => ({
   id,
   name: `Player ${id}`,
   color: 'blue',
+  lastSeen: Date.now(),
+  joinTime: Date.now(),
   hand,
+  deck: [],
   party,
-  rolls: [],
-  isConnected: true
+  actionPoints: 0
 });
 
 // Helper to create ActionContext
@@ -56,7 +58,7 @@ const createActionContext = (
 };
 
 describe('moveCard', () => {
-  let card1: Card, card2: Card, card3: Card, card4: Card;
+  let card1: Card, card2: Card, card3: Card, card4: Card, card5: Card, card6: Card, card7: Card, card8: Card;
   let player1: Player, player2: Player, player3: Player;
 
   beforeEach(() => {
@@ -64,10 +66,23 @@ describe('moveCard', () => {
     card2 = createMockCard('card-2', 'Test Card 2');
     card3 = createMockCard('card-3', 'Test Card 3');
     card4 = createMockCard('card-4', 'Test Card 4');
+    card5 = createMockCard('card-5', 'Test Card 5');
+    card6 = createMockCard('card-6', 'Test Card 6');
+    card7 = createMockCard('card-7', 'Test Card 7');
+    card8 = createMockCard('card-8', 'Test Card 8');
 
-    player1 = createMockPlayer('player-1', [card1, card2]);
-    player2 = createMockPlayer('player-2', [card3]);
-    player3 = createMockPlayer('player-3', [card4]);
+    player1 = createMockPlayer('player-1', [card1, card2], {
+      leader: card5,
+      heroes: [card6, null, null]
+    });
+    player2 = createMockPlayer('player-2', [card3], {
+      leader: card7,
+      heroes: [card8, null, null]
+    });
+    player3 = createMockPlayer('player-3', [card4], {
+      leader: null,
+      heroes: [null, null, null]
+    });
   });
 
   describe('Input validation', () => {
@@ -628,6 +643,366 @@ describe('moveCard', () => {
       expect(result.success).toBe(true);
       const updatedPlayer = context.playersMap.get('player-1') as Player;
       expect(updatedPlayer.party.heroes[0]).toEqual(card3);
+    });
+  });
+
+  describe('NEW SOURCES: Party locations', () => {
+    describe('Move from OwnParty', () => {
+      it('should successfully move leader from own party to cache', () => {
+        const context = createActionContext('player-1', [player1], { cache: [] });
+
+        const result = moveCard(context, Location.OwnParty, Location.Cache, ['card-5']);
+
+        expect(result.success).toBe(true);
+        const updatedPlayer = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer.party.leader).toBeNull();
+
+        const cache = context.gameStateMap.get('cache') as Card[];
+        expect(cache).toHaveLength(1);
+        expect(cache[0].id).toBe('card-5');
+      });
+
+      it('should successfully move hero from own party to cache', () => {
+        const context = createActionContext('player-1', [player1], { cache: [] });
+
+        const result = moveCard(context, Location.OwnParty, Location.Cache, ['card-6']);
+
+        expect(result.success).toBe(true);
+        const updatedPlayer = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer.party.heroes[0]).toBeNull();
+
+        const cache = context.gameStateMap.get('cache') as Card[];
+        expect(cache).toHaveLength(1);
+        expect(cache[0].id).toBe('card-6');
+      });
+
+      it('should fail when card is not found in own party', () => {
+        const context = createActionContext('player-1', [player1]);
+
+        const result = moveCard(context, Location.OwnParty, Location.Cache, ['nonexistent-card']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Card nonexistent-card not found in own-party');
+      });
+    });
+
+    describe('Move from AnyParty', () => {
+      it('should successfully move cards from another player\'s party when all cards are from same player', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.AnyParty, Location.OwnHand, ['card-7']);
+
+        expect(result.success).toBe(true);
+        expect(result.data?.cards[0].id).toBe('card-7');
+
+        // Check that card was removed from player2's party
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        expect(updatedPlayer2.party.leader).toBeNull();
+
+        // Check that card was added to player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(3);
+        expect(updatedPlayer1.hand.some(card => card.id === 'card-7')).toBe(true);
+      });
+
+      it('should fail when cards are from different players\' parties', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.AnyParty, Location.OwnHand, ['card-7', 'card-6']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('For AnyParty, all selected cards must come from the same player\'s party');
+      });
+
+      it('should fail when card is not found in any other player\'s party', () => {
+        const context = createActionContext('player-1', [player1, player2]);
+
+        const result = moveCard(context, Location.AnyParty, Location.OwnHand, ['card-5']); // card-5 is in player1's own party
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Card card-5 not found in any other player\'s party');
+      });
+    });
+
+    describe('Move from OtherParties', () => {
+      it('should successfully move cards from other players\' parties', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.OtherParties, Location.OwnHand, ['card-7', 'card-8']);
+
+        expect(result.success).toBe(true);
+        expect(result.data?.cards).toHaveLength(2);
+
+        // Check that cards were removed from player2's party
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        expect(updatedPlayer2.party.leader).toBeNull();
+        expect(updatedPlayer2.party.heroes[0]).toBeNull();
+
+        // Check that cards were added to player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(4);
+      });
+
+      it('should fail when card is not found in any other player\'s party', () => {
+        const context = createActionContext('player-1', [player1, player2]);
+
+        const result = moveCard(context, Location.OtherParties, Location.OwnHand, ['nonexistent-card']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('Card nonexistent-card not found in any other player\'s party');
+      });
+    });
+  });
+
+  describe('NEW DESTINATIONS: Hand and Party locations', () => {
+    describe('Move to AnyHand', () => {
+      it('should successfully move cards to any other player\'s hand', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.OwnHand, Location.AnyHand, ['card-1']);
+
+        expect(result.success).toBe(true);
+
+        // Check that card was removed from player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(1);
+        expect(updatedPlayer1.hand[0].id).toBe('card-2');
+
+        // Check that card was added to another player's hand (should be player2, the first available)
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        expect(updatedPlayer2.hand).toHaveLength(2);
+        expect(updatedPlayer2.hand.some(card => card.id === 'card-1')).toBe(true);
+      });
+
+      it('should fail when no other players available', () => {
+        const context = createActionContext('player-1', [player1]); // Only one player
+
+        const result = moveCard(context, Location.OwnHand, Location.AnyHand, ['card-1']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No other players available to receive cards in hand');
+      });
+    });
+
+    describe('Move to OtherHands', () => {
+      it('should successfully distribute cards to other players\' hands', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.OwnHand, Location.OtherHands, ['card-1', 'card-2']);
+
+        expect(result.success).toBe(true);
+
+        // Check that cards were removed from player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(0);
+
+        // Check that cards were distributed to other players
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        const updatedPlayer3 = context.playersMap.get('player-3') as Player;
+
+        const totalCardsInOtherHands = updatedPlayer2.hand.length + updatedPlayer3.hand.length;
+        expect(totalCardsInOtherHands).toBe(4); // 2 original + 2 distributed
+      });
+
+      it('should fail when no other players available', () => {
+        const context = createActionContext('player-1', [player1]); // Only one player
+
+        const result = moveCard(context, Location.OwnHand, Location.OtherHands, ['card-1']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No other players available to receive cards in hand');
+      });
+    });
+
+    describe('Move to AnyParty', () => {
+      it('should successfully move cards to any other player\'s party', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.OwnHand, Location.AnyParty, ['card-1']);
+
+        expect(result.success).toBe(true);
+
+        // Check that card was removed from player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(1);
+
+        // Check that card was added to another player's party (should be player2, the first available)
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        expect(updatedPlayer2.party.heroes[1]).toEqual(card1); // Should fill first empty slot
+      });
+
+      it('should fail when no other players available', () => {
+        const context = createActionContext('player-1', [player1]); // Only one player
+
+        const result = moveCard(context, Location.OwnHand, Location.AnyParty, ['card-1']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No other players available to receive cards in party');
+      });
+    });
+
+    describe('Move to OtherParties', () => {
+      it('should successfully distribute cards to other players\' parties', () => {
+        const context = createActionContext('player-1', [player1, player2, player3]);
+
+        const result = moveCard(context, Location.OwnHand, Location.OtherParties, ['card-1', 'card-2']);
+
+        expect(result.success).toBe(true);
+
+        // Check that cards were removed from player1's hand
+        const updatedPlayer1 = context.playersMap.get('player-1') as Player;
+        expect(updatedPlayer1.hand).toHaveLength(0);
+
+        // Check that cards were distributed to other players' parties
+        const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+        const updatedPlayer3 = context.playersMap.get('player-3') as Player;
+
+        // Player2 should have card-1 in second hero slot, Player3 should have card-2 in first hero slot
+        expect(updatedPlayer2.party.heroes[1]).toEqual(card1);
+        expect(updatedPlayer3.party.heroes[0]).toEqual(card2);
+      });
+
+      it('should fail when no other players available', () => {
+        const context = createActionContext('player-1', [player1]); // Only one player
+
+        const result = moveCard(context, Location.OwnHand, Location.OtherParties, ['card-1']);
+
+        expect(result.success).toBe(false);
+        expect(result.message).toBe('No other players available to receive cards in party');
+      });
+    });
+  });
+
+  describe('ALL NEW COMBINATIONS: Party sources to all destinations', () => {
+    it('should move from OwnParty to AnyHand', () => {
+      const context = createActionContext('player-1', [player1, player2]);
+
+      const result = moveCard(context, Location.OwnParty, Location.AnyHand, ['card-5']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.hand.some(card => card.id === 'card-5')).toBe(true);
+    });
+
+    it('should move from OwnParty to OtherHands', () => {
+      const context = createActionContext('player-1', [player1, player2]);
+
+      const result = moveCard(context, Location.OwnParty, Location.OtherHands, ['card-5']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.hand.some(card => card.id === 'card-5')).toBe(true);
+    });
+
+    it('should move from OwnParty to AnyParty', () => {
+      const context = createActionContext('player-1', [player1, player2]);
+
+      const result = moveCard(context, Location.OwnParty, Location.AnyParty, ['card-5']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.heroes[1]).toEqual(card5);
+    });
+
+    it('should move from OwnParty to OtherParties', () => {
+      const context = createActionContext('player-1', [player1, player2]);
+
+      const result = moveCard(context, Location.OwnParty, Location.OtherParties, ['card-5']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.heroes[1]).toEqual(card5);
+    });
+
+    it('should move from AnyParty to AnyHand', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.AnyParty, Location.AnyHand, ['card-7']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.hand.some(card => card.id === 'card-7')).toBe(true);
+    });
+
+    it('should move from AnyParty to OtherHands', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.AnyParty, Location.OtherHands, ['card-7']);
+
+      expect(result.success).toBe(true);
+      // Card should be distributed to other players' hands
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      const updatedPlayer3 = context.playersMap.get('player-3') as Player;
+      const cardFound = updatedPlayer2.hand.some(card => card.id === 'card-7') ||
+                       updatedPlayer3.hand.some(card => card.id === 'card-7');
+      expect(cardFound).toBe(true);
+    });
+
+    it('should move from AnyParty to AnyParty', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.AnyParty, Location.AnyParty, ['card-7']);
+
+      expect(result.success).toBe(true);
+      // Card should move from one player's party to another's
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.leader).toBeNull(); // Removed from player2
+      expect(updatedPlayer2.party.heroes[1]).toEqual(card7); // Added back to player2 (first available)
+    });
+
+    it('should move from AnyParty to OtherParties', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.AnyParty, Location.OtherParties, ['card-7']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.leader).toBeNull(); // Removed from leader position
+    });
+
+    it('should move from OtherParties to AnyHand', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.OtherParties, Location.AnyHand, ['card-7']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.hand.some(card => card.id === 'card-7')).toBe(true);
+    });
+
+    it('should move from OtherParties to OtherHands', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.OtherParties, Location.OtherHands, ['card-7']);
+
+      expect(result.success).toBe(true);
+      // Card should be distributed among other players' hands
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      const updatedPlayer3 = context.playersMap.get('player-3') as Player;
+      const cardFound = updatedPlayer2.hand.some(card => card.id === 'card-7') ||
+                       updatedPlayer3.hand.some(card => card.id === 'card-7');
+      expect(cardFound).toBe(true);
+    });
+
+    it('should move from OtherParties to AnyParty', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.OtherParties, Location.AnyParty, ['card-7']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.leader).toBeNull(); // Removed from leader position
+      expect(updatedPlayer2.party.heroes[1]).toEqual(card7); // Added back to heroes
+    });
+
+    it('should move from OtherParties to OtherParties', () => {
+      const context = createActionContext('player-1', [player1, player2, player3]);
+
+      const result = moveCard(context, Location.OtherParties, Location.OtherParties, ['card-7']);
+
+      expect(result.success).toBe(true);
+      const updatedPlayer2 = context.playersMap.get('player-2') as Player;
+      expect(updatedPlayer2.party.leader).toBeNull(); // Removed from leader position
     });
   });
 });
