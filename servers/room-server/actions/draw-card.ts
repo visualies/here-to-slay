@@ -1,4 +1,4 @@
-import type { ActionContext, ActionResult, ActionParams, Turn } from '../../../shared/types';
+import type { ActionContext, ActionResult, ActionParams, Turn, Player } from '../../../shared/types';
 import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { getParam, determineSelectionMode } from './action-utils';
@@ -11,7 +11,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   const amount = getParam<Amount>(params, 'amount');
 
   // Handle amount 0 as a no-op (no operation) - return success immediately
-  if (amount === 0 || amount === '0') {
+  if (amount === 0 || amount === '0' || amount === Amount.Zero || amount === 'zero') {
     return {
       success: true,
       message: 'No cards to draw (amount is 0)',
@@ -79,7 +79,7 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
     for (const cardId of userInput) {
       let found = false;
       for (const player of otherPlayers) {
-        const card = (player.hand || []).find(c => c.id === cardId);
+        const card = (player.hand || []).find((c: any) => c.id === cardId);
         if (card) {
           if (!playerCardMap.has(player.id)) {
             playerCardMap.set(player.id, []);

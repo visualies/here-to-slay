@@ -149,11 +149,13 @@ test.describe('API: Draw Card Action', () => {
     expect(finalSupportStackSize).toBe(initialSupportStackSize - 3)
   })
 
-  test('should fail when trying to draw more cards than available in support deck', async ({ request }) => {
+  test('should draw all available cards when requesting more than available from support deck', async ({ request }) => {
     // 1. Get current support stack size
     const initialRoomResponse = await request.get(`/api/room/${roomId}`)
     const initialRoomData = await initialRoomResponse.json()
     const supportStackSize = initialRoomData.gameState.supportStack.length
+    const initialPlayer = initialRoomData.players[playerId]
+    const initialHandSize = initialPlayer.hand.length
 
     // 2. Create test card that tries to draw more cards than available
     const createCardResponse = await request.post('/api/cards/test-card', {
@@ -164,8 +166,8 @@ test.describe('API: Draw Card Action', () => {
           { name: 'destination', type: 'LOCATION', value: 'own-hand' },
           { name: 'amount', type: 'AMOUNT', value: String(supportStackSize + 10) }
         ],
-        cardName: 'Draw Too Many Cards',
-        cardDescription: 'Try to draw more cards than available'
+        cardName: 'Draw All Available Cards',
+        cardDescription: 'Draw all available cards from support deck'
       }
     })
 
@@ -173,7 +175,7 @@ test.describe('API: Draw Card Action', () => {
     const createCardBody = await createCardResponse.json()
     testCardId = createCardBody.data.id
 
-    // 3. Try to play the card - should fail
+    // 3. Play the card - should succeed and draw all available cards
     const playCardResponse = await request.post('/api/game/play-card', {
       data: {
         roomId,
@@ -182,19 +184,29 @@ test.describe('API: Draw Card Action', () => {
       }
     })
 
-    expect(playCardResponse.status()).toBe(400)
+    expect(playCardResponse.status()).toBe(200)
     const playCardBody = await playCardResponse.json()
-    expect(playCardBody.success).toBe(false)
-    expect(playCardBody.message).toContain('Not enough cards')
+    expect(playCardBody.success).toBe(true)
+
+    // 4. Verify results - should have drawn all available cards
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalPlayer = finalRoomData.players[playerId]
+    const finalHandSize = finalPlayer.hand.length
+    const finalSupportStackSize = finalRoomData.gameState.supportStack?.length || 0
+
+    expect(finalHandSize).toBe(initialHandSize + supportStackSize)
+    expect(finalSupportStackSize).toBe(0) // Support stack should be empty
   })
 
 
-  test('should fail when trying to move more cards from hand than available', async ({ request }) => {
+  test('should move all available cards when requesting more than available from hand', async ({ request }) => {
     // 1. Get current hand size
     const initialRoomResponse = await request.get(`/api/room/${roomId}`)
     const initialRoomData = await initialRoomResponse.json()
     const initialPlayer = initialRoomData.players[playerId]
     const handSize = initialPlayer.hand.length
+    const initialSupportStackSize = initialRoomData.gameState.supportStack?.length || 0
 
     // 2. Create test card that tries to move more cards than in hand
     const createCardResponse = await request.post('/api/cards/test-card', {
@@ -205,8 +217,8 @@ test.describe('API: Draw Card Action', () => {
           { name: 'destination', type: 'LOCATION', value: 'support-deck' },
           { name: 'amount', type: 'AMOUNT', value: String(handSize + 5) }
         ],
-        cardName: 'Move Too Many Cards',
-        cardDescription: 'Try to move more cards than in hand'
+        cardName: 'Move All Available Cards',
+        cardDescription: 'Move all available cards from hand'
       }
     })
 
@@ -214,7 +226,7 @@ test.describe('API: Draw Card Action', () => {
     const createCardBody = await createCardResponse.json()
     testCardId = createCardBody.data.id
 
-    // 3. Try to play the card - should fail
+    // 3. Play the card - should succeed and move all available cards
     const playCardResponse = await request.post('/api/game/play-card', {
       data: {
         roomId,
@@ -223,19 +235,28 @@ test.describe('API: Draw Card Action', () => {
       }
     })
 
-    expect(playCardResponse.status()).toBe(400)
+    expect(playCardResponse.status()).toBe(200)
     const playCardBody = await playCardResponse.json()
-    expect(playCardBody.success).toBe(false)
-    expect(playCardBody.message).toContain('Not enough cards')
+    expect(playCardBody.success).toBe(true)
+
+    // 4. Verify results - should have moved all available cards
+    const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+    const finalRoomData = await finalRoomResponse.json()
+    const finalPlayer = finalRoomData.players[playerId]
+    const finalHandSize = finalPlayer.hand.length
+    const finalSupportStackSize = finalRoomData.gameState.supportStack?.length || 0
+
+    expect(finalHandSize).toBe(0) // Hand should be empty
+    expect(finalSupportStackSize).toBe(initialSupportStackSize + handSize) // Support stack should have all hand cards
   })
 
   test('should fail with unsupported location combinations', async ({ request }) => {
-    // Test unsupported source location
+    // Test unsupported source location (using a location that doesn't exist)
     const createCardResponse = await request.post('/api/cards/test-card', {
       data: {
         action: 'drawCard',
         parameters: [
-          { name: 'target', type: 'LOCATION', value: 'discard-pile' },
+          { name: 'target', type: 'LOCATION', value: 'invalid-location' },
           { name: 'destination', type: 'LOCATION', value: 'own-hand' },
           { name: 'amount', type: 'AMOUNT', value: '1' }
         ],
@@ -354,17 +375,46 @@ test.describe('API: Draw Card Action', () => {
       expect(finalPlayer.hand.length).toBe(initialHandSize)
     })
 
-    test('should fail to draw from cache to own-hand (unsupported target)', async ({ request }) => {
+    test('should draw from cache to own-hand (now supported)', async ({ request }) => {
+      // First, add some cards to cache by moving them from support deck
+      const addToCacheResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'cache' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Add to Cache',
+          cardDescription: 'Add cards to cache for testing'
+        }
+      })
+
+      const addToCacheId = (await addToCacheResponse.json()).data.id
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: addToCacheId }
+      })
+      await request.delete(`/api/cards/test-card/${addToCacheId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
+      const initialCacheSize = initialRoomData.gameState.cache?.length || 0
+
+      // Create test card to draw from cache with explicit first selection
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
           parameters: [
             { name: 'target', type: 'LOCATION', value: 'cache' },
             { name: 'destination', type: 'LOCATION', value: 'own-hand' },
-            { name: 'amount', type: 'AMOUNT', value: '1' }
+            { name: 'amount', type: 'AMOUNT', value: '1' },
+            { name: 'selection', type: 'SELECTION_MODE', value: 'first' }
           ],
           cardName: 'Draw from Cache',
-          cardDescription: 'Try to draw from cache (unsupported)'
+          cardDescription: 'Draw from cache (now supported)'
         }
       })
 
@@ -372,21 +422,55 @@ test.describe('API: Draw Card Action', () => {
       const createCardBody = await createCardResponse.json()
       testCardId = createCardBody.data.id
 
+      // Play the card
       const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      expect(playCardResponse.status()).toBe(200)
+      const playCardBody = await playCardResponse.json()
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalCacheSize = finalRoomData.gameState.cache?.length || 0
+
+      expect(finalHandSize).toBe(initialHandSize + 1)
+      expect(finalCacheSize).toBe(initialCacheSize - 1)
+    })
+
+    test('should draw from discard-pile to own-hand (now supported)', async ({ request }) => {
+      // First, add some cards to discard pile by moving them from support deck
+      const addToDiscardResponse = await request.post('/api/cards/test-card', {
         data: {
-          roomId,
-          playerId,
-          cardId: testCardId
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'discard-pile' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Add to Discard',
+          cardDescription: 'Add cards to discard pile for testing'
         }
       })
 
-      expect(playCardResponse.status()).toBe(400)
-      const playCardBody = await playCardResponse.json()
-      expect(playCardBody.success).toBe(false)
-      expect(playCardBody.message).toContain('Unsupported source location')
-    })
+      const addToDiscardId = (await addToDiscardResponse.json()).data.id
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: addToDiscardId }
+      })
+      await request.delete(`/api/cards/test-card/${addToDiscardId}`)
 
-    test('should fail to draw from discard-pile to own-hand (unsupported target)', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
+      const initialDiscardSize = initialRoomData.gameState.discardPile?.length || 0
+
+      // Create test card to draw from discard pile
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -396,7 +480,7 @@ test.describe('API: Draw Card Action', () => {
             { name: 'amount', type: 'AMOUNT', value: '1' }
           ],
           cardName: 'Draw from Discard',
-          cardDescription: 'Try to draw from discard pile (unsupported)'
+          cardDescription: 'Draw from discard pile (now supported)'
         }
       })
 
@@ -404,18 +488,24 @@ test.describe('API: Draw Card Action', () => {
       const createCardBody = await createCardResponse.json()
       testCardId = createCardBody.data.id
 
+      // Play the card
       const playCardResponse = await request.post('/api/game/play-card', {
-        data: {
-          roomId,
-          playerId,
-          cardId: testCardId
-        }
+        data: { roomId, playerId, cardId: testCardId }
       })
 
-      expect(playCardResponse.status()).toBe(400)
+      expect(playCardResponse.status()).toBe(200)
       const playCardBody = await playCardResponse.json()
-      expect(playCardBody.success).toBe(false)
-      expect(playCardBody.message).toContain('Unsupported source location')
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalDiscardSize = finalRoomData.gameState.discardPile?.length || 0
+
+      expect(finalHandSize).toBe(initialHandSize + 1)
+      expect(finalDiscardSize).toBe(initialDiscardSize - 1)
     })
 
     test('should draw from other-hands with first selection', async ({ request }) => {
@@ -1147,7 +1237,13 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(initialSupportStackSize)
     })
 
-    test('should fail to move from support-deck to cache (unsupported destination)', async ({ request }) => {
+    test('should move from support-deck to cache (now supported)', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialCacheSize = initialRoomData.gameState.cache?.length || 0
+      const initialSupportStackSize = initialRoomData.gameState.supportStack.length
+
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1157,7 +1253,7 @@ test.describe('API: Draw Card Action', () => {
             { name: 'amount', type: 'AMOUNT', value: '1' }
           ],
           cardName: 'Support to Cache',
-          cardDescription: 'Try to move from support deck to cache (unsupported)'
+          cardDescription: 'Move from support deck to cache (now supported)'
         }
       })
 
@@ -1166,20 +1262,30 @@ test.describe('API: Draw Card Action', () => {
       testCardId = createCardBody.data.id
 
       const playCardResponse = await request.post('/api/game/play-card', {
-        data: {
-          roomId,
-          playerId,
-          cardId: testCardId
-        }
+        data: { roomId, playerId, cardId: testCardId }
       })
 
-      expect(playCardResponse.status()).toBe(400)
+      expect(playCardResponse.status()).toBe(200)
       const playCardBody = await playCardResponse.json()
-      expect(playCardBody.success).toBe(false)
-      expect(playCardBody.message).toContain('Unsupported destination location')
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalCacheSize = finalRoomData.gameState.cache?.length || 0
+      const finalSupportStackSize = finalRoomData.gameState.supportStack.length
+
+      expect(finalCacheSize).toBe(initialCacheSize + 1)
+      expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
     })
 
-    test('should fail to move from support-deck to discard-pile (unsupported destination)', async ({ request }) => {
+    test('should move from support-deck to discard-pile (now supported)', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialDiscardSize = initialRoomData.gameState.discardPile?.length || 0
+      const initialSupportStackSize = initialRoomData.gameState.supportStack.length
+
       const createCardResponse = await request.post('/api/cards/test-card', {
         data: {
           action: 'drawCard',
@@ -1189,7 +1295,7 @@ test.describe('API: Draw Card Action', () => {
             { name: 'amount', type: 'AMOUNT', value: '1' }
           ],
           cardName: 'Support to Discard',
-          cardDescription: 'Try to move from support deck to discard pile (unsupported)'
+          cardDescription: 'Move from support deck to discard pile (now supported)'
         }
       })
 
@@ -1198,17 +1304,21 @@ test.describe('API: Draw Card Action', () => {
       testCardId = createCardBody.data.id
 
       const playCardResponse = await request.post('/api/game/play-card', {
-        data: {
-          roomId,
-          playerId,
-          cardId: testCardId
-        }
+        data: { roomId, playerId, cardId: testCardId }
       })
 
-      expect(playCardResponse.status()).toBe(400)
+      expect(playCardResponse.status()).toBe(200)
       const playCardBody = await playCardResponse.json()
-      expect(playCardBody.success).toBe(false)
-      expect(playCardBody.message).toContain('Unsupported destination location')
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalDiscardSize = finalRoomData.gameState.discardPile?.length || 0
+      const finalSupportStackSize = finalRoomData.gameState.supportStack.length
+
+      expect(finalDiscardSize).toBe(initialDiscardSize + 1)
+      expect(finalSupportStackSize).toBe(initialSupportStackSize - 1)
     })
   })
 
@@ -1399,11 +1509,13 @@ test.describe('API: Draw Card Action', () => {
       expect(finalSupportStackSize).toBe(0)
     })
 
-    test('should fail when trying to draw more than available', async ({ request }) => {
+    test('should draw all available cards when requesting more than available', async ({ request }) => {
       // First check how many cards are available
       const roomResponse = await request.get(`/api/room/${roomId}`)
       const roomData = await roomResponse.json()
       const availableCards = roomData.gameState.supportStack.length
+      const initialPlayer = roomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
 
       // Try to draw more than available
       const excessAmount = availableCards + 10
@@ -1416,8 +1528,8 @@ test.describe('API: Draw Card Action', () => {
             { name: 'destination', type: 'LOCATION', value: 'own-hand' },
             { name: 'amount', type: 'AMOUNT', value: String(excessAmount) }
           ],
-          cardName: 'Draw Too Many',
-          cardDescription: `Try to draw ${excessAmount} cards when only ${availableCards} available`
+          cardName: 'Draw All Available',
+          cardDescription: `Draw all ${availableCards} available cards when requesting ${excessAmount}`
         }
       })
 
@@ -1433,10 +1545,397 @@ test.describe('API: Draw Card Action', () => {
         }
       })
 
-      expect(playCardResponse.status()).toBe(400)
+      expect(playCardResponse.status()).toBe(200)
       const playCardBody = await playCardResponse.json()
-      expect(playCardBody.success).toBe(false)
-      expect(playCardBody.message).toContain('Not enough cards')
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results - should have drawn all available cards
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalSupportStackSize = finalRoomData.gameState.supportStack?.length || 0
+
+      expect(finalHandSize).toBe(initialHandSize + availableCards)
+      expect(finalSupportStackSize).toBe(0) // Support stack should be empty
+    })
+  })
+
+  test.describe('Additional Target Locations', () => {
+    test('should draw from cache to own-hand with selection', async ({ request }) => {
+      // First, add some cards to cache by moving them from support deck
+      const addToCacheResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'cache' },
+            { name: 'amount', type: 'AMOUNT', value: '5' }
+          ],
+          cardName: 'Add to Cache',
+          cardDescription: 'Add cards to cache for testing'
+        }
+      })
+
+      const addToCacheId = (await addToCacheResponse.json()).data.id
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: addToCacheId }
+      })
+      await request.delete(`/api/cards/test-card/${addToCacheId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
+      const initialCacheSize = initialRoomData.gameState.cache?.length || 0
+
+      // Create test card to draw from cache with selection mode
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'cache' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '2' },
+            { name: 'selection', type: 'SELECTION_MODE', value: 'destination-owner' }
+          ],
+          cardName: 'Draw from Cache with Selection',
+          cardDescription: 'Draw cards from cache with user selection'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card - this should trigger user input for selection
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      const playCardBody = await playCardResponse.json()
+
+      // The action should be waiting for user input
+      expect(playCardResponse.status()).toBe(200)
+      expect(playCardBody.success).toBe(true)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].success).toBe(false)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput).toBeDefined()
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput.type).toBe('choice')
+
+      // Now provide user input by selecting specific cards from cache
+      const cacheCardIds = initialRoomData.gameState.cache.slice(0, 2).map((c: any) => c.id) // Take first 2 cards from cache
+      
+      // Get the actionId from the current turn's action queue
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      const roomState = await roomStateResponse.json()
+      const currentTurn = roomState.gameState.currentTurn
+      const waitingAction = currentTurn.action_queue.find((action: any) => action.state === 'waiting')
+      
+      if (!waitingAction) {
+        throw new Error('No action found waiting for input')
+      }
+      
+      const actionId = waitingAction.id
+
+      const provideInputResponse = await request.post('/api/game/provide-action-input', {
+        data: {
+          roomId,
+          playerId,
+          actionId: actionId,
+          input: cacheCardIds
+        }
+      })
+
+      const inputResponseBody = await provideInputResponse.json()
+
+      expect(provideInputResponse.status()).toBe(200)
+      expect(inputResponseBody.success).toBe(true)
+
+      // Verify the final state
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalCacheSize = finalRoomData.gameState.cache?.length || 0
+
+      // Player should gain 2 cards, cache should lose 2 cards
+      expect(finalHandSize).toBe(initialHandSize + 2)
+      expect(finalCacheSize).toBe(initialCacheSize - 2)
+
+      // Verify the specific cards were moved
+      for (const cardId of cacheCardIds) {
+        expect(finalPlayer.hand.some((card: any) => card.id === cardId)).toBe(true)
+        expect(finalRoomData.gameState.cache.some((card: any) => card.id === cardId)).toBe(false)
+      }
+    })
+
+    test('should draw from cache to own-hand with auto-selection when fewer cards available', async ({ request }) => {
+      // First, add some cards to cache by moving them from support deck
+      const addToCacheResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'cache' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Add to Cache',
+          cardDescription: 'Add cards to cache for testing'
+        }
+      })
+
+      const addToCacheId = (await addToCacheResponse.json()).data.id
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: addToCacheId }
+      })
+      await request.delete(`/api/cards/test-card/${addToCacheId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
+      const initialCacheSize = initialRoomData.gameState.cache?.length || 0
+
+      // Create test card to draw from cache - requesting more cards than available (should auto-select all)
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'cache' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '5' } // More than available in cache
+          ],
+          cardName: 'Draw All from Cache',
+          cardDescription: 'Draw all cards from cache (auto-selection)'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card - this should auto-select all available cards (no user input needed)
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      const playCardBody = await playCardResponse.json()
+      expect(playCardResponse.status()).toBe(200)
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results - should have drawn all available cards from cache
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalCacheSize = finalRoomData.gameState.cache?.length || 0
+
+      expect(finalHandSize).toBe(initialHandSize + initialCacheSize) // Should have all cache cards
+      expect(finalCacheSize).toBe(0) // Cache should be empty
+    })
+
+    test('should draw from discard-pile to own-hand', async ({ request }) => {
+      // First, add some cards to discard pile by moving them from support deck
+      const addToDiscardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'discard-pile' },
+            { name: 'amount', type: 'AMOUNT', value: '3' }
+          ],
+          cardName: 'Add to Discard',
+          cardDescription: 'Add cards to discard pile for testing'
+        }
+      })
+
+      const addToDiscardId = (await addToDiscardResponse.json()).data.id
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: addToDiscardId }
+      })
+      await request.delete(`/api/cards/test-card/${addToDiscardId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialHandSize = initialPlayer.hand.length
+      const initialDiscardSize = initialRoomData.gameState.discardPile?.length || 0
+
+      // Create test card to draw from discard pile
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'discard-pile' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Draw from Discard',
+          cardDescription: 'Draw cards from discard pile'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      expect(playCardResponse.status()).toBe(200)
+      const playCardBody = await playCardResponse.json()
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalHandSize = finalPlayer.hand.length
+      const finalDiscardSize = finalRoomData.gameState.discardPile?.length || 0
+
+      expect(finalHandSize).toBe(initialHandSize + 2)
+      expect(finalDiscardSize).toBe(initialDiscardSize - 2)
+    })
+  })
+
+  test.describe('Additional Destination Locations', () => {
+    test('should draw from support-deck to own-party', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer = initialRoomData.players[playerId]
+      const initialPartySize = initialPlayer.party.heroes.filter(hero => hero !== null).length
+      const initialSupportStackSize = initialRoomData.gameState.supportStack.length
+
+      // Create test card to draw to party
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'own-party' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Draw to Party',
+          cardDescription: 'Draw cards to party'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      expect(playCardResponse.status()).toBe(200)
+      const playCardBody = await playCardResponse.json()
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer = finalRoomData.players[playerId]
+      const finalPartySize = finalPlayer.party.heroes.filter(hero => hero !== null).length
+      const finalSupportStackSize = finalRoomData.gameState.supportStack.length
+
+      expect(finalPartySize).toBe(initialPartySize + 2)
+      expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
+    })
+
+    test('should draw from support-deck to cache', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialCacheSize = initialRoomData.gameState.cache?.length || 0
+      const initialSupportStackSize = initialRoomData.gameState.supportStack.length
+
+      // Create test card to draw to cache
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'cache' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Draw to Cache',
+          cardDescription: 'Draw cards to cache'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      expect(playCardResponse.status()).toBe(200)
+      const playCardBody = await playCardResponse.json()
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalCacheSize = finalRoomData.gameState.cache?.length || 0
+      const finalSupportStackSize = finalRoomData.gameState.supportStack.length
+
+      expect(finalCacheSize).toBe(initialCacheSize + 2)
+      expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
+    })
+
+    test('should draw from support-deck to discard-pile', async ({ request }) => {
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialDiscardSize = initialRoomData.gameState.discardPile?.length || 0
+      const initialSupportStackSize = initialRoomData.gameState.supportStack.length
+
+      // Create test card to draw to discard pile
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'discard-pile' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+          ],
+          cardName: 'Draw to Discard',
+          cardDescription: 'Draw cards to discard pile'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: { roomId, playerId, cardId: testCardId }
+      })
+
+      expect(playCardResponse.status()).toBe(200)
+      const playCardBody = await playCardResponse.json()
+      expect(playCardBody.success).toBe(true)
+
+      // Verify results
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalDiscardSize = finalRoomData.gameState.discardPile?.length || 0
+      const finalSupportStackSize = finalRoomData.gameState.supportStack.length
+
+      expect(finalDiscardSize).toBe(initialDiscardSize + 2)
+      expect(finalSupportStackSize).toBe(initialSupportStackSize - 2)
     })
   })
 })

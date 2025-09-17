@@ -104,7 +104,15 @@ export function determineSelectionMode(context: ActionContext, target: Location,
       const ownPlayer = playersMap.get(playerId) as Player;
       totalAvailableCards = ownPlayer?.party?.heroes?.filter(hero => hero !== null).length || 0;
       break;
-    // Add more cases as needed for other locations like discard pile, cache, etc.
+    case Location.Cache:
+      const cache = gameStateMap.get('cache') as Card[] || [];
+      totalAvailableCards = cache.length;
+      break;
+    case Location.DiscardPile:
+      const discardPile = gameStateMap.get('discardPile') as Card[] || [];
+      totalAvailableCards = discardPile.length;
+      break;
+    // Add more cases as needed for other locations
     default:
       // For unknown locations, default to First mode
       return SelectionMode.First;
@@ -122,9 +130,10 @@ export function determineSelectionMode(context: ActionContext, target: Location,
     numAmount = 1; // Default fallback
   }
 
-  // Special case: For support deck, always use First mode (auto-select) for draw card actions
-  //TODO make this differentiate between location types (stack, fan)
-  if (target === Location.SupportDeck) {
+  // Special case: For support deck and discard pile, always use First mode (auto-select) for draw card actions
+  // These are stack-like locations where you can only draw from the top/first card
+  // Cache allows selection from multiple cards
+  if (target === Location.SupportDeck || target === Location.DiscardPile) {
     return SelectionMode.First;
   }
 

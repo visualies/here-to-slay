@@ -99,6 +99,18 @@ function getSourceLocation(
             }
           }
         };
+    case Location.Cache:
+      const cache = gameStateMap.get('cache') as Card[] || [];
+      return {
+        sourceCards: cache,
+        updateSourceFunction: (cards) => gameStateMap.set('cache', cards)
+      };
+    case Location.DiscardPile:
+      const discardPile = gameStateMap.get('discardPile') as Card[] || [];
+      return {
+        sourceCards: discardPile,
+        updateSourceFunction: (cards) => gameStateMap.set('discardPile', cards)
+      };
     default:
       return null;
   }
@@ -185,8 +197,22 @@ function autoSelectCards(
     };
   }
 
+  // All locations should allow requesting more than available - return all available cards
   if (sourceCards.length < numAmount) {
-    return { success: false, message: `Not enough cards in ${target} (has ${sourceCards.length}, needs ${numAmount})` };
+    const actualAmount = sourceCards.length;
+    if (actualAmount === 0) {
+      return { success: false, message: `No cards available in ${target}` };
+    }
+    const selectedCardIds = sourceCards.slice(-actualAmount).map(card => card.id);
+    return {
+      success: true,
+      message: `Auto-selected ${selectedCardIds.length} cards (requested ${numAmount}, but only ${actualAmount} available)`,
+      data: { cardIds: selectedCardIds }
+    };
+  }
+
+  if (sourceCards.length === 0) {
+    return { success: false, message: `No cards available in ${target}` };
   }
 
   // Auto-select from the end (First mode)
@@ -492,6 +518,16 @@ export function moveCard(
       // Add cards back to support stack
       const currentSupportStack = gameStateMap.get('supportStack') as Card[] || [];
       gameStateMap.set('supportStack', [...currentSupportStack, ...drawnCards]);
+      break;
+    case Location.Cache:
+      // Add cards to cache
+      const currentCache = gameStateMap.get('cache') as Card[] || [];
+      gameStateMap.set('cache', [...currentCache, ...drawnCards]);
+      break;
+    case Location.DiscardPile:
+      // Add cards to discard pile
+      const currentDiscardPile = gameStateMap.get('discardPile') as Card[] || [];
+      gameStateMap.set('discardPile', [...currentDiscardPile, ...drawnCards]);
       break;
     default:
       return { success: false, message: `Unsupported destination location: ${destination}` };
