@@ -35,16 +35,70 @@ function getSourceLocation(
           }
         }
       };
-    case Location.OtherHands:
-      const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
-      if (otherPlayers.length === 0) return null;
+      case Location.AnyHand:
+        const anyHandPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+        if (anyHandPlayers.length === 0) return null;
 
-      // For 'first' selection mode, take from the first other player
-      const firstOtherPlayer = otherPlayers[0];
-      return {
-        sourceCards: firstOtherPlayer.hand || [],
-        updateSourceFunction: (cards) => playersMap.set(firstOtherPlayer.id, { ...firstOtherPlayer, hand: cards })
-      };
+        // For AnyHand, we need to collect all cards from all other players for selection
+        // but the user must select all cards from the same player
+        const allOtherHandCards = anyHandPlayers.flatMap(player => 
+          (player.hand || []).map(card => ({ ...card, _playerId: player.id }))
+        );
+        
+        return {
+          sourceCards: allOtherHandCards,
+          updateSourceFunction: (cards) => {
+            // Group cards by player and update each player's hand
+            const cardsByPlayer = new Map<string, Card[]>();
+            for (const card of cards) {
+              const playerId = (card as any)._playerId;
+              if (!cardsByPlayer.has(playerId)) {
+                cardsByPlayer.set(playerId, []);
+              }
+              cardsByPlayer.get(playerId)!.push(card);
+            }
+            
+            // Update each player's hand
+            for (const [pid, playerCards] of cardsByPlayer) {
+              const player = anyHandPlayers.find(p => p.id === pid);
+              if (player) {
+                playersMap.set(pid, { ...player, hand: playerCards });
+              }
+            }
+          }
+        };
+      case Location.OtherHands:
+        const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+        if (otherPlayers.length === 0) return null;
+
+        // For OtherHands, we can take from any combination of players
+        // Collect all cards from all other players
+        const allCards = otherPlayers.flatMap(player => 
+          (player.hand || []).map(card => ({ ...card, _playerId: player.id }))
+        );
+        
+        return {
+          sourceCards: allCards,
+          updateSourceFunction: (cards) => {
+            // Group cards by player and update each player's hand
+            const cardsByPlayer = new Map<string, Card[]>();
+            for (const card of cards) {
+              const playerId = (card as any)._playerId;
+              if (!cardsByPlayer.has(playerId)) {
+                cardsByPlayer.set(playerId, []);
+              }
+              cardsByPlayer.get(playerId)!.push(card);
+            }
+            
+            // Update each player's hand
+            for (const [pid, playerCards] of cardsByPlayer) {
+              const player = otherPlayers.find(p => p.id === pid);
+              if (player) {
+                playersMap.set(pid, { ...player, hand: playerCards });
+              }
+            }
+          }
+        };
     default:
       return null;
   }
@@ -138,8 +192,6 @@ function autoSelectCards(
   // Auto-select from the end (First mode)
   const selectedCardIds = sourceCards.slice(-numAmount).map(card => card.id);
   
-  console.log(`🎯 Auto-selecting ${selectedCardIds.length} cards from ${target}:`, selectedCardIds);
-  console.log(`🎯 Source cards available:`, sourceCards.map(c => c.id));
 
   return {
     success: true,
@@ -314,18 +366,52 @@ export function moveCard(
     return { success: false, message: 'selectedCardIds is required and must not be empty' };
   }
 
-  console.log(`🎯 Card Service: Moving ${selectedCardIds.length} specific card(s) from ${target} to ${destination} for player ${playerId}`);
+  // Special validation for AnyHand: all selected cards must come from the same player
+  if (target === Location.AnyHand) {
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+    const playerCardMap = new Map<string, string[]>();
+    
+    // Group selected cards by player
+    for (const cardId of selectedCardIds) {
+      let found = false;
+      for (const player of otherPlayers) {
+        const card = (player.hand || []).find(c => c.id === cardId);
+        if (card) {
+          if (!playerCardMap.has(player.id)) {
+            playerCardMap.set(player.id, []);
+          }
+          playerCardMap.get(player.id)!.push(cardId);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return { success: false, message: `Card ${cardId} not found in any other player's hand` };
+      }
+    }
+    
+    // Check if all cards come from the same player
+    if (playerCardMap.size > 1) {
+      return { 
+        success: false, 
+        message: 'For AnyHand, all selected cards must come from the same player\'s hand' 
+      };
+    }
+  }
 
   const drawnCards: Card[] = [];
 
   // Handle card movement based on target location
-  if (target === Location.OtherHands) {
-    // For OtherHands, find cards across all other players
+  if (target === Location.AnyHand || target === Location.OtherHands) {
+    // For AnyHand and OtherHands, find cards across all other players
     const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
 
     for (const cardId of selectedCardIds) {
       let found = false;
-      for (const otherPlayer of otherPlayers) {
+      // Get fresh player data from the map for each card
+      const currentOtherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+      
+      for (const otherPlayer of currentOtherPlayers) {
         const cardIndex = (otherPlayer.hand || []).findIndex(card => card.id === cardId);
         if (cardIndex !== -1) {
           const newHand = [...(otherPlayer.hand || [])];

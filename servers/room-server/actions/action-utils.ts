@@ -93,6 +93,7 @@ export function determineSelectionMode(context: ActionContext, target: Location,
       const player = playersMap.get(playerId) as Player;
       totalAvailableCards = player?.hand?.length || 0;
       break;
+    case Location.AnyHand:
     case Location.OtherHands:
       const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
       totalAvailableCards = otherPlayers.reduce((total, player) => {

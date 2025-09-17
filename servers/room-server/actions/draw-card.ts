@@ -10,11 +10,8 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   const destination = getParam<Location>(params, 'destination');
   const amount = getParam<Amount>(params, 'amount');
 
-  console.log(`🎯 DrawCard Action: target=${target}, destination=${destination}, amount=${amount}`);
-
   // Handle amount 0 as a no-op (no operation) - return success immediately
   if (amount === 0 || amount === '0') {
-    console.log(`🎯 DrawCard Action: Amount is 0, treating as no-op`);
     return {
       success: true,
       message: 'No cards to draw (amount is 0)',
@@ -31,16 +28,13 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   let selectionMode: SelectionMode;
   try {
     selectionMode = getParam<SelectionMode>(params, 'selection');
-    console.log(`🎯 Try using explicit selection mode: ${selectionMode}`);
   } catch {
     // No explicit selection mode, determine based on target card count
     selectionMode = determineSelectionMode(context, target, amount);
-    console.log(`🎯 DrawCard Action: Determined selection mode: ${selectionMode}`);
   }
 
   // Step 1: Try to select cards
   const selection = selectCards(context, target, amount, selectionMode);
-  console.log(`🎯 DrawCard Action: selection result:`, selection);
 
   if (selection.needsInput) {
     // Need user input - return early and wait for user selection
@@ -48,14 +42,11 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   }
 
   if (!selection.selectedCardIds || selection.selectedCardIds.length === 0) {
-    console.log(`🎯 DrawCard Action: No cards selected, returning error`);
     return {
       success: false,
       message: 'No cards were selected'
     };
   }
-
-  console.log(`🎯 DrawCard Action: Moving ${selection.selectedCardIds.length} cards:`, selection.selectedCardIds);
   // Step 2: Move the selected cards
   return moveCard(context, target, destination, selection.selectedCardIds);
 }
@@ -63,7 +54,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
 export function callback(context: ActionContext, userInput: string[]): ActionResult {
   // Get the current action to retrieve original parameters
   // TODO can we make it so the callback retrieves the same context as before just now populated with the response
-  const { gameStateMap } = context;
+  const { gameStateMap, playersMap, playerId } = context;
   const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
 
   if (!currentTurn || !currentTurn.action_queue || currentTurn.action_queue.length === 0) {
@@ -78,6 +69,39 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
   // Extract original parameters
   const target = getParam<Location>({ parameters: currentAction.parameters }, 'target');
   const destination = getParam<Location>({ parameters: currentAction.parameters }, 'destination');
+
+  // Special validation for AnyHand: all selected cards must come from the same player
+  if (target === Location.AnyHand) {
+    const otherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
+    const playerCardMap = new Map<string, string[]>();
+    
+    // Group selected cards by player
+    for (const cardId of userInput) {
+      let found = false;
+      for (const player of otherPlayers) {
+        const card = (player.hand || []).find(c => c.id === cardId);
+        if (card) {
+          if (!playerCardMap.has(player.id)) {
+            playerCardMap.set(player.id, []);
+          }
+          playerCardMap.get(player.id)!.push(cardId);
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return { success: false, message: `Card ${cardId} not found in any other player's hand` };
+      }
+    }
+    
+    // Check if all cards come from the same player
+    if (playerCardMap.size > 1) {
+      return { 
+        success: false, 
+        message: 'For AnyHand, all selected cards must come from the same player\'s hand' 
+      };
+    }
+  }
 
   // Move the user-selected cards
   return moveCard(context, target, destination, userInput);

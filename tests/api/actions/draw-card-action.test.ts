@@ -71,7 +71,6 @@ test.describe('API: Draw Card Action', () => {
     expect(initialHandSize).toBe(5) // Players start with 5 cards
 
     // 3. Play the card
-    console.log(`🧪 Test: Playing card ${testCardId} for player ${playerId} in room ${roomId}`)
     const playCardResponse = await request.post('/api/game/play-card', {
       data: {
         roomId,
@@ -80,9 +79,7 @@ test.describe('API: Draw Card Action', () => {
       }
     })
 
-    console.log(`🧪 Test: Play card response status: ${playCardResponse.status()}`)
     const playCardBody = await playCardResponse.json()
-    console.log(`🧪 Test: Play card response body:`, playCardBody)
     
     expect(playCardResponse.status()).toBe(200)
     expect(playCardBody.success).toBe(true)
@@ -619,6 +616,301 @@ test.describe('API: Draw Card Action', () => {
       expect(playCardBody.message).toContain('No other players to draw from')
     })
 
+    test('should handle drawing from any-hand with user input (single player restriction)', async ({ request }) => {
+      // First add two more players so there are multiple "other hands"
+      const player2Id = 'test-player-2'
+      const player3Id = 'test-player-3'
+      
+      // Join player 2
+      await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: player2Id,
+          playerName: 'Test Player 2',
+          playerColor: 'blue'
+        }
+      })
+      await request.post('/api/game/add-player-to-game', {
+        data: { roomId, playerId: player2Id }
+      })
+
+      // Join player 3
+      await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: player3Id,
+          playerName: 'Test Player 3',
+          playerColor: 'green'
+        }
+      })
+      await request.post('/api/game/add-player-to-game', {
+        data: { roomId, playerId: player3Id }
+      })
+
+      // Give each player some cards by having them draw from support deck
+      const giveCardsResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '3' }
+          ],
+          cardName: 'Give Cards',
+          cardDescription: 'Give cards to players'
+        }
+      })
+      const giveCardsId = (await giveCardsResponse.json()).data.id
+
+      // Player 2 draws 3 cards
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId: player2Id, cardId: giveCardsId }
+      })
+
+      // Player 3 draws 3 cards
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId: player3Id, cardId: giveCardsId }
+      })
+
+      // Clean up the temp card
+      await request.delete(`/api/cards/test-card/${giveCardsId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer1 = initialRoomData.players[playerId]
+      const initialPlayer2 = initialRoomData.players[player2Id]
+      const initialPlayer3 = initialRoomData.players[player3Id]
+      const initialPlayer1Hand = initialPlayer1.hand.length
+      const initialPlayer2Hand = initialPlayer2.hand.length
+      const initialPlayer3Hand = initialPlayer3.hand.length
+
+      // Create test card for drawing from any-hand (should require user input)
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'any-hand' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+            // Note: No explicit selection mode - should default to DestinationOwner
+          ],
+          cardName: 'Draw from Any Hand (User Choice)',
+          cardDescription: 'Draw from any single player\'s hand with user selection'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card - this should trigger user input
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: {
+          roomId,
+          playerId,
+          cardId: testCardId
+        }
+      })
+
+      const playCardBody = await playCardResponse.json()
+
+      // The action should be waiting for user input
+      expect(playCardResponse.status()).toBe(200)
+      expect(playCardBody.success).toBe(true)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].success).toBe(false)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput).toBeDefined()
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput.type).toBe('choice')
+
+      // Now provide user input by selecting cards from ONLY player 2's hand
+      // This should succeed because all cards come from the same player
+      const player2CardIds = initialPlayer2.hand.slice(0, 2).map(c => c.id) // Take first 2 cards from player 2
+      
+      // Get the actionId from the current turn's action queue
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      const roomState = await roomStateResponse.json()
+      const currentTurn = roomState.gameState.currentTurn
+      const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
+      
+      if (!waitingAction) {
+        throw new Error('No action found waiting for input')
+      }
+      
+      const actionId = waitingAction.id
+
+      const provideInputResponse = await request.post('/api/game/provide-action-input', {
+        data: {
+          roomId,
+          playerId,
+          actionId: actionId,
+          input: player2CardIds
+        }
+      })
+
+      const inputResponseBody = await provideInputResponse.json()
+
+      expect(provideInputResponse.status()).toBe(200)
+      expect(inputResponseBody.success).toBe(true)
+
+      // Verify the final state
+      const finalRoomResponse = await request.get(`/api/room/${roomId}`)
+      const finalRoomData = await finalRoomResponse.json()
+      const finalPlayer1 = finalRoomData.players[playerId]
+      const finalPlayer2 = finalRoomData.players[player2Id]
+      const finalPlayer3 = finalRoomData.players[player3Id]
+      const finalPlayer1Hand = finalPlayer1.hand.length
+      const finalPlayer2Hand = finalPlayer2.hand.length
+      const finalPlayer3Hand = finalPlayer3.hand.length
+
+
+      // Player 1 should gain 2 cards, player 2 should lose 2 cards, player 3 should be unchanged
+      expect(finalPlayer1Hand).toBe(initialPlayer1Hand + 2)
+      expect(finalPlayer2Hand).toBe(initialPlayer2Hand - 2)
+      expect(finalPlayer3Hand).toBe(initialPlayer3Hand) // Player 3 should be unchanged
+
+      // Verify the specific cards were moved
+      for (const cardId of player2CardIds) {
+        expect(finalPlayer1.hand.some(card => card.id === cardId)).toBe(true)
+        expect(finalPlayer2.hand.some(card => card.id === cardId)).toBe(false)
+      }
+    })
+
+    test('should fail when drawing from any-hand with cards from multiple players', async ({ request }) => {
+      // First add two more players so there are multiple "other hands"
+      const player2Id = 'test-player-2'
+      const player3Id = 'test-player-3'
+      
+      // Join player 2
+      await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: player2Id,
+          playerName: 'Test Player 2',
+          playerColor: 'blue'
+        }
+      })
+      await request.post('/api/game/add-player-to-game', {
+        data: { roomId, playerId: player2Id }
+      })
+
+      // Join player 3
+      await request.post('/api/join-room', {
+        data: {
+          roomId,
+          playerId: player3Id,
+          playerName: 'Test Player 3',
+          playerColor: 'green'
+        }
+      })
+      await request.post('/api/game/add-player-to-game', {
+        data: { roomId, playerId: player3Id }
+      })
+
+      // Give each player some cards by having them draw from support deck
+      const giveCardsResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'support-deck' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '3' }
+          ],
+          cardName: 'Give Cards',
+          cardDescription: 'Give cards to players'
+        }
+      })
+      const giveCardsId = (await giveCardsResponse.json()).data.id
+
+      // Player 2 draws 3 cards
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId: player2Id, cardId: giveCardsId }
+      })
+
+      // Player 3 draws 3 cards
+      await request.post('/api/game/play-card', {
+        data: { roomId, playerId: player3Id, cardId: giveCardsId }
+      })
+
+      // Clean up the temp card
+      await request.delete(`/api/cards/test-card/${giveCardsId}`)
+
+      // Get initial state
+      const initialRoomResponse = await request.get(`/api/room/${roomId}`)
+      const initialRoomData = await initialRoomResponse.json()
+      const initialPlayer2 = initialRoomData.players[player2Id]
+      const initialPlayer3 = initialRoomData.players[player3Id]
+
+      // Create test card for drawing from any-hand (should require user input)
+      const createCardResponse = await request.post('/api/cards/test-card', {
+        data: {
+          action: 'drawCard',
+          parameters: [
+            { name: 'target', type: 'LOCATION', value: 'any-hand' },
+            { name: 'destination', type: 'LOCATION', value: 'own-hand' },
+            { name: 'amount', type: 'AMOUNT', value: '2' }
+            // Note: No explicit selection mode - should default to DestinationOwner
+          ],
+          cardName: 'Draw from Any Hand (Invalid)',
+          cardDescription: 'Try to draw from multiple players (should fail)'
+        }
+      })
+
+      expect(createCardResponse.status()).toBe(200)
+      const createCardBody = await createCardResponse.json()
+      testCardId = createCardBody.data.id
+
+      // Play the card - this should trigger user input
+      const playCardResponse = await request.post('/api/game/play-card', {
+        data: {
+          roomId,
+          playerId,
+          cardId: testCardId
+        }
+      })
+
+      const playCardBody = await playCardResponse.json()
+
+      // The action should be waiting for user input
+      expect(playCardResponse.status()).toBe(200)
+      expect(playCardBody.success).toBe(true)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].success).toBe(false)
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput).toBeDefined()
+      expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput.type).toBe('choice')
+
+      // Now provide user input by selecting cards from BOTH player 2 and player 3
+      // This should fail because cards come from multiple players
+      const player2CardId = initialPlayer2.hand[0].id // Take 1 card from player 2
+      const player3CardId = initialPlayer3.hand[0].id // Take 1 card from player 3
+      
+      // Get the actionId from the current turn's action queue
+      const roomStateResponse = await request.get(`/api/room/${roomId}`)
+      const roomState = await roomStateResponse.json()
+      const currentTurn = roomState.gameState.currentTurn
+      const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
+      
+      if (!waitingAction) {
+        throw new Error('No action found waiting for input')
+      }
+      
+      const actionId = waitingAction.id
+
+      const provideInputResponse = await request.post('/api/game/provide-action-input', {
+        data: {
+          roomId,
+          playerId,
+          actionId: actionId,
+          input: [player2CardId, player3CardId] // Cards from different players
+        }
+      })
+
+      const inputResponseBody = await provideInputResponse.json()
+
+      // This should fail because cards come from multiple players
+      expect(provideInputResponse.status()).toBe(400)
+      expect(inputResponseBody.success).toBe(false)
+      expect(inputResponseBody.message).toContain('all selected cards must come from the same player')
+    })
+
     test('should handle user input when drawing from other-hands with destination owner selection', async ({ request }) => {
       // First add a second player so there are "other hands"
       const player2Id = 'test-player-2'
@@ -677,9 +969,6 @@ test.describe('API: Draw Card Action', () => {
       const initialPlayer1Hand = initialPlayer1.hand.length
       const initialPlayer2Hand = initialPlayer2.hand.length
 
-      console.log(`🧪 Initial Player 1 hand size: ${initialPlayer1Hand}`)
-      console.log(`🧪 Initial Player 2 hand size: ${initialPlayer2Hand}`)
-      console.log(`🧪 Player 2 cards:`, initialPlayer2.hand.map(c => c.id))
 
       // Create test card for drawing from other hands with destination owner selection
       // This should trigger user input since we're not using 'first' selection
@@ -710,10 +999,7 @@ test.describe('API: Draw Card Action', () => {
         }
       })
 
-      console.log(`🧪 Play card response status: ${playCardResponse.status()}`)
       const playCardBody = await playCardResponse.json()
-      console.log(`🧪 Play card response body:`, JSON.stringify(playCardBody, null, 2))
-      console.log(`🧪 Turn service result:`, JSON.stringify(playCardBody.turnServiceResult, null, 2))
 
       // The action should be waiting for user input
       expect(playCardResponse.status()).toBe(200)
@@ -724,17 +1010,14 @@ test.describe('API: Draw Card Action', () => {
 
       // Now provide user input by selecting a specific card from player 2's hand
       const selectedCardId = initialPlayer2.hand[0].id // Select the first card
-      console.log(`🧪 Providing user input: selected card ${selectedCardId}`)
 
       // Get the actionId from the current turn's action queue
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
       const roomState = await roomStateResponse.json()
       const currentTurn = roomState.gameState.currentTurn
-      console.log(`🧪 Current turn:`, JSON.stringify(currentTurn, null, 2))
       
       // Find the action that's waiting for input
       const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
-      console.log(`🧪 Waiting action:`, JSON.stringify(waitingAction, null, 2))
       
       if (!waitingAction) {
         throw new Error('No action found waiting for input')
@@ -751,9 +1034,7 @@ test.describe('API: Draw Card Action', () => {
         }
       })
 
-      console.log(`🧪 Provide input response status: ${provideInputResponse.status()}`)
       const inputResponseBody = await provideInputResponse.json()
-      console.log(`🧪 Provide input response body:`, JSON.stringify(inputResponseBody, null, 2))
 
       expect(provideInputResponse.status()).toBe(200)
       expect(inputResponseBody.success).toBe(true)
@@ -766,10 +1047,6 @@ test.describe('API: Draw Card Action', () => {
       const finalPlayer1Hand = finalPlayer1.hand.length
       const finalPlayer2Hand = finalPlayer2.hand.length
 
-      console.log(`🧪 Final Player 1 hand size: ${finalPlayer1Hand}`)
-      console.log(`🧪 Final Player 2 hand size: ${finalPlayer2Hand}`)
-      console.log(`🧪 Final Player 1 cards:`, finalPlayer1.hand.map(c => c.id))
-      console.log(`🧪 Final Player 2 cards:`, finalPlayer2.hand.map(c => c.id))
 
       // Player 1 should gain 1 card, player 2 should lose 1 card
       expect(finalPlayer1Hand).toBe(initialPlayer1Hand + 1)
