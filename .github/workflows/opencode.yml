@@ -19,6 +19,6 @@ jobs:
       - name: Run opencode
         uses: sst/opencode/sdks/github@github-v1
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         with:
-          model: anthropic/claude-sonnet-4-20250514
+          model: openrouter/google/gemini-2.5-flash
