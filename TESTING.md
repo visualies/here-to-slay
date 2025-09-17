@@ -6,6 +6,8 @@ This document outlines the testing strategy and best practices for the Here to S
 
 The project uses Playwright for end-to-end testing with two main test categories:
 
+Something Conflicting
+
 - **UI Tests**: Test user interactions and visual elements
 - **API Tests**: Test backend functionality and database operations
 
