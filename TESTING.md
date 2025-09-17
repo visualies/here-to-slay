@@ -2,14 +2,6 @@
 
 This document outlines the testing strategy and best practices for the Here to Slay game.
 
-## Test Structure
-
-The project uses Playwright for end-to-end testing with two main test categories:
-
-Something Conflicting
-
-- **UI Tests**: Test user interactions and visual elements
-- **API Tests**: Test backend functionality and database operations
 
 ## Test Commands
 
@@ -38,6 +30,14 @@ npm run test:headless
 # Stop all development servers
 npm run stop
 ```
+
+## Test Structure
+
+The project uses Playwright for end-to-end testing with two main test categories:
+
+- **UI Tests**: Test user interactions and visual elements
+- **API Tests**: Test backend functionality and database operations
+
 
 ## Testing Best Practices
 
@@ -125,6 +125,32 @@ await apiHelper.verifyRoomExists(roomData.roomId, 'Test Room');
 // Test player joining
 await apiHelper.joinRoom(roomId, playerId, 'PlayerName', '#FF6B6B');
 await apiHelper.verifyPlayerCount(roomId, 1);
+```
+
+## Unit Testing with Jest
+
+Jest is used for unit testing individual functions, components, or modules in isolation. It provides a fast and efficient way to verify the correctness of small, isolated pieces of code.
+
+### Running Jest Tests
+
+```bash
+# Run all Jest tests
+npm run test:unit
+
+# Run specific Jest test file
+npm run test:unit -- path/to/your/test-file.test.ts
+```
+
+### Example Jest Test
+
+```typescript
+import { sum } from '../src/utils/math';
+
+describe('sum function', () => {
+  test('adds 1 + 2 to equal 3', () => {
+    expect(sum(1, 2)).toBe(3);
+  });
+});
 ```
 
 ## Test Categories
@@ -238,7 +264,7 @@ The following actions are available in the room action server:
 
 - **`drawCard`** - Move cards between locations (hand, deck, etc.)
 - **`captureDice`** - Capture dice from other players
-- **`captureModifier`** - Capture modifiers from other players  
+- **`captureModifier`** - Capture modifiers from other players
 - **`captureChallenge`** - Capture challenge cards
 - **`discardCard`** - Discard cards from hand
 - **`deductPoint`** - Deduct action points from current player
