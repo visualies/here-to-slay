@@ -94,10 +94,6 @@ export function addHeroToParty(
     return false;
   }
 
-  // Assuming a party size limit, e.g., 3 heroes
-  if (player.party.heroes.length >= 3) {
-    return false;
-  }
 
   const updatedPlayer = {
     ...player,

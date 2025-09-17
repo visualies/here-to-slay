@@ -120,12 +120,6 @@ export async function playCard(
 
     console.log(`🎮 Card ${card.name} played successfully. Processed ${result.actionsProcessed} actions`)
 
-    // TODO: Implement additional game logic
-    // - Verify player has the card in hand
-    // - Validate card requirements
-    // - Remove card from player's hand
-    // - Add card to appropriate game area
-
     return {
       success: true,
       message: `Card ${card.name} played successfully`,
