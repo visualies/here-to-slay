@@ -49,7 +49,9 @@ export function UserProvider({ children, initialUser }: UserProviderProps) {
         setLoading(true)
         setError(null)
         const res = await gameServerAPI.getCurrentPlayer()
+        console.log('🔍 User bootstrap result:', res)
         if (!cancelled && res.success && res.data) {
+          console.log('✅ Setting user with player ID:', res.data.playerId)
           setUser({
             playerId: res.data.playerId,
             playerName: res.data.playerName,

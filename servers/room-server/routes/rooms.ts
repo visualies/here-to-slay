@@ -110,17 +110,31 @@ export function createRoomsRouter(db: RoomDatabase, docs: Map<string, Y.Doc>) {
         )
       }
 
-      // Add/update player in Yjs document
-      playersMap.set(playerId, {
-        id: playerId,
-        name: playerName,
-        color: playerColor,
-        lastSeen: Date.now(),
-        hand: [],
-        party: { leader: null, heroes: [] },
-        actionPoints: 0,
-        joinTime: Date.now()
-      })
+      // Add/update player in Yjs document - preserve existing data if player already exists
+      const existingPlayer = playersMap.get(playerId) as any
+      if (existingPlayer) {
+        // Player already exists - just update presence and name/color
+        console.log(`🔄 Updating existing player ${playerId} with ${existingPlayer.hand?.length || 0} cards`)
+        playersMap.set(playerId, {
+          ...existingPlayer,
+          name: playerName,
+          color: playerColor,
+          lastSeen: Date.now()
+        })
+      } else {
+        // New player - initialize with empty data
+        console.log(`🆕 Creating new player ${playerId}`)
+        playersMap.set(playerId, {
+          id: playerId,
+          name: playerName,
+          color: playerColor,
+          lastSeen: Date.now(),
+          hand: [],
+          party: { leader: null, heroes: [] },
+          actionPoints: 0,
+          joinTime: Date.now()
+        })
+      }
 
       // Use database method to join and persist
       const result = db.joinRoom(roomId, playerId, playerName, playerColor, ydoc)

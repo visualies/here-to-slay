@@ -27,11 +27,15 @@ class GameServerAPI {
   private async request<T>(endpoint: string, method: string, data?: unknown): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
 
+    // Try to get player ID from localStorage as fallback for cross-origin scenarios
+    const storedPlayerId = typeof window !== 'undefined' ? localStorage.getItem('player_id') : null;
+
     try {
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(storedPlayerId && { 'X-Player-ID': storedPlayerId })
         },
         credentials: 'include', // Include cookies for user authentication
         body: data ? JSON.stringify(data) : undefined,

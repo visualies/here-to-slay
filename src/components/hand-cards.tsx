@@ -16,20 +16,9 @@ interface HandCardsProps {
 
 export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playHeroToParty } = useGameActions();
-  const { players, currentTurn, currentTurnData } = useRoom();
+  const { players, currentTurn, currentTurnData, isConnected } = useRoom();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
-
-  // Update cards when players change
-  useEffect(() => {
-    const playerData = players.find(p => p.id === playerId);
-    if (playerData) {
-      console.log(`HandCards: Player ${playerId} hand updated:`, playerData.hand);
-      setCards(playerData.hand || []);
-      setPlayer(playerData);
-    }
-  }, [players, playerId]);
-  const cardCount = cards.length;
 
   // Position-specific styles
   const positionStyles = {
@@ -59,6 +48,26 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
     }
   };
 
+  // Update cards when players change
+  useEffect(() => {
+    const playerData = players.find(p => p.id === playerId);
+    if (playerData) {
+      console.log(`HandCards: Player ${playerId} hand updated:`, playerData.hand);
+      setCards(playerData.hand || []);
+      setPlayer(playerData);
+    }
+  }, [players, playerId]);
+
+  // Don't render until we're connected and have player data
+  if (!isConnected || players.length === 0) {
+    return (
+      <div className={`flex ${positionStyles[position].container} ${positionStyles[position].containerRotation} ${className}`}>
+        <div className="text-gray-500 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  const cardCount = cards.length;
   const styles = positionStyles[position];
 
   return (

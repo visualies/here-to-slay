@@ -6,8 +6,16 @@ export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
   
   playersMap.forEach((value, key) => {
     if (typeof value === 'object' && value !== null && 'id' in value) {
-      console.log('Found player:', key, value);
-      players.push(value as Player);
+      const player = value as Player;
+      console.log(`🔍 Player ${key}:`, {
+        id: player.id,
+        name: player.name,
+        handSize: player.hand?.length || 0,
+        hand: player.hand,
+        party: player.party,
+        actionPoints: player.actionPoints
+      });
+      players.push(player);
     }
   });
   
