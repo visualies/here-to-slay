@@ -21,7 +21,7 @@ interface CenterAreaProps {
 
 export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaProps) {
   const { drawCard } = useGameActions();
-  const { currentTurn, currentPlayer, players, supportStack, monsters, initializeGame, isHost } = useGameState();
+  const { currentTurn, currentTurnData, currentPlayer, players, supportStack, monsters, initializeGame, isHost } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, results: diceHookResults } = useDice();
   const { getTargetDimensions } = useCardOriginSizing();
@@ -179,7 +179,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
         )}
         
         {status === 'your-turn' && (
-          <StatusArea header={`Your turn - ${currentPlayer?.actionPoints || 0} action points`}>
+          <StatusArea header={`Your turn - ${currentTurnData?.action_points || 0} action points`}>
             <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
               <User className="w-4 h-4 text-green-500" />
             </div>

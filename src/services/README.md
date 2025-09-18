@@ -7,7 +7,7 @@ A clean separation between **API endpoints** (with validation) and **internal ac
 ```
 ┌─── API Endpoints ────┐    ┌─── Internal Services ───┐
 │                      │    │                         │
-│ POST /game/draw-card │───▶│ drawCard()              │
+│ POST /game/play-card │───▶│ playCard()              │
 │ ✅ Turn validation   │    │ ✅ Pure game logic      │
 │ ✅ Action points     │    │ ✅ No validation        │
 │ ✅ Common payload    │    │ ✅ Reusable everywhere  │
@@ -18,15 +18,15 @@ A clean separation between **API endpoints** (with validation) and **internal ac
 
 ## The 4 Player Actions
 
-### 1. **Draw Card** - `/api/game/draw-card`
-- **Payload**: `{ playerId, roomId }`
+### 1. **Draw Card** - `/api/game/play-card` with `cardId: "draw-001"`
+- **Payload**: `{ playerId, roomId, cardId: "draw-001" }`
 - **Validation**: Requires 1 action point, player's turn
-- **Internal**: `drawCard(context)` - draws from support stack
+- **Internal**: `playCard(context, "draw-001")` - draws from support stack using system card
 
-### 2. **Play Hero to Party** - `/api/game/play-hero-to-party`
+### 2. **Play Hero to Party** - `/api/game/play-card` with hero `cardId`
 - **Payload**: `{ playerId, roomId, cardId }`
 - **Validation**: Requires 1 action point, player's turn, valid card ID
-- **Internal**: `playHeroToParty(context, cardId)` - moves hero from hand to party
+- **Internal**: `playCard(context, cardId)` - moves hero from hand to party
 
 ### 3. **Attack Monster** - `/api/game/attack-monster`
 - **Payload**: `{ playerId, roomId, monsterId, diceResult }`

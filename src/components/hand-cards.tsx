@@ -16,7 +16,7 @@ interface HandCardsProps {
 
 export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playHeroToParty } = useGameActions();
-  const { players, currentTurn } = useRoom();
+  const { players, currentTurn, currentTurnData } = useRoom();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
 
@@ -68,9 +68,9 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
         cards.map((card, index) => (
           <div
             key={card.id}
-            className={`${index > 0 ? styles.cardSpacing : ''} ${player?.id === currentTurn && (player?.actionPoints ?? 0) > 0 && card.type === 'Hero' ? 'hover:scale-200 hover:translate-y-[-8.5rem] cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition-transform hover:z-10 relative`}
+            className={`${index > 0 ? styles.cardSpacing : ''} ${player?.id === currentTurn && (currentTurnData?.action_points ?? 0) > 0 && card.type === 'Hero' ? 'hover:scale-200 hover:translate-y-[-8.5rem] cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition-transform hover:z-10 relative`}
             onClick={async () => {
-              const canPlay = player?.id === currentTurn && (player?.actionPoints ?? 0) > 0 && card.type === 'Hero';
+              const canPlay = player?.id === currentTurn && (currentTurnData?.action_points ?? 0) > 0 && card.type === 'Hero';
               if (!canPlay) return;
               await playHeroToParty(card.id);
             }}

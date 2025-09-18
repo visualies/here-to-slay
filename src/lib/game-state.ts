@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import type { Player, Card } from '../types';
+import type { Player, Card, Turn } from '../types';
 
 export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
   const players: Player[] = [];
@@ -18,34 +18,44 @@ export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
 export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
   phase: string;
   currentTurn: string;
+  currentTurnData: Turn | null;
   supportStack: Card[];
   monsters: Card[];
 } {
   let phase = 'waiting';
   let currentTurn = '';
+  let currentTurnData: Turn | null = null;
   let supportStack: Card[] = [];
   let monsters: Card[] = [];
-  
+
   gameStateMap.forEach((value, key) => {
     console.log('Game state key:', key, 'value:', value);
     if (key === 'phase') {
       phase = value as string;
     } else if (key === 'currentTurn') {
-      currentTurn = value as string;
+      // Handle both old string format and new Turn object format
+      if (typeof value === 'string') {
+        currentTurn = value;
+        currentTurnData = null;
+      } else if (value && typeof value === 'object' && 'player_id' in value) {
+        const turnData = value as Turn;
+        currentTurn = turnData.player_id;
+        currentTurnData = turnData;
+      }
     } else if (key === 'supportStack') {
       supportStack = value as Card[];
     } else if (key === 'monsters') {
       monsters = value as Card[];
     }
   });
-  
-  return { phase, currentTurn, supportStack, monsters };
+
+  return { phase, currentTurn, currentTurnData, supportStack, monsters };
 }
 
 export function createYjsObserver(
   playersMap: Y.Map<Player>,
   gameStateMap: Y.Map<unknown>,
-  onStateUpdate: (players: Player[], gameState: { phase: string; currentTurn: string; supportStack: Card[]; monsters: Card[] }) => void
+  onStateUpdate: (players: Player[], gameState: { phase: string; currentTurn: string; currentTurnData: Turn | null; supportStack: Card[]; monsters: Card[] }) => void
 ): () => void {
   const updateState = () => {
     console.log('=== STATE UPDATE ===');

@@ -1,5 +1,6 @@
 import type { Player } from './player';
 import type { Card } from './card';
+import type { Turn } from './turn';
 import type { WebsocketProvider } from 'y-websocket';
 
 export type Room = {
@@ -15,6 +16,7 @@ export type Room = {
   players: Player[];
   phase: string;
   currentTurn: string;
+  currentTurnData: Turn | null;
   supportStack: Card[];
   monsters: Card[];
 

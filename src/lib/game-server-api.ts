@@ -65,11 +65,17 @@ class GameServerAPI {
 
   // Game actions
   async drawCard(roomId: string, playerId: string): Promise<ApiResponse> {
-    return this.request(`/api/game/draw-card`, 'POST', { roomId, playerId });
+    // Use the new play-card endpoint with the special draw-001 card
+    return this.playCard(roomId, playerId, 'draw-001');
+  }
+
+  async playCard(roomId: string, playerId: string, cardId: string): Promise<ApiResponse> {
+    return this.request(`/api/game/play-card`, 'POST', { roomId, playerId, cardId });
   }
 
   async playHeroToParty(roomId: string, playerId: string, cardId: string): Promise<ApiResponse> {
-    return this.request(`/api/game/play-hero-to-party`, 'POST', { roomId, playerId, cardId });
+    // Use the new play-card endpoint for playing heroes
+    return this.playCard(roomId, playerId, cardId);
   }
 
   async attackMonster(roomId: string, playerId: string, monsterId: string, diceResult: number): Promise<ApiResponse> {

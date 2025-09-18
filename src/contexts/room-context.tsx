@@ -3,7 +3,7 @@
 import { createContext, ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import type { Player, Card, Room } from '../types';
+import type { Player, Card, Room, Turn } from '../types';
 import { isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
@@ -24,12 +24,6 @@ interface RoomProviderProps {
 export function RoomProvider({ roomId, children }: RoomProviderProps) {
   const { user, loading } = useUser();
 
-  // Wait until user is bootstrapped from cookie (@me)
-  if (loading || !user) {
-    return null;
-  }
-  const { playerId, playerName, playerColor } = user;
-
   // Yjs setup
   const docRef = useRef<ReadOnlyYDoc | null>(null);
   const providerRef = useRef<WebsocketProvider | null>(null);
@@ -41,9 +35,16 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [phase, setPhase] = useState<string>('waiting');
   const [currentTurn, setCurrentTurn] = useState<string>('');
+  const [currentTurnData, setCurrentTurnData] = useState<Turn | null>(null);
   const [supportStack, setSupportStack] = useState<Card[]>([]);
   const [monsters, setMonsters] = useState<Card[]>([]);
   const [isConnected, setIsConnected] = useState(false);
+
+  // Wait until user is bootstrapped from cookie (@me)
+  if (loading || !user) {
+    return null;
+  }
+  const { playerId, playerName, playerColor } = user;
 
   // Initialize Yjs when roomId changes
   useEffect(() => {
@@ -132,6 +133,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
           setPlayers(newPlayers);
           setPhase(gameState.phase);
           setCurrentTurn(gameState.currentTurn);
+          setCurrentTurnData(gameState.currentTurnData);
           setSupportStack(gameState.supportStack);
           setMonsters(gameState.monsters || []);
         }
@@ -234,6 +236,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     players,
     phase,
     currentTurn,
+    currentTurnData,
     supportStack,
     monsters,
     
