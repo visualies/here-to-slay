@@ -3,15 +3,8 @@ import { useRoom } from './use-room';
 import { useDice } from './use-dice';
 import { useContext } from 'react';
 import { StatusContext } from '../contexts/status-context';
+import { StatusKey, GameStatus } from '../types';
 import * as Y from 'yjs';
-
-export interface GameStatus {
-  key: string;            // Action name or status key (e.g., 'placeCard', 'waiting-to-start')
-  message: string;        // Display message for center game board
-  timeout?: number;       // Duration in milliseconds, optional
-  timeoutAt?: number;     // Timestamp when status expires (ms since epoch)
-  timeRemaining?: number; // Calculated time remaining in milliseconds
-}
 
 interface StatusReturn {
   status: GameStatus;
@@ -48,20 +41,20 @@ export function useStatus(): StatusReturn {
   // Fallback to basic game states when no action is running
   else if (phase === 'waiting') {
     gameStatus = {
-      key: 'waiting-to-start',
+      key: StatusKey.WAITING_TO_START,
       message: 'Waiting for players to join...'
     };
   }
   else if (phase === 'ended') {
     gameStatus = {
-      key: 'game-ended',
+      key: StatusKey.GAME_ENDED,
       message: 'Game has ended'
     };
   }
   // Simplified dice handling - just show capture when enabled
   else if (diceEnabled) {
     gameStatus = {
-      key: 'capture-dice',
+      key: StatusKey.CAPTURE_DICE,
       message: 'Click and drag to throw dice'
     };
   }
@@ -71,12 +64,12 @@ export function useStatus(): StatusReturn {
 
     if (isMyTurn) {
       gameStatus = {
-        key: 'your-turn',
+        key: StatusKey.YOUR_TURN,
         message: 'Your turn - choose an action'
       };
     } else {
       gameStatus = {
-        key: 'waiting-for-turn',
+        key: StatusKey.WAITING_FOR_TURN,
         message: 'Waiting for other players...'
       };
     }
@@ -84,7 +77,7 @@ export function useStatus(): StatusReturn {
   // Default fallback
   else {
     gameStatus = {
-      key: 'waiting',
+      key: StatusKey.WAITING,
       message: 'Loading...'
     };
   }

@@ -1,6 +1,6 @@
 // Re-export shared types for backward compatibility
-export type { Player, Card, Action, ActionParams, GameState, Room, DicePosition, ServerDiceState, ServerDiceStates, CoordinateTransformer, ActionContext, ActionResult, Turn } from '../../shared/types';
-export { CardType, HeroClass, FIELD_SIZE } from '../../shared/types';
+export type { Player, Card, Action, ActionParams, GameState, Room, DicePosition, ServerDiceState, ServerDiceStates, CoordinateTransformer, ActionContext, ActionResult, Turn, GameStatus } from '../../shared/types';
+export { CardType, HeroClass, FIELD_SIZE, StatusKey } from '../../shared/types';
 
 // Export local types
 export type { SimpleRequirement } from '../../shared/types/card';

@@ -206,11 +206,11 @@ export function seedPeanutIfMissing() {
   db.insert(requirements).values({
     cardId: 'hero-007',
     type: 'point',
-    value: 7,
+    value: 1,
   }).run()
 
   const effects = [
-    { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '7' } ] },
+    { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '1' } ] },
     { action: 'placeCard', params: [] },
     { action: 'captureChallenge', params: [] },
     { action: 'captureDice', params: [] },

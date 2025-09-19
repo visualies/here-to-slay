@@ -25,3 +25,7 @@ export { FIELD_SIZE } from './dice';
 
 // Server types
 export type { ActionContext, ActionResult } from './server';
+
+// Status types
+export { StatusKey } from './status';
+export type { GameStatus } from './status';

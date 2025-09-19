@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { gameContextMiddleware, roomOnlyContextMiddleware } from '../middleware/game-context-middleware';
 import { setStatus, clearStatus } from '../lib/status-service';
+import { StatusKey } from '../../../shared/types';
 import * as stateManager from '../lib/state-manager';
 
 export function createEnrichedGameRouter() {
@@ -35,7 +36,7 @@ export function createEnrichedGameRouter() {
       const { cardId } = await c.req.json();
 
       // Business logic is now the focus
-      setStatus(context, 'playCard', `Playing card ${cardId}...`);
+      setStatus(context, StatusKey.PLAY_CARD, `Playing card ${cardId}...`);
 
       // Simulate card play logic
       const currentTurn = stateManager.getCurrentTurn(context.roomId);
@@ -61,7 +62,7 @@ export function createEnrichedGameRouter() {
     // Context automatically available, no repetitive setup!
     const context = c.var.gameContext;
 
-    setStatus(context, 'drawCard', 'Drawing card...');
+    setStatus(context, StatusKey.DRAW_CARD, 'Drawing card...');
 
     // Draw card logic...
     clearStatus(context);
@@ -73,7 +74,7 @@ export function createEnrichedGameRouter() {
     // Context automatically available!
     const context = c.var.gameContext;
 
-    setStatus(context, 'endTurn', 'Ending turn...');
+    setStatus(context, StatusKey.END_TURN, 'Ending turn...');
 
     // End turn logic...
     clearStatus(context);

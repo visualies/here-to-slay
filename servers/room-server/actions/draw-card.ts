@@ -1,5 +1,5 @@
 import type { ActionContext, ActionResult, ActionParams, Turn, Player } from '../../../shared/types';
-import { Location, Amount, SelectionMode } from '../../../shared/types';
+import { Location, Amount, SelectionMode, StatusKey } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { getParam, determineSelectionMode } from './action-utils';
 import { selectCards, moveCard } from '../lib/card-service';
@@ -18,7 +18,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   const gameContext = createGameContext(roomId, playerId);
 
   // Set status when action starts
-  setStatus(gameContext, 'draw-card', 'Drawing cards...');
+  setStatus(gameContext, StatusKey.DRAW_CARD, 'Drawing cards...');
 
   // Handle amount 0 as a no-op (no operation) - return success immediately
   if (amount === 0 || (typeof amount === 'string' && Number(amount) === 0)) {
@@ -48,7 +48,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
 
   if (selection.needsInput) {
     // Set status with timeout since this action needs user input (has callback)
-    setStatus(gameContext, 'draw-card', 'Waiting for card selection...', true);
+    setStatus(gameContext, StatusKey.DRAW_CARD, 'Waiting for card selection...', true);
 
     // Need user input - return early and wait for user selection
     return selection.needsInput;

@@ -15,7 +15,7 @@ import {
   User,
   Plus,
   Target,
-  Zap,
+  Swords,
   Trash2,
   Minus,
   RotateCcw,
@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { StatusBubble } from "./ui/status-bubble";
 import { useState, useEffect } from "react";
-import { CardType, HeroClass, Card as GameCard } from "../types";
+import { CardType, HeroClass, Card as GameCard, StatusKey } from "../types";
 
 interface CenterAreaProps {
   diceResults?: number[];
@@ -178,7 +178,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {/* Status Area - Dynamic content based on status */}
       <div className="mt-[2%]">
-        {status.key === 'waiting-to-start' && (
+        {status.key === StatusKey.WAITING_TO_START && (
           <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
             <StartRound
               onStartRound={initializeGame}
@@ -187,15 +187,20 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'waiting-for-turn' && (
+        {status.key === StatusKey.WAITING_FOR_TURN && (
           <StatusArea header={status.message}>
-            <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
-              <Clock className="w-4 h-4 text-muted-foreground" />
-            </div>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Clock className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
           </StatusArea>
         )}
 
-        {status.key === 'your-turn' && (
+        {status.key === StatusKey.YOUR_TURN && (
           <StatusArea header={status.message}>
             <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
               <User className="w-4 h-4 text-green-500" />
@@ -203,7 +208,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'capture-dice' && (
+        {status.key === StatusKey.CAPTURE_DICE && (
           <StatusArea header={status.message}>
             <DiceResults
               diceResults={displayResults}
@@ -211,14 +216,14 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'game-ended' && (
+        {status.key === StatusKey.GAME_ENDED && (
           <StatusArea header={status.message}>
             <DiceResults diceResults={diceResults} />
           </StatusArea>
         )}
 
         {/* Action-specific status bubbles */}
-        {status.key === 'draw-card' && (
+        {status.key === StatusKey.DRAW_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -231,7 +236,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'capture-modifier' && (
+        {status.key === StatusKey.CAPTURE_MODIFIER && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -244,7 +249,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'capture-challenge' && (
+        {status.key === StatusKey.CAPTURE_CHALLENGE && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -252,12 +257,12 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               timeRemaining={status.timeRemaining}
               direction="counterclockwise"
             >
-              <Zap className="w-5 h-5 text-gray-600" />
+              <Swords className="w-5 h-5 text-gray-600" />
             </StatusBubble>
           </StatusArea>
         )}
 
-        {status.key === 'discard-card' && (
+        {status.key === StatusKey.DISCARD_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -270,7 +275,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'deduct-point' && (
+        {status.key === StatusKey.DEDUCT_POINT && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -283,7 +288,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'steal-card' && (
+        {status.key === StatusKey.STEAL_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -296,7 +301,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'destroy-card' && (
+        {status.key === StatusKey.DESTROY_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -309,7 +314,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'sacrifice-card' && (
+        {status.key === StatusKey.SACRIFICE_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -322,7 +327,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'place-card' && (
+        {status.key === StatusKey.PLACE_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -335,7 +340,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'play-card' && (
+        {status.key === StatusKey.PLAY_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -348,7 +353,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'end-turn' && (
+        {status.key === StatusKey.END_TURN && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -361,7 +366,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'end-move' && (
+        {status.key === StatusKey.END_MOVE && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -374,7 +379,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {status.key === 'pick-card' && (
+        {status.key === StatusKey.PICK_CARD && (
           <StatusArea header={status.message}>
             <StatusBubble
               variant="default"
@@ -387,20 +392,6 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {/* Fallback for any unhandled action status */}
-        {!['waiting-to-start', 'waiting-for-turn', 'your-turn', 'capture-dice', 'game-ended',
-            'draw-card', 'capture-modifier', 'capture-challenge', 'discard-card', 'deduct-point',
-            'steal-card', 'destroy-card', 'sacrifice-card', 'place-card', 'play-card',
-            'end-turn', 'end-move', 'pick-card'].includes(status.key) && (
-          <StatusArea header={status.message}>
-            {status.timeRemaining && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="w-4 h-4" />
-                <span>{Math.ceil(status.timeRemaining / 1000)}s</span>
-              </div>
-            )}
-          </StatusArea>
-        )}
       </div>
     </div>
   );

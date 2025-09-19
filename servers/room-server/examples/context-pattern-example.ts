@@ -8,6 +8,7 @@
 import { Hono } from 'hono';
 import { createGameContext, validateGameContext } from '../lib/game-context';
 import { setStatus, clearStatus, getStatus } from '../lib/status-service';
+import { StatusKey } from '../../../shared/types';
 import * as stateManager from '../lib/state-manager';
 
 // Example route using the new pattern
@@ -35,7 +36,7 @@ export function exampleRoute() {
       const context = createGameContext(roomId, playerId);
 
       // Services now use clean API with context + global state
-      setStatus(context, 'playCard', `Playing card ${cardId}...`);
+      setStatus(context, StatusKey.PLAY_CARD, `Playing card ${cardId}...`);
 
       // Business logic would go here...
       // const result = cardService.playCard(enhancedContext, cardId)

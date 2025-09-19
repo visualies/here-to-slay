@@ -1,5 +1,5 @@
 import type { ActionContext, ActionResult, Player, Card } from '../../../shared/types';
-import { Location, Amount, SelectionMode } from '../../../shared/types';
+import { Location, Amount, SelectionMode, StatusKey } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { moveCard } from '../lib/card-service';
 import { setStatus } from '../lib/status-service';
@@ -12,7 +12,7 @@ export function run(context: ActionContext): ActionResult {
   const gameContext = createGameContext(roomId, playerId);
 
   // Set status when action starts
-  setStatus(gameContext, 'placeCard', 'Placing card in party...');
+  setStatus(gameContext, StatusKey.PLACE_CARD, 'Placing card in party...');
   
   // Get the player to check their hand
   const player = playersMap.get(playerId) as Player;

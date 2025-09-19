@@ -1,12 +1,8 @@
 import * as stateManager from './state-manager';
 import type { GameContext } from './game-context';
+import { StatusKey, GameStatus } from '../../../shared/types/status';
 
-export interface GameStatusData {
-  key: string;            // Action name or status key (e.g., 'placeCard', 'waiting-to-start')
-  message: string;        // Display message for center game board
-  timeout?: number;       // Duration in milliseconds, optional
-  timeoutAt?: number;     // Timestamp when status expires (ms since epoch)
-}
+export type GameStatusData = GameStatus;
 
 // Default timeout from environment or 30 seconds
 const DEFAULT_TIMEOUT_MS = parseInt(process.env.ACTION_TIMEOUT_MS || '30000');
@@ -30,7 +26,7 @@ const DEFAULT_TIMEOUT_MS = parseInt(process.env.ACTION_TIMEOUT_MS || '30000');
  */
 export function setStatus(
   context: GameContext,
-  actionName: string,
+  actionName: StatusKey,
   message: string,
   hasCallback: boolean = false,
   customTimeoutMs?: number

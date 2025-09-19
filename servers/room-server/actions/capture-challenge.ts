@@ -1,8 +1,20 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
+import { StatusKey } from '../../../shared/types';
 import { registerAction } from './action-registry';
+import { setStatus } from '../lib/status-service';
+import { createGameContext } from '../lib/game-context';
+
+// Challenge timeout from environment or 7 seconds default
+const CHALLENGE_TIMEOUT_MS = parseInt(process.env.CHALLENGE_TIMEOUT_MS || '7000');
 
 export function run(context: ActionContext): ActionResult {
-  const { playerId } = context;
+  const { playerId, roomId } = context;
+
+  // Create game context for service calls
+  const gameContext = createGameContext(roomId, playerId);
+
+  // Set status when action starts
+  setStatus(gameContext, StatusKey.CAPTURE_CHALLENGE, 'Anyone challenging?', true, CHALLENGE_TIMEOUT_MS);
 
   console.log(`🎯 Internal: Capturing challenge for player ${playerId}`);
   console.log('capturing challenges');
@@ -13,7 +25,7 @@ export function run(context: ActionContext): ActionResult {
     waitingForInput: {
       type: 'choice',
       prompt: 'Anyone challenging?',
-      timeoutMs: 30000,
+      timeoutMs: CHALLENGE_TIMEOUT_MS,
       requiredPlayerId: playerId
     }
   };
