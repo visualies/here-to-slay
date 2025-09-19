@@ -212,6 +212,8 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           <StatusArea header={status.message}>
             <DiceResults
               diceResults={displayResults}
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
             />
           </StatusArea>
         )}

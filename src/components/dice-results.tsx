@@ -4,9 +4,11 @@ import { StatusBubble } from './ui/status-bubble';
 
 interface DiceResultsProps {
   diceResults: number[];
+  timeout?: number;
+  timeRemaining?: number;
 }
 
-export function DiceResults({ diceResults = [] }: DiceResultsProps) {
+export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceResultsProps) {
   const diceContext = useDice();
   const { captureStatus, requiredAmount } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
@@ -35,27 +37,29 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
     }
   }, [captureStatus]);
 
-  // Handle timeout timer when status is 'waiting'
+  // Handle timeout timer when status is 'waiting' (dice context only)
   useEffect(() => {
-    if (captureStatus === 'waiting') {
+    if (captureStatus === 'waiting' && !timeout) {
+      // Only use internal timer for dice context when no timeout props are provided
       setTimeoutProgress(0);
       const startTime = Date.now();
       
       const timer = setInterval(() => {
         const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / 30000, 1); // 30 seconds timeout
+        const timeoutDuration = 30000; // Default 30 seconds for dice context
+        const progress = Math.min(elapsed / timeoutDuration, 1);
         setTimeoutProgress(progress);
         
         if (progress >= 1) {
           clearInterval(timer);
         }
-      }, 100); // Update every 100ms for timeout
+      }, 100);
       
       return () => clearInterval(timer);
     } else {
       setTimeoutProgress(0);
     }
-  }, [captureStatus]);
+  }, [captureStatus, timeout]);
   
   const total = validResults.reduce((sum, val) => sum + val, 0);
 
@@ -79,32 +83,38 @@ export function DiceResults({ diceResults = [] }: DiceResultsProps) {
     return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
   };
 
-  // Show question marks only when waiting
-  if (captureStatus === 'waiting') {
+  // Show question marks only when waiting or when timeout props are provided
+  if (captureStatus === 'waiting' || (timeout && timeRemaining !== undefined)) {
     return (
       <div className="flex items-center gap-3">
         <StatusBubble
-          progress={timeoutProgress}
-          showProgress={true}
+          progress={timeout ? undefined : timeoutProgress}
+          showProgress={timeout ? undefined : true}
+          timeout={timeout}
+          timeRemaining={timeRemaining}
           variant="default"
-          direction="counterclockwise"
+          direction="clockwise"
         >
           <div className="text-lg font-bold text-gray-600">?</div>
         </StatusBubble>
         <StatusBubble
-          progress={timeoutProgress}
-          showProgress={true}
+          progress={timeout ? undefined : timeoutProgress}
+          showProgress={timeout ? undefined : true}
+          timeout={timeout}
+          timeRemaining={timeRemaining}
           variant="default"
-          direction="counterclockwise"
+          direction="clockwise"
         >
           <div className="text-lg font-bold text-gray-600">?</div>
         </StatusBubble>
         <div className="text-gray-500 mx-1">=</div>
         <StatusBubble
-          progress={timeoutProgress}
-          showProgress={true}
+          progress={timeout ? undefined : timeoutProgress}
+          showProgress={timeout ? undefined : true}
+          timeout={timeout}
+          timeRemaining={timeRemaining}
           variant="default"
-          direction="counterclockwise"
+          direction="clockwise"
         >
           <div className="text-lg font-bold text-gray-600">?</div>
         </StatusBubble>
