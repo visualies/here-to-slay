@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import type { Card } from '../../../shared/types'
 
 test.describe('API: Draw Card Action', () => {
   let roomId: string
@@ -814,13 +815,13 @@ test.describe('API: Draw Card Action', () => {
 
       // Now provide user input by selecting cards from ONLY player 2's hand
       // This should succeed because all cards come from the same player
-      const player2CardIds = initialPlayer2.hand.slice(0, 2).map(c => c.id) // Take first 2 cards from player 2
+      const player2CardIds = initialPlayer2.hand.slice(0, 2).map((c: Card) => c.id) // Take first 2 cards from player 2
       
       // Get the actionId from the current turn's action queue
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
       const roomState = await roomStateResponse.json()
       const currentTurn = roomState.gameState.currentTurn
-      const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
+      const waitingAction = currentTurn.action_queue.find((action: { state: string; id: string }) => action.state === 'waiting')
       
       if (!waitingAction) {
         throw new Error('No action found waiting for input')
@@ -860,8 +861,8 @@ test.describe('API: Draw Card Action', () => {
 
       // Verify the specific cards were moved
       for (const cardId of player2CardIds) {
-        expect(finalPlayer1.hand.some(card => card.id === cardId)).toBe(true)
-        expect(finalPlayer2.hand.some(card => card.id === cardId)).toBe(false)
+        expect(finalPlayer1.hand.some((card: Card) => card.id === cardId)).toBe(true)
+        expect(finalPlayer2.hand.some((card: Card) => card.id === cardId)).toBe(false)
       }
     })
 
@@ -976,7 +977,7 @@ test.describe('API: Draw Card Action', () => {
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
       const roomState = await roomStateResponse.json()
       const currentTurn = roomState.gameState.currentTurn
-      const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
+      const waitingAction = currentTurn.action_queue.find((action: { state: string; id: string }) => action.state === 'waiting')
       
       if (!waitingAction) {
         throw new Error('No action found waiting for input')
@@ -1107,7 +1108,7 @@ test.describe('API: Draw Card Action', () => {
       const currentTurn = roomState.gameState.currentTurn
       
       // Find the action that's waiting for input
-      const waitingAction = currentTurn.action_queue.find(action => action.state === 'waiting')
+      const waitingAction = currentTurn.action_queue.find((action: { state: string; id: string }) => action.state === 'waiting')
       
       if (!waitingAction) {
         throw new Error('No action found waiting for input')
@@ -1143,8 +1144,8 @@ test.describe('API: Draw Card Action', () => {
       expect(finalPlayer2Hand).toBe(initialPlayer2Hand - 1)
 
       // Verify the specific card was moved
-      expect(finalPlayer1.hand.some(card => card.id === selectedCardId)).toBe(true)
-      expect(finalPlayer2.hand.some(card => card.id === selectedCardId)).toBe(false)
+      expect(finalPlayer1.hand.some((card: Card) => card.id === selectedCardId)).toBe(true)
+      expect(finalPlayer2.hand.some((card: Card) => card.id === selectedCardId)).toBe(false)
     })
   })
 
@@ -1630,7 +1631,7 @@ test.describe('API: Draw Card Action', () => {
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
       const roomState = await roomStateResponse.json()
       const currentTurn = roomState.gameState.currentTurn
-      const waitingAction = currentTurn.action_queue.find((action: any) => action.state === 'waiting')
+      const waitingAction = currentTurn.action_queue.find((action: { state: string; id: string }) => action.state === 'waiting')
       
       if (!waitingAction) {
         throw new Error('No action found waiting for input')
@@ -1809,7 +1810,7 @@ test.describe('API: Draw Card Action', () => {
       const initialRoomResponse = await request.get(`/api/room/${roomId}`)
       const initialRoomData = await initialRoomResponse.json()
       const initialPlayer = initialRoomData.players[playerId]
-      const initialPartySize = initialPlayer.party.heroes.filter(hero => hero !== null).length
+      const initialPartySize = initialPlayer.party.heroes.filter((hero: Card | null) => hero !== null).length
       const initialSupportStackSize = initialRoomData.gameState.supportStack.length
 
       // Create test card to draw to party
@@ -1843,7 +1844,7 @@ test.describe('API: Draw Card Action', () => {
       const finalRoomResponse = await request.get(`/api/room/${roomId}`)
       const finalRoomData = await finalRoomResponse.json()
       const finalPlayer = finalRoomData.players[playerId]
-      const finalPartySize = finalPlayer.party.heroes.filter(hero => hero !== null).length
+      const finalPartySize = finalPlayer.party.heroes.filter((hero: Card | null) => hero !== null).length
       const finalSupportStackSize = finalRoomData.gameState.supportStack.length
 
       expect(finalPartySize).toBe(initialPartySize + 2)

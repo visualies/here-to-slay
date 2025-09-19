@@ -127,7 +127,7 @@ test.describe('API: User Cookie Persistence Bugs', () => {
       const context = await browser.newContext()
       const freshRequest = context.request
 
-      const response = await freshRequest.get('http://localhost:8234/api/users/@me')
+      const response = await freshRequest.get('/api/users/@me')
       expect(response.status()).toBe(200)
 
       const data = await response.json()
@@ -203,7 +203,8 @@ test.describe('API: User Cookie Persistence Bugs', () => {
       const createRoom = await request.post('/api/create-room', {
         data: { name: 'Membership Test Room' }
       })
-      roomId = createRoom.json().then(data => data.roomId)
+      const createRoomData = await createRoom.json()
+      roomId = createRoomData.roomId
 
       const getUserResponse = await request.get('/api/users/@me')
       const userData = await getUserResponse.json()
@@ -254,7 +255,7 @@ test.describe('API: User Cookie Persistence Bugs', () => {
       const request = context.request
 
       // Try with completely fresh context
-      const response = await request.get('http://192.168.178.61:1234/api/users/@me')
+      const response = await request.get('/api/users/@me')
       expect(response.status()).toBe(200)
 
       const data = await response.json()

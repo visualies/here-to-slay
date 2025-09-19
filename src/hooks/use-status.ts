@@ -1,7 +1,9 @@
 import { useGameState } from './use-game-state';
+import { useRoom } from './use-room';
 import { useDice } from './use-dice';
 import { useContext } from 'react';
 import { StatusContext } from '../contexts/status-context';
+import * as Y from 'yjs';
 
 export interface GameStatus {
   key: string;            // Action name or status key (e.g., 'placeCard', 'waiting-to-start')
@@ -22,14 +24,15 @@ interface StatusReturn {
 }
 
 export function useStatus(): StatusReturn {
-  const { phase, currentTurn, currentPlayer, gameStateMap } = useGameState();
+  const { phase, currentTurn, currentPlayer } = useGameState();
+  const { gameStateRef } = useRoom();
   const { enabled: diceEnabled } = useDice();
   const statusContext = useContext(StatusContext);
 
   let gameStatus: GameStatus;
 
-  // Get status from gameStateMap (set by actions via status service)
-  const serverStatus = gameStateMap?.get('gameStatus') as GameStatus | undefined;
+  // Get status from gameStateRef (set by actions via status service)
+  const serverStatus = (gameStateRef as Y.Map<unknown>)?.get('gameStatus') as GameStatus | undefined;
 
   if (serverStatus) {
     // Calculate time remaining if there's a timeout

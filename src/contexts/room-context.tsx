@@ -40,14 +40,13 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   const [monsters, setMonsters] = useState<Card[]>([]);
   const [isConnected, setIsConnected] = useState(false);
 
-  // Wait until user is bootstrapped from cookie (@me)
-  if (loading || !user) {
-    return null;
-  }
-  const { playerId, playerName, playerColor } = user;
-
   // Initialize Yjs when roomId changes
   useEffect(() => {
+    // Wait until user is bootstrapped from cookie (@me)
+    if (loading || !user) {
+      return;
+    }
+    const { playerId, playerName, playerColor } = user;
     // Clean up previous connection
     if (providerRef.current) {
       providerRef.current.disconnect();
@@ -115,7 +114,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
       cleanupHeartbeat(heartbeatRef.current);
       provider.disconnect();
     };
-  }, [roomId, playerId, playerName, playerColor]);
+  }, [roomId, user, loading]);
   
   // Subscribe to players and game state changes
   useEffect(() => {
@@ -173,17 +172,12 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
       clearInterval(storageUpdateInterval);
     };
   }, [roomId]);
-  
-  // Derived state - all players are managed by server
-  const currentPlayer = players.find(p => p.id === playerId) || null;
-  const otherPlayers = players.filter(p => p.id !== playerId);
-  
-  // Check if current player is host (first to join)
-  const playerIsHost = isHost(players, playerId);
 
-  
-  // Actions
+  // Actions - moved before conditional return to satisfy React hooks rules
   const handleInitializeGame = useCallback(async () => {
+    if (loading || !user) return;
+
+    const playerIsHost = isHost(players, user.playerId);
     if (!playerIsHost) {
       console.log('initializeGame: Not host');
       return;
@@ -199,9 +193,12 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     } catch (error) {
       console.error('❌ Failed to start game via API:', error);
     }
-  }, [playerIsHost, roomId]);
+  }, [loading, user, players, roomId]);
 
   const handleAddPlayerToGame = useCallback(async (playerIdToAdd: string) => {
+    if (loading || !user) return;
+
+    const playerIsHost = isHost(players, user.playerId);
     if (!playerIsHost) {
       console.log('addPlayerToGame: Not host');
       return;
@@ -217,11 +214,25 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     } catch (error) {
       console.error('❌ Failed to add player to game via API:', error);
     }
-  }, [playerIsHost, roomId]);
-  
+  }, [loading, user, players, roomId]);
+
   const handleUpdateCursor = useCallback((x: number, y: number) => {
     updateCursor(providerRef.current, x, y);
   }, []);
+
+  // Wait until user is bootstrapped before rendering component logic
+  if (loading || !user) {
+    return null;
+  }
+
+  const { playerId, playerName, playerColor } = user;
+
+  // Derived state - all players are managed by server
+  const currentPlayer = players.find(p => p.id === playerId) || null;
+  const otherPlayers = players.filter(p => p.id !== playerId);
+
+  // Check if current player is host (first to join)
+  const playerIsHost = isHost(players, playerId);
 
   const roomData: Room = {
     // Room info

@@ -45,7 +45,7 @@ export async function gameContextMiddleware(c: Context, next: Next) {
     }
 
     // Validate required fields
-    if (!validateGameContext({ roomId, playerId })) {
+    if (!roomId || playerId === undefined) {
       return c.json({
         error: 'Missing required fields: roomId and playerId are required'
       }, 400);
@@ -60,7 +60,7 @@ export async function gameContextMiddleware(c: Context, next: Next) {
     }
 
     // Create and set context
-    const gameContext = createGameContext(roomId, playerId);
+    const gameContext = createGameContext(roomId!, playerId!);
     c.set('gameContext', gameContext);
 
     await next();

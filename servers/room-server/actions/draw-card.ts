@@ -20,7 +20,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   setStatus(gameContext, 'drawCard', 'Drawing cards...');
 
   // Handle amount 0 as a no-op (no operation) - return success immediately
-  if (amount === 0 || amount === '0' || amount === Amount.Zero || amount === 'zero') {
+  if (amount === 0 || (typeof amount === 'string' && Number(amount) === 0)) {
     return {
       success: true,
       message: 'No cards to draw (amount is 0)',
@@ -117,7 +117,7 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
       }
       if (!found) {
         // Clear status on error
-        clearStatus(gameStateMap);
+        clearStatus(gameContext);
         return { success: false, message: `Card ${cardId} not found in any other player's hand` };
       }
     }
@@ -125,7 +125,7 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
     // Check if all cards come from the same player
     if (playerCardMap.size > 1) {
       // Clear status on error
-      clearStatus(gameStateMap);
+      clearStatus(gameContext);
       return {
         success: false,
         message: 'For AnyHand, all selected cards must come from the same player\'s hand'

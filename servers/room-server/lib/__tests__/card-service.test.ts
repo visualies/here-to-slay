@@ -1,7 +1,13 @@
 import * as Y from 'yjs';
 import { moveCard } from '../card-service';
 import { Location } from '../../../../shared/types';
-import type { ActionContext, Card, Player } from '../../../../shared/types';
+import type { ActionContext, Card, Player, ActionResult } from '../../../../shared/types';
+
+// Type for moveCard result data
+interface MoveCardResultData {
+  cards: Card[];
+  amount: number;
+}
 
 // Mock card data
 const createMockCard = (id: string, name: string = `Card ${id}`): Card => ({
@@ -9,8 +15,7 @@ const createMockCard = (id: string, name: string = `Card ${id}`): Card => ({
   name,
   type: 'hero',
   description: `Description for ${name}`,
-  image: `image-${id}.jpg`,
-  rarity: 'common',
+  imagePath: `image-${id}.jpg`,
   requirements: [],
   actions: []
 });
@@ -89,7 +94,7 @@ describe('moveCard', () => {
     it('should fail when target is null or undefined', () => {
       const context = createActionContext('player-1');
 
-      const result = moveCard(context, null as Location, Location.OwnHand, ['card-1']);
+      const result = moveCard(context, null as unknown as Location, Location.OwnHand, ['card-1']);
       expect(result.success).toBe(false);
       expect(result.message).toBe('target and destination are required');
     });
@@ -97,7 +102,7 @@ describe('moveCard', () => {
     it('should fail when destination is null or undefined', () => {
       const context = createActionContext('player-1');
 
-      const result = moveCard(context, Location.OwnHand, null as Location, ['card-1']);
+      const result = moveCard(context, Location.OwnHand, null as unknown as Location, ['card-1']);
       expect(result.success).toBe(false);
       expect(result.message).toBe('target and destination are required');
     });
@@ -113,7 +118,7 @@ describe('moveCard', () => {
     it('should fail when selectedCardIds is null or undefined', () => {
       const context = createActionContext('player-1');
 
-      const result = moveCard(context, Location.OwnHand, Location.Cache, null as string[]);
+      const result = moveCard(context, Location.OwnHand, Location.Cache, null as unknown as string[]);
       expect(result.success).toBe(false);
       expect(result.message).toBe('selectedCardIds is required and must not be empty');
     });
@@ -127,8 +132,8 @@ describe('moveCard', () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe('Moved 1 card(s) from own-hand to cache');
-      expect(result.data?.cards).toHaveLength(1);
-      expect(result.data?.cards[0].id).toBe('card-1');
+      expect((result.data as MoveCardResultData)?.cards).toHaveLength(1);
+      expect((result.data as MoveCardResultData)?.cards[0].id).toBe('card-1');
 
       // Check that card was removed from hand
       const updatedPlayer = context.playersMap.get('player-1') as Player;
@@ -147,7 +152,7 @@ describe('moveCard', () => {
       const result = moveCard(context, Location.OwnHand, Location.DiscardPile, ['card-1', 'card-2']);
 
       expect(result.success).toBe(true);
-      expect(result.data?.cards).toHaveLength(2);
+      expect((result.data as MoveCardResultData)?.cards).toHaveLength(2);
 
       // Check that both cards were removed from hand
       const updatedPlayer = context.playersMap.get('player-1') as Player;
@@ -216,7 +221,7 @@ describe('moveCard', () => {
       const result = moveCard(context, Location.AnyHand, Location.OwnHand, ['card-3']);
 
       expect(result.success).toBe(true);
-      expect(result.data?.cards[0].id).toBe('card-3');
+      expect((result.data as MoveCardResultData)?.cards[0].id).toBe('card-3');
 
       // Check that card was removed from player2's hand
       const updatedPlayer2 = context.playersMap.get('player-2') as Player;
@@ -254,7 +259,7 @@ describe('moveCard', () => {
       const result = moveCard(context, Location.OtherHands, Location.OwnHand, ['card-3', 'card-4']);
 
       expect(result.success).toBe(true);
-      expect(result.data?.cards).toHaveLength(2);
+      expect((result.data as MoveCardResultData)?.cards).toHaveLength(2);
 
       // Check that cards were removed from respective players
       const updatedPlayer2 = context.playersMap.get('player-2') as Player;
@@ -360,7 +365,7 @@ describe('moveCard', () => {
     });
 
     it('should handle moving to OwnParty when all slots are filled', () => {
-      const fullParty = { heroes: [card3, card4, createMockCard('card-5')] };
+      const fullParty = { leader: null, heroes: [card3, card4, createMockCard('card-5')] };
       const playerWithFullParty = createMockPlayer('player-1', [card1, card2], fullParty);
       const context = createActionContext('player-1', [playerWithFullParty]);
 
@@ -447,9 +452,9 @@ describe('moveCard', () => {
 
       const result = moveCard(context, Location.OwnHand, Location.Cache, ['card-1', 'card-2']);
 
-      expect(result.data?.cards).toHaveLength(2);
-      expect(result.data?.cards.map((c: Card) => c.id)).toEqual(['card-1', 'card-2']);
-      expect(result.data?.amount).toBe(2);
+      expect((result.data as MoveCardResultData)?.cards).toHaveLength(2);
+      expect((result.data as MoveCardResultData)?.cards.map((c: Card) => c.id)).toEqual(['card-1', 'card-2']);
+      expect((result.data as MoveCardResultData)?.amount).toBe(2);
     });
   });
 
@@ -693,7 +698,7 @@ describe('moveCard', () => {
         const result = moveCard(context, Location.AnyParty, Location.OwnHand, ['card-7']);
 
         expect(result.success).toBe(true);
-        expect(result.data?.cards[0].id).toBe('card-7');
+        expect((result.data as MoveCardResultData)?.cards[0].id).toBe('card-7');
 
         // Check that card was removed from player2's party
         const updatedPlayer2 = context.playersMap.get('player-2') as Player;
@@ -731,7 +736,7 @@ describe('moveCard', () => {
         const result = moveCard(context, Location.OtherParties, Location.OwnHand, ['card-7', 'card-8']);
 
         expect(result.success).toBe(true);
-        expect(result.data?.cards).toHaveLength(2);
+        expect((result.data as MoveCardResultData)?.cards).toHaveLength(2);
 
         // Check that cards were removed from player2's party
         const updatedPlayer2 = context.playersMap.get('player-2') as Player;

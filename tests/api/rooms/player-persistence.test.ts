@@ -54,7 +54,7 @@ test.describe('API: Player Persistence and Rejoin Scenarios', () => {
       const newRequest = newContext.request
 
       // Get player ID in new context
-      const secondResponse = await newRequest.get('http://192.168.178.61:1234/api/users/@me')
+      const secondResponse = await newRequest.get('/api/users/@me')
       const secondBody = await secondResponse.json()
       const secondPlayerId = secondBody.data.playerId
 
