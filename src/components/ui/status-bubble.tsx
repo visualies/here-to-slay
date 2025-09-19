@@ -10,22 +10,34 @@ interface StatusBubbleProps {
   showProgress?: boolean;
   variant?: 'default' | 'success' | 'error';
   direction?: 'clockwise' | 'counterclockwise';
+  timeout?: number; // Total timeout duration in milliseconds
+  timeRemaining?: number; // Time remaining in milliseconds
 }
 
-export function StatusBubble({ 
-  children, 
-  className = "", 
+export function StatusBubble({
+  children,
+  className = "",
   progress = 1,
   showProgress = false,
   variant = 'default',
-  direction = 'clockwise'
+  direction = 'clockwise',
+  timeout,
+  timeRemaining
 }: StatusBubbleProps) {
   const [showCelebration, setShowCelebration] = useState(false);
   const bubbleRef = useRef<HTMLDivElement>(null);
 
+  // Calculate progress from timeout values if provided
+  const calculatedProgress = timeout && timeRemaining !== undefined
+    ? Math.max(0, Math.min(1, timeRemaining / timeout))
+    : progress;
+
+  // Show progress automatically when timeout is provided
+  const shouldShowProgress = showProgress || (timeout !== undefined && timeRemaining !== undefined);
+
   // Trigger celebration when progress completes
   useEffect(() => {
-    if (progress >= 1 && showProgress && variant === 'success') {
+    if (calculatedProgress >= 1 && shouldShowProgress && variant === 'success') {
       setShowCelebration(true);
       
       // Trigger confetti from the bubble position
@@ -48,7 +60,7 @@ export function StatusBubble({
       const timer = setTimeout(() => setShowCelebration(false), 600);
       return () => clearTimeout(timer);
     }
-  }, [progress, showProgress, variant]);
+  }, [calculatedProgress, shouldShowProgress, variant]);
 
   const getColors = () => {
     switch (variant) {
@@ -89,7 +101,7 @@ export function StatusBubble({
       <div 
         className={`absolute inset-0 border-2 border-dashed ${colors.dashedBorder} rounded-lg`}
         style={(() => {
-          if (!showProgress) {
+          if (!shouldShowProgress) {
             // When not showing progress, show appropriate starting state
             if (direction === 'clockwise') {
               // Clockwise starts empty (no border visible)
@@ -102,9 +114,9 @@ export function StatusBubble({
               return {};
             }
           }
-          
+
           // When showing progress, animate based on direction
-          const angle = progress * 360;
+          const angle = calculatedProgress * 360;
           if (direction === 'counterclockwise') {
             // Counterclockwise: start full, remove going backwards (timeout)
             return {

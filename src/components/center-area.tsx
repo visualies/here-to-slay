@@ -10,7 +10,24 @@ import { Card } from "./card";
 import { CardSlot } from "./card-slot";
 import { CardOrigin } from "./card-origin";
 import { Stack } from "./stack";
-import { Clock, User } from "lucide-react";
+import {
+  Clock,
+  User,
+  Plus,
+  Target,
+  Zap,
+  Trash2,
+  Minus,
+  RotateCcw,
+  Bomb,
+  Skull,
+  Hand,
+  Play,
+  StopCircle,
+  ArrowRight,
+  PickaxeIcon as Pick
+} from "lucide-react";
+import { StatusBubble } from "./ui/status-bubble";
 import { useState, useEffect } from "react";
 import { CardType, HeroClass, Card as GameCard } from "../types";
 
@@ -200,8 +217,181 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
           </StatusArea>
         )}
 
-        {/* Show action status when an action is running */}
-        {!['waiting-to-start', 'waiting-for-turn', 'your-turn', 'capture-dice', 'game-ended'].includes(status.key) && (
+        {/* Action-specific status bubbles */}
+        {status.key === 'draw-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Plus className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'capture-modifier' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Target className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'capture-challenge' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Zap className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'discard-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Trash2 className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'deduct-point' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Minus className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'steal-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <RotateCcw className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'destroy-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Bomb className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'sacrifice-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Skull className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'place-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Hand className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'play-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Play className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'end-turn' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <StopCircle className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'end-move' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <ArrowRight className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {status.key === 'pick-card' && (
+          <StatusArea header={status.message}>
+            <StatusBubble
+              variant="default"
+              timeout={status.timeout}
+              timeRemaining={status.timeRemaining}
+              direction="counterclockwise"
+            >
+              <Pick className="w-5 h-5 text-gray-600" />
+            </StatusBubble>
+          </StatusArea>
+        )}
+
+        {/* Fallback for any unhandled action status */}
+        {!['waiting-to-start', 'waiting-for-turn', 'your-turn', 'capture-dice', 'game-ended',
+            'draw-card', 'capture-modifier', 'capture-challenge', 'discard-card', 'deduct-point',
+            'steal-card', 'destroy-card', 'sacrifice-card', 'place-card', 'play-card',
+            'end-turn', 'end-move', 'pick-card'].includes(status.key) && (
           <StatusArea header={status.message}>
             {status.timeRemaining && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
