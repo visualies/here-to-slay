@@ -49,16 +49,13 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
       return `url(${card.imagePath})`;
     }
     
-    // Fall back to default images based on type
-    switch (card.type) {
-      case 'Modifier':
-        return 'url(/modifier.png)';
-      case 'Hero':
-      case 'Item':
-      case 'Magic':
-      default:
-        return 'url(/heroBack.png)';
+    // Only show specific images for Modifier cards, no default fallback for others
+    if (card.type === 'Modifier') {
+      return 'url(/modifier.png)';
     }
+    
+    // Return empty string for cards without images (will show text content instead)
+    return '';
   };
 
   const transform = getRandomTransform(card.name, stackIndex, randomness);
@@ -81,14 +78,14 @@ export function Card({ card, isBack = false, size = 'default', className = '', s
     setBlurred(false);
   };
 
-  // All cards now use background images
+  // Set background image - only show card back when isBack is explicitly true
   const backgroundImage = isBack ? 'url(/heroBack.png)' : getCardBackground(card);
 
   return (
     <div 
       className={`card ${baseClasses} bg-cover bg-center rounded overflow-hidden outline outline-1 ${className} ${card.type !== 'Modifier' && !isBack ? 'flex flex-col' : ''} ${preview ? 'random-rotate hover:scale-[2] hover:rotate-[var(--hover-rotation)] hover:z-[60] hover:shadow-2xl hover:shadow-black/50 transition-all duration-300 ease-in-out cursor-pointer relative will-change-transform' : 'transition-transform duration-300 ease-in-out cursor-pointer relative will-change-transform'}`}
       style={{ 
-        backgroundImage,
+        backgroundImage: backgroundImage || undefined,
         transform: hoverTransform ? `${transform} ${hoverTransform}` : transform,
         outlineColor: 'var(--outline)',
         ...(preview && {

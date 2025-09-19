@@ -8,7 +8,7 @@ export const modifierRegistry: Card[] = [
     description: 'A sample modifier card',
     requirements: [{ type: 'point', value: 0 }],
     effect: [],
-    imagePath: '/api/images/modifiers/modifier-001.png',
+    imagePath: '/api/images/card/modifier-001',
   },
   {
     id: 'modifier-plus-3',
@@ -20,7 +20,7 @@ export const modifierRegistry: Card[] = [
       action: 'MODIFY_ROLL',
       amount: 3,
     }],
-    imagePath: '/api/images/modifiers/modifier-plus-3.png',
+    imagePath: '/api/images/card/modifier-plus-3',
   },
   {
     id: 'modifier-minus-3',
@@ -32,7 +32,7 @@ export const modifierRegistry: Card[] = [
       action: 'MODIFY_ROLL',
       amount: -3,
     }],
-    imagePath: '/api/images/modifiers/modifier-minus-3.png',
+    imagePath: '/api/images/card/modifier-minus-3',
   },
   {
     id: 'modifier-plus-4',
@@ -44,7 +44,7 @@ export const modifierRegistry: Card[] = [
       action: 'MODIFY_ROLL',
       amount: 4,
     }],
-    imagePath: '/api/images/modifiers/modifier-plus-4.png',
+    imagePath: '/api/images/card/modifier-plus-4',
   },
 ];
 

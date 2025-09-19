@@ -118,7 +118,7 @@ export function seedButtonsIfMissing() {
     type: 'Hero',
     heroClass: 'Thief',
     description: "Pull a card from another player's hand. If it is a Magic card, you may play it immediately.",
-    imagePath: '/api/images/heroes/thief_buttons.png',
+    imagePath: '/api/images/card/hero-042',
   }).run()
 
   db.insert(requirements).values({
@@ -148,4 +148,85 @@ export function seedButtonsIfMissing() {
   }
 }
 
+export function seedNappingNibblesIfMissing() {
+  const exists = db.select({ id: cards.id }).from(cards).where(eq(cards.id, 'hero-006')).all()[0]
+  if (exists) return
+
+  console.log('🐹 Seeding hero-006 Napping Nibbles...')
+
+  db.insert(cards).values({
+    id: 'hero-006',
+    name: 'Napping Nibbles',
+    type: 'Hero',
+    heroClass: 'Bard',
+    description: 'Do nothing.',
+    imagePath: '/api/images/card/hero-006',
+  }).run()
+
+  db.insert(requirements).values({
+    cardId: 'hero-006',
+    type: 'point',
+    value: 2,
+  }).run()
+
+  const effects = [
+    { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '2' } ] },
+    { action: 'placeCard', params: [] },
+    { action: 'captureChallenge', params: [] },
+    { action: 'captureDice', params: [] },
+    { action: 'captureModifier', params: [] },
+  ] as const
+
+  for (const e of effects) {
+    const inserted = db.insert(actions).values({ cardId: 'hero-006', action: e.action }).run()
+    const actionId = (inserted as unknown as { lastInsertRowid: number }).lastInsertRowid as number
+    for (const p of e.params) {
+      db.insert(actionParams).values({ actionId, name: p.name, type: p.type, value: p.value }).run()
+    }
+  }
+
+  console.log('✅ hero-006 Napping Nibbles seeded successfully')
+}
+
+export function seedPeanutIfMissing() {
+  const exists = db.select({ id: cards.id }).from(cards).where(eq(cards.id, 'hero-007')).all()[0]
+  if (exists) return
+
+  console.log('🥜 Seeding hero-007 Peanut...')
+
+  db.insert(cards).values({
+    id: 'hero-007',
+    name: 'Peanut',
+    type: 'Hero',
+    heroClass: 'Bard',
+    description: 'DRAW 2 cards.',
+    imagePath: '/api/images/card/hero-007',
+  }).run()
+
+  db.insert(requirements).values({
+    cardId: 'hero-007',
+    type: 'point',
+    value: 7,
+  }).run()
+
+  const effects = [
+    { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '7' } ] },
+    { action: 'placeCard', params: [] },
+    { action: 'captureChallenge', params: [] },
+    { action: 'captureDice', params: [] },
+    { action: 'captureModifier', params: [] },
+    { action: 'endMove', params: [] },
+    { action: 'drawCard', params: [ { name: 'target', type: 'LOCATION', value: 'support-deck' }, { name: 'destination', type: 'LOCATION', value: 'own-hand' }, { name: 'amount', type: 'AMOUNT', value: '2' } ] },
+  ] as const
+
+  for (const e of effects) {
+    const inserted = db.insert(actions).values({ cardId: 'hero-007', action: e.action }).run()
+    const actionId = (inserted as unknown as { lastInsertRowid: number }).lastInsertRowid as number
+    for (const p of e.params) {
+      db.insert(actionParams).values({ actionId, name: p.name, type: p.type, value: p.value }).run()
+    }
+  }
+
+  console.log('✅ hero-007 Peanut seeded successfully')
+}
 

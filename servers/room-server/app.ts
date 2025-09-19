@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { ensureSchema, seedButtonsIfMissing, seedDrawCardIfMissing } from './db/migrate'
+import { ensureSchema, seedButtonsIfMissing, seedDrawCardIfMissing, seedNappingNibblesIfMissing, seedPeanutIfMissing } from './db/migrate'
 import { createRoomsRouter } from './routes/rooms.js'
 import { createGameRouter } from './routes/game.js'
 import { createActionChainsRouter } from './routes/action-chains.js'
@@ -8,7 +8,7 @@ import { createUsersRouter } from './routes/users.js'
 import { createCardsRouter } from './routes/cards.js'
 import { corsMiddleware } from './middleware/cors.js'
 import { initialize } from './lib/state-manager.js'
-import type RoomDatabase from '../../src/lib/database.js'
+import type RoomDatabase from './lib/database.js'
 import type * as Y from 'yjs'
 
 export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
@@ -33,6 +33,8 @@ export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
     ensureSchema()
     seedButtonsIfMissing()
     seedDrawCardIfMissing()
+    seedNappingNibblesIfMissing()
+    seedPeanutIfMissing()
   } catch (e) {
     console.error('[DB] Failed to ensure schema/seed:', e)
   }

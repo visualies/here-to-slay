@@ -13,7 +13,7 @@ export const heroRegistry: Card[] = [
       action: 'DRAW',
       amount: 2,
     }],
-    imagePath: '/api/images/heroes/bard_greedy_cheeks.png',
+    imagePath: 'heroes/bard_greedy_cheeks.png',
   },
   {
     id: 'hero-002',
@@ -26,7 +26,7 @@ export const heroRegistry: Card[] = [
       action: 'EXCHANGE',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/bard_dogy_dealer.png',
+    imagePath: 'heroes/bard_dogy_dealer.png',
   },
   {
     id: 'hero-003',
@@ -39,7 +39,7 @@ export const heroRegistry: Card[] = [
       action: 'CALM',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/bard_mellow_dee.png',
+    imagePath: 'heroes/bard_mellow_dee.png',
   },
   {
     id: 'hero-004',
@@ -52,7 +52,7 @@ export const heroRegistry: Card[] = [
       action: 'RANDOM',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/bard_tipsy_tootie.png',
+    imagePath: 'heroes/bard_tipsy_tootie.png',
   },
   {
     id: 'hero-005',
@@ -65,7 +65,7 @@ export const heroRegistry: Card[] = [
       action: 'SPELL',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_buttons.png',
+    imagePath: 'heroes/wizard_buttons.png',
   },
   {
     id: 'hero-006',
@@ -78,7 +78,7 @@ export const heroRegistry: Card[] = [
       action: 'TELEPORT',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_fluffy.png',
+    imagePath: null,
   },
   {
     id: 'hero-007',
@@ -91,7 +91,7 @@ export const heroRegistry: Card[] = [
       action: 'DIMENSION_JUMP',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_hopper.png',
+    imagePath: null,
   },
   {
     id: 'hero-008',
@@ -104,7 +104,7 @@ export const heroRegistry: Card[] = [
       action: 'FREEZE',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_snowball.png',
+    imagePath: 'heroes/wizard_snowball.png',
   },
   {
     id: 'hero-009',
@@ -117,7 +117,7 @@ export const heroRegistry: Card[] = [
       action: 'DARK_MAGIC',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_spooky.png',
+    imagePath: 'heroes/wizard_spooky.png',
   },
   {
     id: 'hero-010',
@@ -130,7 +130,7 @@ export const heroRegistry: Card[] = [
       action: 'TRANSFORM',
       amount: 1,
     }],
-    imagePath: '/api/images/heroes/wizard_whiskers.png',
+    imagePath: 'heroes/wizard_whiskers.png',
   },
   // Original heroes without images
   {

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type RoomDatabase from '../../../src/lib/database.js'
+import type RoomDatabase from '../lib/database.js'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import * as Y from 'yjs'
 

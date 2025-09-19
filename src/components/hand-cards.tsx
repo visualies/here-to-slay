@@ -16,7 +16,7 @@ interface HandCardsProps {
 
 export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
   const { playCard } = useGameActions();
-  const { players, currentTurn, currentTurnData, isConnected } = useRoom();
+  const { players, currentTurn, currentTurnData, isConnected, currentPlayer } = useRoom();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
 
@@ -69,10 +69,11 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
 
   const cardCount = cards.length;
   const styles = positionStyles[position];
+  const isLocalPlayer = isOwn || currentPlayer?.id === playerId;
 
   return (
     <div className={`flex ${styles.container} ${styles.containerRotation} ${className}`}>
-      {isOwn ? (
+      {isLocalPlayer ? (
         // Show actual cards for the current player
         cards.map((card, index) => (
           <div

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type RoomDatabase from '../../../src/lib/database.js'
+import type RoomDatabase from '../lib/database.js'
 import * as Y from 'yjs'
 import { getYDoc as getYDocShared } from '@y/websocket-server/utils'
 import { initializeGame, addPlayerToGame } from '../lib/game-service.js'

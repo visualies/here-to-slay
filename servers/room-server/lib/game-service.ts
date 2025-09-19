@@ -1,13 +1,35 @@
 import * as Y from 'yjs';
-import type { Player, Turn } from '../../../shared/types';
+import type { Player, Turn, Card } from '../../../shared/types';
 import {
-  dealCardsToPlayer,
   assignRandomPartyLeadersToAllPlayers,
   assignPartyLeaderToPlayer,
 } from '../../../src/lib/players';
 import { getActivePlayers, getSortedPlayersByJoinTime } from '../../../src/lib/players';
-import { createSupportStack } from '../../../src/game/deck';
+import { createSupportStackFromDatabase, dealCardsFromDatabase } from './database-card-service';
 import { getAllMonsters } from '../../../src/game/monsters';
+
+/**
+ * Deal cards from database to a player (server-side only)
+ */
+export function dealCardsToPlayer(
+  playersMap: Y.Map<unknown>,
+  playerId: string,
+  handSize: number = 5
+): void {
+  const player = playersMap.get(playerId) as Player | undefined;
+  if (!player) return;
+
+  const hand = dealCardsFromDatabase(handSize);
+
+  const gamePlayer: Player = {
+    ...player,
+    hand,
+    party: player.party || { leader: null, heroes: [] },
+    actionPoints: player.actionPoints || 0
+  };
+
+  playersMap.set(playerId, gamePlayer);
+}
 
 export function initializeGame(
   playersMap: Y.Map<unknown>,
@@ -46,7 +68,7 @@ export function initializeGame(
   };
 
   gameStateMap.set('currentTurn', initialTurn);
-  gameStateMap.set('supportStack', createSupportStack());
+  gameStateMap.set('supportStack', createSupportStackFromDatabase());
   gameStateMap.set('monsters', selectedMonsters);
   gameStateMap.set('phase', 'playing');
 }

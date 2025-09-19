@@ -1,6 +1,6 @@
 import { FullConfig } from '@playwright/test'
 import { createApp } from '../servers/room-server/app.js'
-import RoomDatabase from '../src/lib/database.js'
+import RoomDatabase from '../servers/room-server/lib/database.js'
 import * as Y from 'yjs'
 import fs from 'fs'
 import path from 'path'

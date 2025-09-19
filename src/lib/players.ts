@@ -1,6 +1,5 @@
 import type { Player, Card } from '../types';
 import * as Y from 'yjs';
-import { createDeck, dealHand } from '../game/deck';
 import { getRandomPartyLeader, getAllPartyLeaders } from '../game/party-leaders';
 
 export function getActivePlayers(players: Player[]): Player[] {
@@ -107,27 +106,6 @@ export function addHeroToParty(
   return true;
 }
 
-export function dealCardsToPlayer(
-  playersMap: Y.Map<unknown>,
-  playerId: string,
-  handSize: number = 5
-): void {
-  const player = playersMap.get(playerId) as Player | undefined;
-  if (!player) return;
-
-  const deck = createDeck();
-  const { hand } = dealHand(deck, handSize);
-
-  const gamePlayer: Player = {
-    ...player,
-    hand,
-    deck: deck.slice(handSize),
-    party: player.party || { leader: null, heroes: [] },
-    actionPoints: player.actionPoints || 0
-  };
-
-  playersMap.set(playerId, gamePlayer);
-}
 
 export function assignPartyLeaderToPlayer(
   playersMap: Y.Map<unknown>,

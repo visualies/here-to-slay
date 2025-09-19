@@ -5,15 +5,35 @@ export function run(context: ActionContext): ActionResult {
   const { playerId } = context;
 
   console.log(`🎯 Internal: Capturing modifier for player ${playerId}`);
-
-  // TODO: Implement modifier capture logic
-  console.log('Modifier capture action executed');
+  console.log('capturing modifiers');
 
   return {
-    success: true,
-    message: 'Modifier captured successfully',
-    data: { playerId }
+    success: false,
+    message: 'Waiting for user to select modifier',
+    waitingForInput: {
+      type: 'choice',
+      prompt: 'Select modifier cards',
+      timeoutMs: 30000,
+      requiredPlayerId: playerId
+    }
   };
 }
 
-registerAction('captureModifier', { run });
+export function callback(context: ActionContext, userInput: string[]): ActionResult {
+  const { playerId } = context;
+
+  console.log(`🎯 Internal: Modifier callback for player ${playerId}`);
+  console.log('Modifier cards received:', userInput);
+
+  // Process the list of modifier cards
+  return {
+    success: true,
+    message: 'Modifier captured successfully',
+    data: {
+      playerId,
+      modifierCards: userInput
+    }
+  };
+}
+
+registerAction('captureModifier', { run, callback });

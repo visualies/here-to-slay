@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import type RoomDatabase from '../../../src/lib/database.js'
+import type RoomDatabase from '../lib/database.js'
 import * as Y from 'yjs'
 import { actionQueue } from '../../../src/services/action-queue.js'
 import type { ActionQueueItem } from '../../../src/services/action-queue.js'

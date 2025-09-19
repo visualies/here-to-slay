@@ -10,7 +10,7 @@ import WebSocket, { WebSocketServer } from 'ws'
 import http from 'http'
 import type { Server as NodeHttpServer } from 'http'
 import { setupWSConnection, docs } from '@y/websocket-server/utils'
-import RoomDatabase from '../../src/lib/database.js'
+import RoomDatabase from './lib/database.js'
 import { createApp } from './app.js'
 import { createAdaptorServer } from '@hono/node-server'
 
