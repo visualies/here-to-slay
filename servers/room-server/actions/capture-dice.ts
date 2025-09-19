@@ -10,7 +10,7 @@ export function run(context: ActionContext): ActionResult {
   const gameContext = createGameContext(roomId, playerId);
 
   // Set status when action starts
-  setStatus(gameContext, 'captureDice', 'Waiting for dice to be thrown...');
+  setStatus(gameContext, 'capture-dice', 'Waiting for dice to be thrown...', true);
 
   console.log(`🎯 Internal: Capturing dice for player ${playerId}`);
 

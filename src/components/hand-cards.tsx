@@ -15,7 +15,7 @@ interface HandCardsProps {
 }
 
 export function HandCards({ playerId, isOwn = false, position, className = '' }: HandCardsProps) {
-  const { playHeroToParty } = useGameActions();
+  const { playCard } = useGameActions();
   const { players, currentTurn, currentTurnData, isConnected } = useRoom();
   const [cards, setCards] = useState<GameCard[]>([]);
   const [player, setPlayer] = useState<Player | null>(null);
@@ -81,7 +81,7 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
             onClick={async () => {
               const canPlay = player?.id === currentTurn && (currentTurnData?.action_points ?? 0) > 0 && card.type === 'Hero';
               if (!canPlay) return;
-              await playHeroToParty(card.id);
+              await playCard(card.id);
             }}
           >
             <Card card={card} size="default" />

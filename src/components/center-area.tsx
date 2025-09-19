@@ -20,7 +20,7 @@ interface CenterAreaProps {
 }
 
 export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaProps) {
-  const { drawCard } = useGameActions();
+  const { playCard } = useGameActions();
   const { currentTurn, currentTurnData, currentPlayer, players, supportStack, monsters, initializeGame, isHost } = useGameState();
   const { status } = useStatus();
   const { enabled: diceEnabled, results: diceHookResults } = useDice();
@@ -45,7 +45,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   // Increment seed when a card is drawn to trigger re-render with new randomization
   const handleDrawCard = async () => {
     setDeckSeed(prev => prev + 1);
-    await drawCard();
+    await playCard('draw-001'); // Use special draw card ID as per API
   };
   
   // Get the current turn player's name

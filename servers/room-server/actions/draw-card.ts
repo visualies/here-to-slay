@@ -14,10 +14,11 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   const amount = getParam<Amount>(params, 'amount');
 
   // Create game context for service calls
+  //todo this should come from top not be created here
   const gameContext = createGameContext(roomId, playerId);
 
   // Set status when action starts
-  setStatus(gameContext, 'drawCard', 'Drawing cards...');
+  setStatus(gameContext, 'draw-card', 'Drawing cards...');
 
   // Handle amount 0 as a no-op (no operation) - return success immediately
   if (amount === 0 || (typeof amount === 'string' && Number(amount) === 0)) {
@@ -47,7 +48,7 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
 
   if (selection.needsInput) {
     // Set status with timeout since this action needs user input (has callback)
-    setStatus(gameContext, 'drawCard', 'Waiting for card selection...', true);
+    setStatus(gameContext, 'draw-card', 'Waiting for card selection...', true);
 
     // Need user input - return early and wait for user selection
     return selection.needsInput;

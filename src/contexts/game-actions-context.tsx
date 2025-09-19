@@ -8,8 +8,7 @@ import { useDice } from '../hooks/use-dice';
 import type { Card } from '../types';
 
 interface GameActionsContextValue {
-  drawCard: () => Promise<void>;
-  playHeroToParty: (cardId: string) => Promise<void>;
+  playCard: (cardId: string) => Promise<void>;
   attackMonster: (monsterId: string) => Promise<void>;
   discardHandRedraw: () => Promise<void>;
   heroAbility: (hero: Card) => Promise<void>;
@@ -32,24 +31,17 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   const { showMessage } = useStatus();
   const { captureDiceResult } = useDice();
 
-  const handleApiResponse = useCallback((result: ApiResponse, successMessage: string) => {
-    if (result.success) {
-      showMessage(successMessage, 'success');
-    } else {
+  const handleApiResponse = useCallback((result: ApiResponse) => {
+    if (!result.success) {
       showMessage(result.message || 'Action failed', 'error');
     }
+    // Status is now entirely managed by server via Yjs document
   }, [showMessage]);
 
-  const drawCard = useCallback(async () => {
+  const playCard = useCallback(async (cardId: string) => {
     if (!room?.roomId || !room?.currentPlayer?.id) return;
-    const result = await gameServerAPI.drawCard(room.roomId, room.currentPlayer.id);
-    handleApiResponse(result, 'Card drawn!');
-  }, [room, handleApiResponse]);
-
-  const playHeroToParty = useCallback(async (cardId: string) => {
-    if (!room?.roomId || !room?.currentPlayer?.id) return;
-    const result = await gameServerAPI.playHeroToParty(room.roomId, room.currentPlayer.id, cardId);
-    handleApiResponse(result, 'Hero played!');
+    const result = await gameServerAPI.playCard(room.roomId, room.currentPlayer.id, cardId);
+    handleApiResponse(result);
   }, [room, handleApiResponse]);
 
   const attackMonster = useCallback(async (monsterId: string) => {
@@ -65,13 +57,13 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
 
     // Then, send the dice result to the server for validation
     const result = await gameServerAPI.attackMonster(room.roomId, room.currentPlayer.id, monsterId, diceResult);
-    handleApiResponse(result, `Attack on monster finished!`);
+    handleApiResponse(result);
   }, [room, captureDiceResult, handleApiResponse, showMessage]);
 
   const discardHandRedraw = useCallback(async () => {
     if (!room?.roomId || !room?.currentPlayer?.id) return;
     const result = await gameServerAPI.discardHandAndRedraw(room.roomId, room.currentPlayer.id);
-    handleApiResponse(result, 'Hand discarded and redrawn!');
+    handleApiResponse(result);
   }, [room, handleApiResponse]);
 
   const heroAbility = useCallback(async (hero: Card) => {
@@ -83,8 +75,7 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
   }, []);
 
   const contextValue: GameActionsContextValue = {
-    drawCard,
-    playHeroToParty,
+    playCard,
     attackMonster,
     discardHandRedraw,
     heroAbility,

@@ -262,7 +262,6 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     updateCursor: handleUpdateCursor,
     gameActions: {
       playCard: () => { console.warn('playCard not implemented'); },
-      drawCard: () => { console.warn('drawCard not implemented'); },
       advanceTurn: () => { console.warn('advanceTurn not implemented'); },
     },
     
