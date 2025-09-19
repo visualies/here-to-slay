@@ -7,11 +7,15 @@ import { createHealthRouter } from './routes/health.js'
 import { createUsersRouter } from './routes/users.js'
 import { createCardsRouter } from './routes/cards.js'
 import { corsMiddleware } from './middleware/cors.js'
+import { initialize } from './lib/state-manager.js'
 import type RoomDatabase from '../../src/lib/database.js'
 import type * as Y from 'yjs'
 
 export function createApp(db: RoomDatabase, docs: Map<string, Y.Doc>) {
   const app = new Hono()
+
+  // Initialize state manager with global docs
+  initialize(docs)
 
   // Add CORS middleware
   app.use('*', corsMiddleware)

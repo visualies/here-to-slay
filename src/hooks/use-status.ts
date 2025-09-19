@@ -3,14 +3,13 @@ import { useDice } from './use-dice';
 import { useContext } from 'react';
 import { StatusContext } from '../contexts/status-context';
 
-export type GameStatus = 
-  | 'waiting-to-start'
-  | 'waiting-for-turn'
-  | 'your-turn'
-  | 'dice-rolling'
-  | 'dice-capture'
-  | 'dice-results'
-  | 'game-ended';
+export interface GameStatus {
+  key: string;            // Action name or status key (e.g., 'placeCard', 'waiting-to-start')
+  message: string;        // Display message for center game board
+  timeout?: number;       // Duration in milliseconds, optional
+  timeoutAt?: number;     // Timestamp when status expires (ms since epoch)
+  timeRemaining?: number; // Calculated time remaining in milliseconds
+}
 
 interface StatusReturn {
   status: GameStatus;
@@ -23,54 +22,68 @@ interface StatusReturn {
 }
 
 export function useStatus(): StatusReturn {
-  const { phase, currentTurn, currentPlayer } = useGameState();
-  const { enabled: diceEnabled, stable: diceStable, hasRolled } = useDice();
+  const { phase, currentTurn, currentPlayer, gameStateMap } = useGameState();
+  const { enabled: diceEnabled } = useDice();
   const statusContext = useContext(StatusContext);
-  
+
   let gameStatus: GameStatus;
-  
-  // Game hasn't started yet
-  if (phase === 'waiting') {
-    gameStatus = 'waiting-to-start';
+
+  // Get status from gameStateMap (set by actions via status service)
+  const serverStatus = gameStateMap?.get('gameStatus') as GameStatus | undefined;
+
+  if (serverStatus) {
+    // Calculate time remaining if there's a timeout
+    const timeRemaining = serverStatus.timeoutAt
+      ? Math.max(0, serverStatus.timeoutAt - Date.now())
+      : undefined;
+
+    gameStatus = {
+      ...serverStatus,
+      timeRemaining
+    };
   }
-  // Game has ended
+  // Fallback to basic game states when no action is running
+  else if (phase === 'waiting') {
+    gameStatus = {
+      key: 'waiting-to-start',
+      message: 'Waiting for players to join...'
+    };
+  }
   else if (phase === 'ended') {
-    gameStatus = 'game-ended';
+    gameStatus = {
+      key: 'game-ended',
+      message: 'Game has ended'
+    };
   }
-  
-  // Game is playing - determine current state
+  // Simplified dice handling - just show capture when enabled
+  else if (diceEnabled) {
+    gameStatus = {
+      key: 'capture-dice',
+      message: 'Click and drag to throw dice'
+    };
+  }
+  // Default playing state
   else if (phase === 'playing') {
     const isMyTurn = currentPlayer?.id === currentTurn;
-    
-    // Dice are enabled - determine dice state
-    if (diceEnabled) {
-      // Rolling: dice are not stable
-      if (!diceStable) {
-        gameStatus = 'dice-rolling';
-      }
-      // Waiting: hasRolled is false and dice are stable (waiting for user to throw)
-      else if (!hasRolled && diceStable) {
-        gameStatus = 'dice-capture';
-      }
-      // Stable: hasRolled is true and dice are stable (dice have been thrown and settled)
-      else if (hasRolled && diceStable) {
-        gameStatus = 'dice-results';
-      } else {
-        gameStatus = 'dice-results';
-      }
-    }
-    // It's my turn
-    else if (isMyTurn) {
-      gameStatus = 'your-turn';
-    }
-    // It's someone else's turn
-    else {
-      gameStatus = 'waiting-for-turn';
+
+    if (isMyTurn) {
+      gameStatus = {
+        key: 'your-turn',
+        message: 'Your turn - choose an action'
+      };
+    } else {
+      gameStatus = {
+        key: 'waiting-for-turn',
+        message: 'Waiting for other players...'
+      };
     }
   }
-  // Default fallback - show dice results
+  // Default fallback
   else {
-    gameStatus = 'dice-results';
+    gameStatus = {
+      key: 'waiting',
+      message: 'Loading...'
+    };
   }
 
   return {

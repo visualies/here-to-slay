@@ -3,12 +3,21 @@ import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { getParam, determineSelectionMode } from './action-utils';
 import { selectCards, moveCard } from '../lib/card-service';
+import { setStatus, clearStatus } from '../lib/status-service';
+import { createGameContext } from '../lib/game-context';
 
 
 export function run(context: ActionContext, params?: ActionParams): ActionResult {
+  const { gameStateMap, roomId, playerId } = context;
   const target = getParam<Location>(params, 'target');
   const destination = getParam<Location>(params, 'destination');
   const amount = getParam<Amount>(params, 'amount');
+
+  // Create game context for service calls
+  const gameContext = createGameContext(roomId, playerId);
+
+  // Set status when action starts
+  setStatus(gameContext, 'drawCard', 'Drawing cards...');
 
   // Handle amount 0 as a no-op (no operation) - return success immediately
   if (amount === 0 || amount === '0' || amount === Amount.Zero || amount === 'zero') {
@@ -37,27 +46,44 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   const selection = selectCards(context, target, amount, selectionMode);
 
   if (selection.needsInput) {
+    // Set status with timeout since this action needs user input (has callback)
+    setStatus(gameContext, 'drawCard', 'Waiting for card selection...', true);
+
     // Need user input - return early and wait for user selection
     return selection.needsInput;
   }
 
   if (!selection.selectedCardIds || selection.selectedCardIds.length === 0) {
+    // Clear status on error
+    clearStatus(gameContext);
     return {
       success: false,
       message: 'No cards were selected'
     };
   }
   // Step 2: Move the selected cards
-  return moveCard(context, target, destination, selection.selectedCardIds);
+  const result = moveCard(context, target, destination, selection.selectedCardIds);
+
+  // Clear status when action completes successfully
+  if (result.success) {
+    clearStatus(gameContext);
+  }
+
+  return result;
 }
 
 export function callback(context: ActionContext, userInput: string[]): ActionResult {
   // Get the current action to retrieve original parameters
   // TODO can we make it so the callback retrieves the same context as before just now populated with the response
-  const { gameStateMap, playersMap, playerId } = context;
+  const { gameStateMap, playersMap, playerId, roomId } = context;
+
+  // Create game context for service calls
+  const gameContext = createGameContext(roomId, playerId);
   const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
 
   if (!currentTurn || !currentTurn.action_queue || currentTurn.action_queue.length === 0) {
+    // Clear status on error
+    clearStatus(gameContext);
     return {
       success: false,
       message: 'No current action found for callback'
@@ -90,21 +116,32 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
         }
       }
       if (!found) {
+        // Clear status on error
+        clearStatus(gameStateMap);
         return { success: false, message: `Card ${cardId} not found in any other player's hand` };
       }
     }
     
     // Check if all cards come from the same player
     if (playerCardMap.size > 1) {
-      return { 
-        success: false, 
-        message: 'For AnyHand, all selected cards must come from the same player\'s hand' 
+      // Clear status on error
+      clearStatus(gameStateMap);
+      return {
+        success: false,
+        message: 'For AnyHand, all selected cards must come from the same player\'s hand'
       };
     }
   }
 
   // Move the user-selected cards
-  return moveCard(context, target, destination, userInput);
+  const result = moveCard(context, target, destination, userInput);
+
+  // Clear status when callback completes successfully
+  if (result.success) {
+    clearStatus(gameContext);
+  }
+
+  return result;
 }
 
 registerAction('drawCard', { run, callback });

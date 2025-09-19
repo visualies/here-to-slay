@@ -161,7 +161,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
       
       {/* Status Area - Dynamic content based on status */}
       <div className="mt-[2%]">
-        {status === 'waiting-to-start' && (
+        {status.key === 'waiting-to-start' && (
           <StatusArea header={isHost ? "Ready to start?" : "Waiting for host"}>
             <StartRound
               onStartRound={initializeGame}
@@ -169,50 +169,46 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
             />
           </StatusArea>
         )}
-        
-        {status === 'waiting-for-turn' && (
-          <StatusArea header={`Waiting for ${currentTurnPlayerName}'s turn`}>
+
+        {status.key === 'waiting-for-turn' && (
+          <StatusArea header={status.message}>
             <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
               <Clock className="w-4 h-4 text-muted-foreground" />
             </div>
           </StatusArea>
         )}
-        
-        {status === 'your-turn' && (
-          <StatusArea header={`Your turn - ${currentTurnData?.action_points || 0} action points`}>
+
+        {status.key === 'your-turn' && (
+          <StatusArea header={status.message}>
             <div className="w-[clamp(2rem,6cqw,3rem)] h-[clamp(2rem,6cqw,3rem)] bg-green-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
               <User className="w-4 h-4 text-green-500" />
             </div>
           </StatusArea>
         )}
-        
-        {status === 'dice-rolling' && (
-          <StatusArea header={`${currentTurnPlayerName} is rolling dice...`}>
-            <DiceResults 
-              diceResults={displayResults} 
+
+        {status.key === 'capture-dice' && (
+          <StatusArea header={status.message}>
+            <DiceResults
+              diceResults={displayResults}
             />
           </StatusArea>
         )}
-        
-        {status === 'dice-capture' && (
-          <StatusArea header={`Waiting for ${currentTurnPlayerName} to throw dice`}>
-            <DiceResults 
-              diceResults={displayResults} 
-            />
-          </StatusArea>
-        )}
-        
-        {status === 'dice-results' && (
-          <StatusArea header={`Dice Results`}>
-            <DiceResults 
-              diceResults={displayResults} 
-            />
-          </StatusArea>
-        )}
-        
-        {status === 'game-ended' && (
-          <StatusArea header="Dice Results">
+
+        {status.key === 'game-ended' && (
+          <StatusArea header={status.message}>
             <DiceResults diceResults={diceResults} />
+          </StatusArea>
+        )}
+
+        {/* Show action status when an action is running */}
+        {!['waiting-to-start', 'waiting-for-turn', 'your-turn', 'capture-dice', 'game-ended'].includes(status.key) && (
+          <StatusArea header={status.message}>
+            {status.timeRemaining && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Clock className="w-4 h-4" />
+                <span>{Math.ceil(status.timeRemaining / 1000)}s</span>
+              </div>
+            )}
           </StatusArea>
         )}
       </div>

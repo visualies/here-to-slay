@@ -2,9 +2,17 @@ import type { ActionContext, ActionResult, Player, Card } from '../../../shared/
 import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { moveCard } from '../lib/card-service';
+import { setStatus, clearStatus } from '../lib/status-service';
+import { createGameContext } from '../lib/game-context';
 
 export function run(context: ActionContext): ActionResult {
-  const { playersMap, playerId, cardId } = context;
+  const { playersMap, gameStateMap, playerId, cardId, roomId } = context;
+
+  // Create game context for service calls
+  const gameContext = createGameContext(roomId, playerId);
+
+  // Set status when action starts
+  setStatus(gameContext, 'placeCard', 'Placing card in party...');
   
   // Get the player to check their hand
   const player = playersMap.get(playerId) as Player;
@@ -48,13 +56,20 @@ export function run(context: ActionContext): ActionResult {
 
   // Place the specific card from hand to party
   console.log(`📍 Internal: Placing specific card ${cardId} from hand to party for player ${playerId}`);
-  
+
   const target = Location.OwnHand;
   const destination = Location.OwnParty;
   const amount = Amount.One;
   const selection = SelectionMode.First; // Use first selection mode, specificCardId will override
 
-  return moveCard(context, target, destination, [cardId]);
+  const result = moveCard(context, target, destination, [cardId]);
+
+  // Clear status when action completes successfully
+  if (result.success) {
+    clearStatus(gameContext);
+  }
+
+  return result;
 }
 
 registerAction('placeCard', { run });
