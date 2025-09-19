@@ -25,6 +25,7 @@ export function SizingProvider({ children }: SizingProviderProps) {
   const [scales, setScales] = useState<Record<Position, number>>({ top: 1, right: 1, bottom: 1, left: 1 });
 
   const observersRef = useRef<Map<Element, ResizeObserver>>(new Map());
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const measureAll = useCallback(() => {
     const nextSizes: Partial<Record<Position, { width: number; height: number }>> = {};
@@ -33,23 +34,6 @@ export function SizingProvider({ children }: SizingProviderProps) {
       if (el) {
         nextSizes[pos] = { width: el.clientWidth, height: el.clientHeight };
       }
-    });
-
-    // Update scales based on size changes
-    setScales((prev) => {
-      const positions: Position[] = ['top','right','bottom','left'];
-      const newScales = { ...prev };
-      
-      positions.forEach((pos) => {
-        const currentSize = nextSizes[pos];
-        if (currentSize) {
-          // Calculate scale based on size - this is a simplified version
-          // You might want to implement more sophisticated scaling logic here
-          newScales[pos] = Math.min(1, Math.min(currentSize.width, currentSize.height) / 200);
-        }
-      });
-      
-      return newScales;
     });
 
     // Compute global minimum target so all sides match the same smaller dimension
@@ -80,6 +64,15 @@ export function SizingProvider({ children }: SizingProviderProps) {
     });
   }, []);
 
+  const debouncedMeasureAll = useCallback(() => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      measureAll();
+    }, 16); // ~60fps
+  }, [measureAll]);
+
   const register = useCallback((position: Position, element: HTMLElement | null) => {
     const current = elementsRef.current[position];
     if (element === current) return;
@@ -100,7 +93,7 @@ export function SizingProvider({ children }: SizingProviderProps) {
       elementsRef.current[position] = element;
       if (!observersRef.current.has(element)) {
         const ro = new ResizeObserver(() => {
-          measureAll();
+          debouncedMeasureAll();
         });
         ro.observe(element);
         observersRef.current.set(element, ro);
@@ -113,16 +106,20 @@ export function SizingProvider({ children }: SizingProviderProps) {
   // Initial measure and window resize listener
   useLayoutEffect(() => {
     measureAll();
-    const onResize = () => measureAll();
+    const onResize = () => debouncedMeasureAll();
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [measureAll]);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [measureAll, debouncedMeasureAll]);
 
-  // Debug scales visibility
-  useLayoutEffect(() => {
-     
-    console.debug('[Sizing] scales', scales);
-  }, [scales]);
+  // Debug scales visibility (disabled to prevent console spam)
+  // useLayoutEffect(() => {
+  //   console.debug('[Sizing] scales', scales);
+  // }, [scales]);
 
   // Keep legacy cardSize for compatibility; not used for scaling logic
   const cardSize = 80;
