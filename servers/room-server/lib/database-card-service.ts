@@ -66,17 +66,9 @@ export function getSupportCardsFromDatabase(): Card[] {
 export function createDeckFromDatabase(): Card[] {
   const allCards = getAllCardsFromDatabase()
 
-  // Create multiple copies of cards for a proper deck
-  const deck: Card[] = []
-
-  allCards.forEach((card, index) => {
-    // Add original
-    deck.push(card)
-
-    // Add 2 copies with unique IDs
-    deck.push({ ...card, id: `${card.id}-copy1-${index}` })
-    deck.push({ ...card, id: `${card.id}-copy2-${index}` })
-  })
+  // For now, just use the original cards without creating copies
+  // Each card should exist in the database with its actual ID
+  const deck: Card[] = [...allCards]
 
   return shuffleDeck(deck)
 }
@@ -96,16 +88,13 @@ export function createSupportStackFromDatabase(): Card[] {
     return []
   }
 
-  // Create support stack with 20 random cards from database
+  // Create support stack with available cards (allowing duplicates for now)
   const supportStack: Card[] = []
   for (let i = 0; i < 20; i++) {
     const randomIndex = Math.floor(Math.random() * allAvailableCards.length)
     const selectedCard = allAvailableCards[randomIndex]
-    // Create a unique copy with a new ID to avoid conflicts
-    supportStack.push({
-      ...selectedCard,
-      id: `support-${selectedCard.id}-${i}`
-    })
+    // Use the original card without modifying the ID
+    supportStack.push({ ...selectedCard })
   }
 
   return supportStack
