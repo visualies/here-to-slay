@@ -84,6 +84,9 @@ export function HandCards({ playerId, isOwn = false, position, className = '' }:
               if (!canPlay) return;
               await playCard(card.id);
             }}
+            data-testid={`hand-card-${card.id}`}
+            data-card-type={card.type}
+            data-card-name={card.name}
           >
             <Card card={card} size="default" />
           </div>

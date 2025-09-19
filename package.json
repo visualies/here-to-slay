@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"tsx servers/room-server/server.ts\" \"tsx servers/dice-server/dice-server.ts\" \"next dev\"",
+    "dev": "npm run stop && concurrently \"tsx servers/room-server/server.ts\" \"tsx servers/dice-server/dice-server.ts\" \"next dev\"",
     "dev:client-only": "next dev",
     "prebuild": "npm ci",
     "build": "next build",

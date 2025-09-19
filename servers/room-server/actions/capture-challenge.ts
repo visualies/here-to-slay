@@ -32,15 +32,15 @@ export function run(context: ActionContext): ActionResult {
 }
 
 export function callback(context: ActionContext, userInput: string[]): ActionResult {
-  const { playerId } = context;
+  const { playerId, roomId } = context;
 
   console.log(`🎯 Internal: Challenge callback for player ${playerId}`);
   console.log('Challenge cards received:', userInput);
 
-  // Process the list of challenge cards
+  // Process the list of challenge cards (empty array means no challenges)
   return {
     success: true,
-    message: 'Challenge captured successfully',
+    message: userInput.length > 0 ? 'Challenge captured successfully' : 'No challenges received, continuing...',
     data: {
       playerId,
       challengeCards: userInput

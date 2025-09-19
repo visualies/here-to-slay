@@ -60,17 +60,18 @@ export function StatusArea({ header, children }: StatusAreaProps) {
     const IconComponent = styles.icon;
 
     return (
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2" data-testid="status-message">
         <div 
           className={`text-sm font-medium transition-opacity duration-300 ${
             isVisible ? 'opacity-100' : 'opacity-0'
           } ${styles.textColor}`}
+          data-testid="status-message-text"
         >
           {currentMessage.message}
         </div>
         <div className={`w-12 h-12 ${styles.bgColor} border-2 border-dashed ${styles.borderColor} rounded-lg flex items-center justify-center transition-opacity duration-300 ${
           isVisible ? 'opacity-100' : 'opacity-0'
-        }`}>
+        }`} data-testid="status-message-icon">
           <IconComponent className={`w-4 h-4 ${styles.textColor}`} />
         </div>
       </div>
@@ -78,8 +79,8 @@ export function StatusArea({ header, children }: StatusAreaProps) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="text-sm text-foreground font-medium">{header}</div>
+    <div className="flex flex-col items-center gap-2" data-testid="status-area">
+      <div className="text-sm text-foreground font-medium" data-testid="status-header">{header}</div>
       {children}
     </div>
   );

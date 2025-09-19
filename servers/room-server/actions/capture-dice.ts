@@ -1,8 +1,17 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
+import { StatusKey } from '../../../shared/types';
 import { registerAction } from './action-registry';
+import { setStatus } from '../lib/status-service';
+import { createGameContext } from '../lib/game-context';
 
 export function run(context: ActionContext): ActionResult {
-  const { playerId } = context;
+  const { playerId, roomId } = context;
+
+  // Create game context for service calls
+  const gameContext = createGameContext(roomId, playerId);
+
+  // Set status when action starts
+  setStatus(gameContext, StatusKey.CAPTURE_DICE, 'Roll the dice', true, 30000);
 
   console.log(`🎯 Internal: Capturing dice for player ${playerId}`);
   console.log('capturing dice');
@@ -20,7 +29,7 @@ export function run(context: ActionContext): ActionResult {
 }
 
 export function callback(context: ActionContext, userInput: string[]): ActionResult {
-  const { playerId } = context;
+  const { playerId, roomId } = context;
 
   console.log(`🎯 Internal: Dice callback for player ${playerId}`);
 

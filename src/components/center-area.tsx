@@ -230,6 +230,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               timeout={status.timeout}
               timeRemaining={status.timeRemaining}
               direction="counterclockwise"
+              data-testid="draw-card-action-bubble"
             >
               <Plus className="w-5 h-5 text-gray-600" />
             </StatusBubble>
@@ -243,6 +244,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               timeout={status.timeout}
               timeRemaining={status.timeRemaining}
               direction="counterclockwise"
+              data-testid="capture-modifier-action-bubble"
             >
               <Target className="w-5 h-5 text-gray-600" />
             </StatusBubble>
@@ -256,6 +258,7 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               timeout={status.timeout}
               timeRemaining={status.timeRemaining}
               direction="counterclockwise"
+              data-testid="capture-challenge-action-bubble"
             >
               <Swords className="w-5 h-5 text-gray-600" />
             </StatusBubble>

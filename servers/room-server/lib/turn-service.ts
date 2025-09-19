@@ -20,52 +20,6 @@ export interface TurnServiceResult {
   actionsProcessed?: number;
 }
 
-/**
- * Check for timed out actions and mark them as canceled
- */
-export function checkActionTimeouts(
-  gameStateMap: Y.Map<unknown>
-): void {
-  const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
-  if (!currentTurn) return;
-
-  const now = Date.now();
-  let hasTimeouts = false;
-
-  const updatedQueue = currentTurn.action_queue.map(action => {
-    if (action.state === ActionState.WaitingForInput &&
-        action.timeoutAt &&
-        now > action.timeoutAt) {
-      console.log(`⏱️ Action ${action.id} timed out, marking as canceled`);
-      hasTimeouts = true;
-      return {
-        ...action,
-        state: ActionState.Canceled
-      };
-    }
-    return action;
-  });
-
-  if (hasTimeouts) {
-    const updatedTurn: Turn = {
-      ...currentTurn,
-      action_queue: updatedQueue
-    };
-    gameStateMap.set('currentTurn', updatedTurn);
-
-    // Clear waiting status if any action timed out
-    const waitingAction = gameStateMap.get('waitingForAction');
-    if (waitingAction) {
-      const timedOutAction = updatedQueue.find(action =>
-        action.id === (waitingAction as any).actionId && action.state === ActionState.Canceled
-      );
-      if (timedOutAction) {
-        console.log(`⏱️ Clearing waiting status for timed out action ${(waitingAction as any).actionId}`);
-        gameStateMap.delete('waitingForAction');
-      }
-    }
-  }
-}
 
 /**
  * Add actions from a card to the current turn's action queue
@@ -121,9 +75,6 @@ export function processActionQueue(
 ): TurnServiceResult {
   console.log(`🎮 Turn Service: Processing action queue for player ${playerId}`);
 
-  // Check for timeouts first
-  checkActionTimeouts(gameStateMap);
-
   let actionsProcessed = 0;
   const results: ActionResult[] = [];
 
@@ -147,36 +98,17 @@ export function processActionQueue(
     const nextAction = currentTurn.action_queue[0];
     console.log(`🎮 Turn Service: Processing action: ${nextAction.action} (state: ${nextAction.state})`);
 
-    // Skip actions that are waiting for input or completed
+    // Skip actions that are waiting for input
     if (nextAction.state === ActionState.WaitingForInput) {
       console.log(`⏸️ Turn Service: Action ${nextAction.id} waiting for user input, pausing queue`);
       break;
     }
 
-    if (nextAction.state === ActionState.Completed) {
-      console.log(`✅ Turn Service: Action ${nextAction.id} already completed, removing from queue`);
-      const updatedCurrentTurn = gameStateMap.get('currentTurn') as Turn;
-      const updatedTurn: Turn = {
-        ...updatedCurrentTurn,
-        action_queue: updatedCurrentTurn.action_queue.slice(1)
-      };
-      gameStateMap.set('currentTurn', updatedTurn);
-      continue;
-    }
-
-    if (nextAction.state === ActionState.Canceled) {
-      console.log(`❌ Turn Service: Action ${nextAction.id} was canceled, removing from queue`);
-      const updatedCurrentTurn = gameStateMap.get('currentTurn') as Turn;
-      const updatedTurn: Turn = {
-        ...updatedCurrentTurn,
-        action_queue: updatedCurrentTurn.action_queue.slice(1)
-      };
-      gameStateMap.set('currentTurn', updatedTurn);
-      continue;
-    }
-
-    if (nextAction.state === ActionState.Failed) {
-      console.log(`❌ Turn Service: Action ${nextAction.id} failed, removing from queue`);
+    // Remove completed, canceled, or failed actions
+    if (nextAction.state === ActionState.Completed || 
+        nextAction.state === ActionState.Canceled || 
+        nextAction.state === ActionState.Failed) {
+      console.log(`🗑️ Turn Service: Action ${nextAction.id} in ${nextAction.state} state, removing from queue`);
       const updatedCurrentTurn = gameStateMap.get('currentTurn') as Turn;
       const updatedTurn: Turn = {
         ...updatedCurrentTurn,
@@ -188,7 +120,7 @@ export function processActionQueue(
 
     // Only process pending actions
     if (nextAction.state !== ActionState.Pending) {
-      console.log(`⚠️ Turn Service: Action ${nextAction.id} in unexpected state: ${nextAction.state}`);
+      console.log(`⚠️ Turn Service: Action ${nextAction.id} in unexpected state: ${nextAction.state}, removing from queue`);
       const updatedCurrentTurn = gameStateMap.get('currentTurn') as Turn;
       const updatedTurn: Turn = {
         ...updatedCurrentTurn,
@@ -282,6 +214,45 @@ export function processActionQueue(
           timeoutAt,
           timeRemaining: timeoutMs
         });
+
+        // Set up timeout callback
+        setTimeout(() => {
+          console.log(`⏱️ Action ${nextAction.id} timed out, calling callback with empty input`);
+          
+          // Call the action's callback with empty input to allow cleanup
+          if (actionHandler && actionHandler.callback) {
+            try {
+              console.log(`⏱️ Calling timeout callback for action ${nextAction.action}`);
+              const timeoutResult = actionHandler.callback(context, []);
+              console.log(`⏱️ Timeout callback result:`, timeoutResult);
+            } catch (error) {
+              console.error(`⏱️ Error calling timeout callback for action ${nextAction.action}:`, error);
+            }
+          }
+          
+          // Mark action as canceled and continue processing
+          const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
+          if (currentTurn) {
+            const updatedQueue = currentTurn.action_queue.map(action => 
+              action.id === nextAction.id 
+                ? { ...action, state: ActionState.Canceled }
+                : action
+            );
+            
+            const updatedTurn: Turn = {
+              ...currentTurn,
+              action_queue: updatedQueue
+            };
+            gameStateMap.set('currentTurn', updatedTurn);
+            
+            // Clear waiting status
+            gameStateMap.delete('waitingForAction');
+            
+            // Continue processing the action queue
+            console.log(`⏱️ Continuing action queue processing after timeout`);
+            processActionQueue(playersMap, gameStateMap, playerId, roomId);
+          }
+        }, timeoutMs);
 
         // Pause processing and wait for user input
         break;
