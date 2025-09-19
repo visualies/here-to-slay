@@ -3,7 +3,7 @@ import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { getParam, determineSelectionMode } from './action-utils';
 import { selectCards, moveCard } from '../lib/card-service';
-import { setStatus, clearStatus } from '../lib/status-service';
+import { setStatus } from '../lib/status-service';
 import { createGameContext } from '../lib/game-context';
 
 
@@ -55,8 +55,6 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   }
 
   if (!selection.selectedCardIds || selection.selectedCardIds.length === 0) {
-    // Clear status on error
-    clearStatus(gameContext);
     return {
       success: false,
       message: 'No cards were selected'
@@ -64,11 +62,6 @@ export function run(context: ActionContext, params?: ActionParams): ActionResult
   }
   // Step 2: Move the selected cards
   const result = moveCard(context, target, destination, selection.selectedCardIds);
-
-  // Clear status when action completes successfully
-  if (result.success) {
-    clearStatus(gameContext);
-  }
 
   return result;
 }
@@ -83,8 +76,6 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
   const currentTurn = gameStateMap.get('currentTurn') as Turn | null;
 
   if (!currentTurn || !currentTurn.action_queue || currentTurn.action_queue.length === 0) {
-    // Clear status on error
-    clearStatus(gameContext);
     return {
       success: false,
       message: 'No current action found for callback'
@@ -117,16 +108,12 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
         }
       }
       if (!found) {
-        // Clear status on error
-        clearStatus(gameContext);
         return { success: false, message: `Card ${cardId} not found in any other player's hand` };
       }
     }
     
     // Check if all cards come from the same player
     if (playerCardMap.size > 1) {
-      // Clear status on error
-      clearStatus(gameContext);
       return {
         success: false,
         message: 'For AnyHand, all selected cards must come from the same player\'s hand'
@@ -136,11 +123,6 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
 
   // Move the user-selected cards
   const result = moveCard(context, target, destination, userInput);
-
-  // Clear status when callback completes successfully
-  if (result.success) {
-    clearStatus(gameContext);
-  }
 
   return result;
 }

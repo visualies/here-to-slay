@@ -2,7 +2,7 @@ import type { ActionContext, ActionResult, Player, Card } from '../../../shared/
 import { Location, Amount, SelectionMode } from '../../../shared/types';
 import { registerAction } from './action-registry';
 import { moveCard } from '../lib/card-service';
-import { setStatus, clearStatus } from '../lib/status-service';
+import { setStatus } from '../lib/status-service';
 import { createGameContext } from '../lib/game-context';
 
 export function run(context: ActionContext): ActionResult {
@@ -63,11 +63,6 @@ export function run(context: ActionContext): ActionResult {
   const selection = SelectionMode.First; // Use first selection mode, specificCardId will override
 
   const result = moveCard(context, target, destination, [cardId]);
-
-  // Clear status when action completes successfully
-  if (result.success) {
-    clearStatus(gameContext);
-  }
 
   return result;
 }

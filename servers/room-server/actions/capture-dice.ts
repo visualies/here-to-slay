@@ -1,6 +1,6 @@
 import type { ActionContext, ActionResult } from '../../../shared/types';
 import { registerAction } from './action-registry';
-import { setStatus, clearStatus } from '../lib/status-service';
+import { setStatus } from '../lib/status-service';
 import { createGameContext } from '../lib/game-context';
 
 export function run(context: ActionContext): ActionResult {
@@ -16,9 +16,6 @@ export function run(context: ActionContext): ActionResult {
 
   // TODO: Implement dice capture logic
   console.log('Dice capture action executed');
-
-  // Clear status when action completes successfully
-  clearStatus(gameContext);
 
   return {
     success: true,
