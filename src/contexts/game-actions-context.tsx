@@ -68,9 +68,34 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
 
     let cancelled = false;
 
+    const currentAction = room.currentTurnData?.action_queue.find(action => action.id === actionId);
+
+    const parseRequiredAmount = (value: unknown): number | undefined => {
+      if (typeof value === 'number') {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed)) {
+          return parsed;
+        }
+      }
+      return undefined;
+    };
+
+    let requiredAmount: number | undefined;
+    if (currentAction) {
+      const amountParam = currentAction.parameters.find(param => param.name === 'amount');
+      requiredAmount = parseRequiredAmount(amountParam?.value);
+    }
+
+    if (requiredAmount === undefined && typeof room.currentTurnData?.last_amount === 'number') {
+      requiredAmount = room.currentTurnData.last_amount;
+    }
+
     const handleCapture = async () => {
       try {
-        const diceResponse = await captureDiceResult();
+        const diceResponse = await captureDiceResult(requiredAmount);
         if (cancelled) {
           return;
         }
@@ -105,7 +130,16 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     return () => {
       cancelled = true;
     };
-  }, [room.waitingForAction, room.currentPlayer?.id, status.key, captureDiceResult, showMessage, room.roomId]);
+  }, [
+    room.waitingForAction,
+    room.currentPlayer?.id,
+    status.key,
+    captureDiceResult,
+    showMessage,
+    room.roomId,
+    room.currentTurnData?.last_amount,
+    room.currentTurnData?.action_queue
+  ]);
 
   const playCard = useCallback(async (cardId: string) => {
     if (!room?.roomId || !room?.currentPlayer?.id) return;

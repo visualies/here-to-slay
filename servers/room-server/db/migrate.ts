@@ -1,6 +1,6 @@
 import { db } from './client'
 import { cards, requirements, actions, actionParams } from './schema'
-import { sql, eq, and } from 'drizzle-orm'
+import { sql, eq, inArray } from 'drizzle-orm'
 
 export function ensureSchema() {
   db.run(sql`
@@ -131,7 +131,7 @@ export function seedButtonsIfMissing() {
     { action: 'deduct-point', params: [ { name: 'amount', type: 'NUMBER', value: '6' } ] },
     { action: 'place-card', params: [ { name: 'target', type: 'LOCATION', value: 'own-hand' } ] },
     { action: 'capture-challenge', params: [] },
-    { action: 'capture-dice', params: [ { name: 'target', type: 'NUMBER', value: '1' } ] },
+    { action: 'capture-dice', params: [ { name: 'target', type: 'NUMBER', value: '1' }, { name: 'amount', type: 'AMOUNT', value: '5' } ] },
     { action: 'capture-modifier', params: [] },
     { action: 'end-move', params: [ { name: 'requirement', type: 'NUMBER', value: '1' } ] },
     { action: 'draw-card', params: [ { name: 'target', type: 'LOCATION', value: 'any-hand' }, { name: 'destination', type: 'STRING', value: 'cache' }, { name: 'amount', type: 'AMOUNT', value: '1' } ] },
@@ -173,7 +173,7 @@ export function seedNappingNibblesIfMissing() {
     { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '2' } ] },
     { action: 'placeCard', params: [] },
     { action: 'captureChallenge', params: [] },
-    { action: 'captureDice', params: [] },
+    { action: 'captureDice', params: [ { name: 'amount', type: 'AMOUNT', value: '5' } ] },
     { action: 'captureModifier', params: [] },
   ] as const
 
@@ -213,7 +213,7 @@ export function seedPeanutIfMissing() {
     { action: 'deductPoint', params: [ { name: 'amount', type: 'NUMBER', value: '1' } ] },
     { action: 'placeCard', params: [] },
     { action: 'captureChallenge', params: [] },
-    { action: 'captureDice', params: [] },
+    { action: 'captureDice', params: [ { name: 'amount', type: 'AMOUNT', value: '5' } ] },
     { action: 'captureModifier', params: [] },
     { action: 'endMove', params: [] },
     { action: 'drawCard', params: [ { name: 'target', type: 'LOCATION', value: 'support-deck' }, { name: 'destination', type: 'LOCATION', value: 'own-hand' }, { name: 'amount', type: 'AMOUNT', value: '2' } ] },
@@ -230,3 +230,35 @@ export function seedPeanutIfMissing() {
   console.log('✅ hero-007 Peanut seeded successfully')
 }
 
+export function ensureCaptureDiceAmountParams(defaultAmount: number = 5) {
+  const captureActions = db
+    .select({ id: actions.id, action: actions.action })
+    .from(actions)
+    .where(inArray(actions.action, ['captureDice', 'capture-dice']))
+    .all()
+
+  for (const captureAction of captureActions) {
+    const params = db
+      .select({ id: actionParams.id, name: actionParams.name })
+      .from(actionParams)
+      .where(eq(actionParams.actionId, captureAction.id))
+      .all()
+
+    const amountParam = params.find(param => param.name === 'amount')
+    const value = defaultAmount.toString()
+
+    if (!amountParam) {
+      db.insert(actionParams).values({
+        actionId: captureAction.id,
+        name: 'amount',
+        type: 'AMOUNT',
+        value
+      }).run()
+    } else {
+      db.update(actionParams)
+        .set({ type: 'AMOUNT', value })
+        .where(eq(actionParams.id, amountParam.id))
+        .run()
+    }
+  }
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 
-import { ensureSchema, seedButtonsIfMissing, seedDrawCardIfMissing, seedNappingNibblesIfMissing, seedPeanutIfMissing } from './db/migrate'
+import { ensureSchema, seedButtonsIfMissing, seedDrawCardIfMissing, seedNappingNibblesIfMissing, seedPeanutIfMissing, ensureCaptureDiceAmountParams } from './db/migrate'
 
 console.log('🔄 Running database migrations...')
 
@@ -14,6 +14,7 @@ try {
   seedButtonsIfMissing()
   seedNappingNibblesIfMissing()
   seedPeanutIfMissing()
+  ensureCaptureDiceAmountParams()
   console.log('✅ Data seeding completed')
 
   console.log('🎉 All migrations applied successfully!')

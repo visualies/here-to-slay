@@ -1,72 +1,73 @@
+import { useEffect, useState } from 'react';
 import { useDice } from '../hooks/use-dice';
-import { useState, useEffect } from 'react';
 import { StatusBubble } from './ui/status-bubble';
 
 interface DiceResultsProps {
-  diceResults: number[];
+  diceResults?: number[];
   timeout?: number;
   timeRemaining?: number;
+  requiredAmount?: number;
+  currentRoll?: number | null;
 }
 
-export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceResultsProps) {
-  const diceContext = useDice();
-  const { captureStatus, requiredAmount, hasRolled } = diceContext;
-  const validResults = diceResults.filter(r => r > 0);
+export function DiceResults({
+  diceResults = [],
+  timeout,
+  timeRemaining,
+  requiredAmount: requiredAmountProp,
+  currentRoll,
+}: DiceResultsProps) {
+  const { captureStatus, requiredAmount: contextRequiredAmount, hasRolled } = useDice();
   const [timeoutProgress, setTimeoutProgress] = useState(0);
 
-  // Handle timeout timer when status is 'waiting' (dice context only)
+  // Track timeout progress when waiting for dice interaction locally
   useEffect(() => {
     if (captureStatus === 'waiting' && !timeout) {
-      // Only use internal timer for dice context when no timeout props are provided
       setTimeoutProgress(0);
       const startTime = Date.now();
-      
+
       const timer = setInterval(() => {
         const elapsed = Date.now() - startTime;
-        const timeoutDuration = 30000; // Default 30 seconds for dice context
+        const timeoutDuration = 30000;
         const progress = Math.min(elapsed / timeoutDuration, 1);
         setTimeoutProgress(progress);
-        
+
         if (progress >= 1) {
           clearInterval(timer);
         }
       }, 100);
-      
+
       return () => clearInterval(timer);
-    } else {
-      setTimeoutProgress(0);
     }
+
+    setTimeoutProgress(0);
+    return undefined;
   }, [captureStatus, timeout]);
-  
-  const total = validResults.reduce((sum, val) => sum + val, 0);
 
-  // Check if dice result meets required amount
-  const meetsRequirement = (total: number, required: number): boolean => {
-    if (required === 0) return false; // 0 means no requirement set
-    return total >= required;
-  };
+  const validResults = diceResults.filter(result => result > 0);
+  const localTotal = validResults.length > 0
+    ? validResults.reduce((sum, value) => sum + value, 0)
+    : null;
 
-  // All dice faces and result use same gray as Start Round button
-  const getDiceFaceColor = () => {
-    return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
-  };
+  const normalizedCurrentRoll = typeof currentRoll === 'number' && currentRoll > 0
+    ? currentRoll
+    : null;
 
-  // Result color based on requirement
-  const getResultColor = (total: number) => {
-    const meetsReq = meetsRequirement(total, requiredAmount);
-    if (meetsReq) {
-      return { bg: 'bg-green-100', border: 'border-green-400', text: 'text-green-700' };
-    }
-    return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
-  };
+  const total = localTotal ?? normalizedCurrentRoll;
+  const hasResult = typeof total === 'number' && total > 0;
+
+  const effectiveRequiredAmount = typeof requiredAmountProp === 'number'
+    ? requiredAmountProp
+    : (typeof contextRequiredAmount === 'number' ? contextRequiredAmount : 0);
+
+  const meetsRequirement = typeof total === 'number' && effectiveRequiredAmount > 0
+    ? total >= effectiveRequiredAmount
+    : false;
 
   const shouldShowPlaceholders =
     !hasRolled ||
-    (
-      validResults.length === 0 &&
-      captureStatus !== 'rolling' &&
-      (captureStatus === 'waiting' || (timeout && timeRemaining !== undefined))
-    );
+    captureStatus === 'waiting' ||
+    (!hasResult && captureStatus !== 'complete');
 
   if (shouldShowPlaceholders) {
     return (
@@ -106,50 +107,37 @@ export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceRe
     );
   }
 
+  const resultVariant = meetsRequirement ? 'success' : 'default';
+  const resultTextColor = meetsRequirement ? 'text-green-700' : 'text-gray-600';
+
+  const diceFaceColors = {
+    bg: 'bg-gray-100',
+    text: 'text-gray-600'
+  } as const;
+
+  const shouldShowEquals = validResults.length > 1;
 
   return (
     <div className="flex items-center gap-3">
-      {validResults.length > 0 ? (
+      {validResults.length > 0 && (
         <>
-          {validResults.map((result, index) => {
-            const colors = getDiceFaceColor();
-            return (
-              <div
-                key={index}
-                className={`w-12 h-12 ${colors.bg} border-2 border-dashed rounded-lg flex items-center justify-center`}
-                style={{ borderColor: "var(--outline)" }}
-              >
-                <div className={`text-lg font-bold ${colors.text}`}>{result}</div>
-              </div>
-            );
-          })}
-          {validResults.length > 1 && (
-            <>
-              <div className="text-gray-500 mx-1">=</div>
-              <div
-                className={`w-12 h-12 ${getResultColor(total).bg} border-2 border-dashed rounded-lg flex items-center justify-center`}
-                style={{ borderColor: 'var(--outline)' }}
-              >
-                <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
-              </div>
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          {/* Show placeholder dice when no results */}
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
-            <div className="text-lg font-bold text-gray-600">?</div>
-          </div>
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
-            <div className="text-lg font-bold text-gray-600">?</div>
-          </div>
-          <div className="text-gray-500 mx-1">=</div>
-          <div className="w-12 h-12 bg-gray-100 border-2 border-dashed rounded-lg flex items-center justify-center" style={{ borderColor: "var(--outline)" }}>
-            <div className="text-lg font-bold text-gray-600">?</div>
-          </div>
+          {validResults.map((result, index) => (
+            <div
+              key={index}
+              className={`w-12 h-12 ${diceFaceColors.bg} border-2 border-dashed rounded-lg flex items-center justify-center`}
+              style={{ borderColor: 'var(--outline)' }}
+            >
+              <div className={`text-lg font-bold ${diceFaceColors.text}`}>{result}</div>
+            </div>
+          ))}
+          {shouldShowEquals && <div className="text-gray-500 mx-1">=</div>}
         </>
       )}
+      <StatusBubble variant={resultVariant} direction="counterclockwise">
+        <div className={`text-lg font-bold ${resultTextColor}`}>
+          {typeof total === 'number' ? total : '?'}
+        </div>
+      </StatusBubble>
     </div>
   );
 }

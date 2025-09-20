@@ -78,6 +78,9 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
   // Get dimensions for monster slots to match party leader size (already scaled)
   const monsterDimensions = getTargetDimensions('party-bottom-large');
 
+  const captureRequiredAmount = currentTurnData?.last_amount;
+  const captureCurrentRoll = currentTurnData?.current_roll ?? null;
+
   return (
     <div 
       className={`flex flex-col items-center justify-center relative ${debugMode ? 'bg-red-100 outline outline-2 outline-red-300 p-4' : ''}`}
@@ -214,6 +217,8 @@ export function CenterArea({ diceResults = [], debugMode = false }: CenterAreaPr
               diceResults={displayResults}
               timeout={status.timeout}
               timeRemaining={status.timeRemaining}
+              requiredAmount={captureRequiredAmount}
+              currentRoll={captureCurrentRoll}
             />
           </StatusArea>
         )}
