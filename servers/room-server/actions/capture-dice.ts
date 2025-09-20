@@ -38,7 +38,7 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
   console.log('Dice result received:', diceResult);
 
   // Validate dice result
-  if (isNaN(diceResult) || diceResult < 1 || diceResult > 6) {
+  if (isNaN(diceResult) || diceResult < 1 || diceResult > 12) {
     return {
       success: false,
       message: 'Invalid dice result. Must be a number between 1 and 6.'

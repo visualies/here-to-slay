@@ -12,30 +12,7 @@ export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceRe
   const diceContext = useDice();
   const { captureStatus, requiredAmount, hasRolled } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
-  const [completionProgress, setCompletionProgress] = useState(0);
   const [timeoutProgress, setTimeoutProgress] = useState(0);
-  
-  // Handle completion timer when status is 'complete'
-  useEffect(() => {
-    if (captureStatus === 'complete') {
-      setCompletionProgress(0);
-      const startTime = Date.now();
-      
-      const timer = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / 7000, 1); // 7 seconds total
-        setCompletionProgress(progress);
-        
-        if (progress >= 1) {
-          clearInterval(timer);
-        }
-      }, 50); // 20fps for smoother animation
-      
-      return () => clearInterval(timer);
-    } else {
-      setCompletionProgress(0);
-    }
-  }, [captureStatus]);
 
   // Handle timeout timer when status is 'waiting' (dice context only)
   useEffect(() => {
@@ -149,14 +126,12 @@ export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceRe
           {validResults.length > 1 && (
             <>
               <div className="text-gray-500 mx-1">=</div>
-              <StatusBubble
-                progress={completionProgress}
-                showProgress={captureStatus === 'complete'}
-                variant={meetsRequirement(total, requiredAmount) ? 'success' : 'default'}
-                direction="clockwise"
+              <div
+                className={`w-12 h-12 ${getResultColor(total).bg} border-2 border-dashed rounded-lg flex items-center justify-center`}
+                style={{ borderColor: 'var(--outline)' }}
               >
                 <div className={`text-lg font-bold ${getResultColor(total).text}`}>{total}</div>
-              </StatusBubble>
+              </div>
             </>
           )}
         </>
