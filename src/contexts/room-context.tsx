@@ -3,7 +3,7 @@
 import { createContext, ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import type { Player, Card, Room, Turn } from '../types';
+import type { Player, Card, Room, Turn, GameState } from '../types';
 import { isHost } from '../lib/players';
 import { setupPlayerAwareness, updateCursor } from '../lib/presence';
 import { createYjsObserver } from '../lib/game-state';
@@ -38,6 +38,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
   const [currentTurnData, setCurrentTurnData] = useState<Turn | null>(null);
   const [supportStack, setSupportStack] = useState<Card[]>([]);
   const [monsters, setMonsters] = useState<Card[]>([]);
+  const [waitingForAction, setWaitingForAction] = useState<GameState['waitingForAction'] | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   // Initialize Yjs when roomId changes
@@ -135,6 +136,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
           setCurrentTurnData(gameState.currentTurnData);
           setSupportStack(gameState.supportStack);
           setMonsters(gameState.monsters || []);
+          setWaitingForAction(gameState.waitingForAction || null);
         }
       );
       
@@ -250,6 +252,7 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     currentTurnData,
     supportStack,
     monsters,
+    waitingForAction,
     
     // Player info
     currentPlayer,
@@ -275,4 +278,3 @@ export function RoomProvider({ roomId, children }: RoomProviderProps) {
     </RoomContext.Provider>
   );
 }
-

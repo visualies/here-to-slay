@@ -153,7 +153,8 @@ export function ServerDiceCanvas({ onDiceResults }: {
     diceStates, 
     isConnected, 
     throwAllDice,
-    moveMultipleDice
+    moveMultipleDice,
+    hasRolled
   } = useDice();
 
   // Update local dice results when server dice states change
@@ -260,7 +261,7 @@ export function ServerDiceCanvas({ onDiceResults }: {
         left: 0,
         width: '100%',
         height: '100%',
-        pointerEvents: diceEnabled ? 'auto' : 'none',
+        pointerEvents: diceEnabled && !hasRolled ? 'auto' : 'none',
         background: 'transparent',
         zIndex: 30
       }}

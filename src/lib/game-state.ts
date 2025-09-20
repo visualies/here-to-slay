@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import type { Player, Card, Turn } from '../types';
+import type { Player, Card, Turn, GameState } from '../types';
 
 export function syncPlayersFromYjs(playersMap: Y.Map<Player>): Player[] {
   const players: Player[] = [];
@@ -29,12 +29,14 @@ export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
   currentTurnData: Turn | null;
   supportStack: Card[];
   monsters: Card[];
+  waitingForAction: GameState['waitingForAction'] | null;
 } {
   let phase = 'waiting';
   let currentTurn = '';
   let currentTurnData: Turn | null = null;
   let supportStack: Card[] = [];
   let monsters: Card[] = [];
+  let waitingForAction: GameState['waitingForAction'] | null = null;
 
   gameStateMap.forEach((value, key) => {
     console.log('Game state key:', key, 'value:', value);
@@ -55,15 +57,18 @@ export function syncGameStateFromYjs(gameStateMap: Y.Map<unknown>): {
     } else if (key === 'monsters') {
       monsters = value as Card[];
     }
+    else if (key === 'waitingForAction') {
+      waitingForAction = (value as GameState['waitingForAction']) || null;
+    }
   });
 
-  return { phase, currentTurn, currentTurnData, supportStack, monsters };
+  return { phase, currentTurn, currentTurnData, supportStack, monsters, waitingForAction };
 }
 
 export function createYjsObserver(
   playersMap: Y.Map<Player>,
   gameStateMap: Y.Map<unknown>,
-  onStateUpdate: (players: Player[], gameState: { phase: string; currentTurn: string; currentTurnData: Turn | null; supportStack: Card[]; monsters: Card[] }) => void
+  onStateUpdate: (players: Player[], gameState: { phase: string; currentTurn: string; currentTurnData: Turn | null; supportStack: Card[]; monsters: Card[]; waitingForAction: GameState['waitingForAction'] | null }) => void
 ): () => void {
   const updateState = () => {
     console.log('=== STATE UPDATE ===');

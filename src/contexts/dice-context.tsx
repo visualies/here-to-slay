@@ -89,6 +89,9 @@ export function DiceProvider({ children }: DiceProviderProps) {
   const [serverDiceStates, setServerDiceStates] = useState<ServerDiceStates>({});
   const [lastUpdate, setLastUpdate] = useState(0);
   const serverDiceManagerRef = useRef<ServerDiceManager | null>(null);
+  const captureResolverRef = useRef<((response: DiceCaptureResponse) => void) | null>(null);
+  const captureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stabilityTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Stable callback for dice state updates
   const onServerStatesUpdate = useCallback((states: ServerDiceStates) => {
@@ -236,6 +239,18 @@ export function DiceProvider({ children }: DiceProviderProps) {
       });
     }
 
+    if (captureTimeoutRef.current) {
+      clearTimeout(captureTimeoutRef.current);
+      captureTimeoutRef.current = null;
+    }
+
+    if (stabilityTimerRef.current) {
+      clearTimeout(stabilityTimerRef.current);
+      stabilityTimerRef.current = null;
+    }
+
+    captureResolverRef.current = null;
+
     // Initialize capture state
     setIsCapturing(true);
     setCaptureStatus('waiting');
@@ -246,60 +261,90 @@ export function DiceProvider({ children }: DiceProviderProps) {
     setRequiredAmount(requiredAmount || 0);
     
     return new Promise((resolve) => {
-      const checkTimeout = () => {
-        // Don't timeout if dice are actively rolling
-        if (captureStatus === 'rolling') {
-          setTimeout(checkTimeout, 1000);
-          return;
+      captureResolverRef.current = resolve;
+
+      captureTimeoutRef.current = setTimeout(() => {
+        if (captureResolverRef.current) {
+          captureResolverRef.current({
+            status: 'complete',
+            error: null,
+            data: []
+          });
+          captureResolverRef.current = null;
         }
-        
-        // Timeout occurred - gracefully end the action
+
         setIsCapturing(false);
         setEnabled(false);
         setCaptureStatus('complete');
         setRequiredAmount(0);
-        resolve({
-          status: 'complete',
-          error: null, // No error - just end the action gracefully
-          data: []
-        });
-      };
-      
-      const timeout = setTimeout(checkTimeout, 30000);
-
-      // Wait for dice to be stable and hasRolled
-      const checkForCompletion = () => {
-        if (stable && hasRolled && results.length > 0) {
-          // 500ms stability delay before starting the 4-second completion timer
-          setTimeout(() => {
-            if (stable && hasRolled && results.length > 0) {
-              // Start the 4-second completion timer
-              setCaptureStatus('complete');
-              
-              setTimeout(() => {
-                clearTimeout(timeout);
-                setIsCapturing(false);
-                setEnabled(false);
-                // Don't reset requiredAmount here - let it persist for the UI
-                
-                resolve({
-                  status: 'complete',
-                  error: null,
-                  data: results
-                });
-              }, 4000); // 4-second completion timer
-            } else {
-              setTimeout(checkForCompletion, 100);
-            }
-          }, 500);
-        } else {
-          setTimeout(checkForCompletion, 100);
-        }
-      };
-      
-      checkForCompletion();
+      }, 30000);
     });
-  }, [isCapturing, stable, hasRolled, results, captureStatus]);
+  }, [isCapturing]);
+
+  // Resolve capture as soon as dice are stable with a valid result
+  useEffect(() => {
+    if (!isCapturing || !captureResolverRef.current) {
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+        stabilityTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (stable && hasRolled && results.length > 0) {
+      if (stabilityTimerRef.current) {
+        return;
+      }
+
+      stabilityTimerRef.current = setTimeout(() => {
+        if (!captureResolverRef.current) {
+          stabilityTimerRef.current = null;
+          return;
+        }
+
+        if (!(stable && hasRolled && results.length > 0)) {
+          stabilityTimerRef.current = null;
+          return;
+        }
+
+        const resolver = captureResolverRef.current;
+        const resolvedResults = [...results];
+
+        captureResolverRef.current = null;
+
+        if (captureTimeoutRef.current) {
+          clearTimeout(captureTimeoutRef.current);
+          captureTimeoutRef.current = null;
+        }
+
+        setCaptureStatus('complete');
+        setIsCapturing(false);
+        setEnabled(false);
+
+        resolver({
+          status: 'complete',
+          error: null,
+          data: resolvedResults
+        });
+
+        stabilityTimerRef.current = null;
+      }, 500);
+    } else if (stabilityTimerRef.current) {
+      clearTimeout(stabilityTimerRef.current);
+      stabilityTimerRef.current = null;
+    }
+  }, [isCapturing, stable, hasRolled, results]);
+
+  useEffect(() => {
+    return () => {
+      if (captureTimeoutRef.current) {
+        clearTimeout(captureTimeoutRef.current);
+      }
+      if (stabilityTimerRef.current) {
+        clearTimeout(stabilityTimerRef.current);
+      }
+    };
+  }, []);
   
   const diceData: DiceData = {
     enabled,
@@ -329,4 +374,3 @@ export function DiceProvider({ children }: DiceProviderProps) {
     </DiceContext.Provider>
   );
 }
-

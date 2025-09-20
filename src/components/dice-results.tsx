@@ -10,7 +10,7 @@ interface DiceResultsProps {
 
 export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceResultsProps) {
   const diceContext = useDice();
-  const { captureStatus, requiredAmount } = diceContext;
+  const { captureStatus, requiredAmount, hasRolled } = diceContext;
   const validResults = diceResults.filter(r => r > 0);
   const [completionProgress, setCompletionProgress] = useState(0);
   const [timeoutProgress, setTimeoutProgress] = useState(0);
@@ -83,8 +83,15 @@ export function DiceResults({ diceResults = [], timeout, timeRemaining }: DiceRe
     return { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-600' };
   };
 
-  // Show question marks only when waiting or when timeout props are provided
-  if (captureStatus === 'waiting' || (timeout && timeRemaining !== undefined)) {
+  const shouldShowPlaceholders =
+    !hasRolled ||
+    (
+      validResults.length === 0 &&
+      captureStatus !== 'rolling' &&
+      (captureStatus === 'waiting' || (timeout && timeRemaining !== undefined))
+    );
+
+  if (shouldShowPlaceholders) {
     return (
       <div className="flex items-center gap-3">
         <StatusBubble

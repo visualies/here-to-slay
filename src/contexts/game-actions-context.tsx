@@ -1,11 +1,12 @@
 "use client";
 
-import { createContext, ReactNode, useCallback } from 'react';
+import { createContext, ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useRoom } from '../hooks/use-room';
 import { useStatus } from '../hooks/use-status';
 import { gameServerAPI } from '../lib/game-server-api';
 import { useDice } from '../hooks/use-dice';
 import type { Card } from '../types';
+import { StatusKey } from '../types';
 
 interface GameActionsContextValue {
   playCard: (cardId: string) => Promise<void>;
@@ -28,8 +29,9 @@ interface ApiResponse {
 
 export function GameActionsProvider({ children }: GameActionsProviderProps) {
   const room = useRoom();
-  const { showMessage } = useStatus();
+  const { status, showMessage } = useStatus();
   const { captureDiceResult } = useDice();
+  const autoCaptureActionRef = useRef<string | null>(null);
 
   const handleApiResponse = useCallback((result: ApiResponse) => {
     if (!result.success) {
@@ -37,6 +39,73 @@ export function GameActionsProvider({ children }: GameActionsProviderProps) {
     }
     // Status is now entirely managed by server via Yjs document
   }, [showMessage]);
+
+  // Automatically handle dice capture requests from the server action queue
+  useEffect(() => {
+    const waitingAction = room.waitingForAction;
+    const currentPlayerId = room.currentPlayer?.id;
+
+    if (!waitingAction || !currentPlayerId) {
+      autoCaptureActionRef.current = null;
+      return;
+    }
+
+    if (waitingAction.playerId !== currentPlayerId) {
+      return;
+    }
+
+    if (status.key !== StatusKey.CAPTURE_DICE) {
+      return;
+    }
+
+    const { actionId } = waitingAction;
+
+    if (!actionId || autoCaptureActionRef.current === actionId) {
+      return;
+    }
+
+    autoCaptureActionRef.current = actionId;
+
+    let cancelled = false;
+
+    const handleCapture = async () => {
+      try {
+        const diceResponse = await captureDiceResult();
+        if (cancelled) {
+          return;
+        }
+
+        if (diceResponse.error || !diceResponse.data || diceResponse.data.length === 0) {
+          autoCaptureActionRef.current = null;
+          showMessage(diceResponse.error || 'Dice roll failed or timed out.', 'error');
+          return;
+        }
+
+        const diceTotal = diceResponse.data.reduce((sum, value) => sum + value, 0);
+        const response = await gameServerAPI.provideActionInput(
+          room.roomId,
+          currentPlayerId,
+          actionId,
+          [diceTotal.toString()]
+        );
+
+        if (!response.success) {
+          autoCaptureActionRef.current = null;
+          showMessage(response.message || 'Failed to submit dice result.', 'error');
+        }
+      } catch (error) {
+        console.error('Failed to handle automatic dice capture:', error);
+        autoCaptureActionRef.current = null;
+        showMessage('Failed to submit dice result.', 'error');
+      }
+    };
+
+    handleCapture();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [room.waitingForAction, room.currentPlayer?.id, status.key, captureDiceResult, showMessage, room.roomId]);
 
   const playCard = useCallback(async (cardId: string) => {
     if (!room?.roomId || !room?.currentPlayer?.id) return;

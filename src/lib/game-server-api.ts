@@ -90,6 +90,10 @@ class GameServerAPI {
     return this.request(`/api/game/discard-hand-redraw`, 'POST', { roomId, playerId });
   }
 
+  async provideActionInput(roomId: string, playerId: string, actionId: string, input: string[]): Promise<ApiResponse> {
+    return this.request(`/api/game/provide-action-input`, 'POST', { roomId, playerId, actionId, input });
+  }
+
   // Utility
   async saveGameState(roomId: string): Promise<ApiResponse> {
     return this.request('/api/game/save', 'POST', { roomId });
