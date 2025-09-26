@@ -12,7 +12,7 @@ export const partyLeaderRegistry: Card[] = [
       action: 'CHALLENGE_BOOST',
       amount: 2,
     }],
-    imagePath: '/api/images/card/party-leader-001',
+    imagePath: 'party-leaders/partyleader_figher.png',
   },
   {
     id: 'party-leader-002',
@@ -25,7 +25,7 @@ export const partyLeaderRegistry: Card[] = [
       action: 'HERO_EFFECT_BOOST',
       amount: 1,
     }],
-    imagePath: '/api/images/card/party-leader-002',
+    imagePath: 'party-leaders/partyleader_bard.png',
   },
   {
     id: 'party-leader-003',
@@ -38,7 +38,7 @@ export const partyLeaderRegistry: Card[] = [
       action: 'ATTACK_BOOST',
       amount: 1,
     }],
-    imagePath: '/api/images/card/party-leader-003',
+    imagePath: 'party-leaders/partyleader_ranger.png',
   },
   {
     id: 'party-leader-004',
@@ -51,7 +51,7 @@ export const partyLeaderRegistry: Card[] = [
       action: 'STEAL_CARD',
       amount: 1,
     }],
-    imagePath: '/api/images/card/party-leader-004',
+    imagePath: 'party-leaders/partyleader_thief.png',
   },
 ];
 

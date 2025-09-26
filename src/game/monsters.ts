@@ -11,7 +11,7 @@ export const monsterRegistry: Card[] = [
       action: 'POISON',
       amount: 2,
     }],
-    imagePath: '/api/images/card/monster-001',
+    imagePath: 'monsters/monster_anuran_cauldron.png',
   },
   {
     id: 'monster-002',
@@ -23,7 +23,7 @@ export const monsterRegistry: Card[] = [
       action: 'HYPNOSIS',
       amount: 1,
     }],
-    imagePath: '/api/images/card/monster-002',
+    imagePath: 'monsters/monster_crowned_serpent.png',
   },
   {
     id: 'monster-003',
@@ -35,7 +35,7 @@ export const monsterRegistry: Card[] = [
       action: 'ABSORB',
       amount: 3,
     }],
-    imagePath: '/api/images/card/monster-003',
+    imagePath: 'monsters/monster_mega_slime.png',
   },
 ];
 
