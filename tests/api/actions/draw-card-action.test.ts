@@ -1624,8 +1624,8 @@ test.describe('API: Draw Card Action', () => {
       expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput).toBeDefined()
       expect(playCardBody.data.turnServiceResult.data.actionResults[0].waitingForInput.type).toBe('choice')
 
-      // Now provide user input by selecting specific cards from cache
-      const cacheCardIds = initialRoomData.gameState.cache.slice(0, 2).map((c: any) => c.id) // Take first 2 cards from cache
+      // Now provide user input by selecting specific cards from cache using their instance IDs
+      const cacheCardIds = initialRoomData.gameState.cache.slice(0, 2).map((c: any) => c.instanceId || c.id) // Take first 2 cards from cache
       
       // Get the actionId from the current turn's action queue
       const roomStateResponse = await request.get(`/api/room/${roomId}`)
@@ -1660,14 +1660,15 @@ test.describe('API: Draw Card Action', () => {
       const finalHandSize = finalPlayer.hand.length
       const finalCacheSize = finalRoomData.gameState.cache?.length || 0
 
+
       // Player should gain 2 cards, cache should lose 2 cards
       expect(finalHandSize).toBe(initialHandSize + 2)
       expect(finalCacheSize).toBe(initialCacheSize - 2)
 
       // Verify the specific cards were moved
       for (const cardId of cacheCardIds) {
-        expect(finalPlayer.hand.some((card: any) => card.id === cardId)).toBe(true)
-        expect(finalRoomData.gameState.cache.some((card: any) => card.id === cardId)).toBe(false)
+        expect(finalPlayer.hand.some((card: any) => card.instanceId === cardId || card.id === cardId)).toBe(true)
+        expect(finalRoomData.gameState.cache.some((card: any) => card.instanceId === cardId || card.id === cardId)).toBe(false)
       }
     })
 

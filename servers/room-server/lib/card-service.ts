@@ -548,6 +548,7 @@ export function moveCard(
 ): ActionResult {
   const { playersMap, gameStateMap, playerId } = context;
 
+
   if (!target || !destination) {
     return { success: false, message: 'target and destination are required' };
   }
@@ -645,7 +646,9 @@ export function moveCard(
       const currentOtherPlayers = Array.from(playersMap.values()).filter(p => (p as Player).id !== playerId) as Player[];
 
       for (const otherPlayer of currentOtherPlayers) {
-        const cardIndex = (otherPlayer.hand || []).findIndex(card => card.id === cardId);
+        const cardIndex = (otherPlayer.hand || []).findIndex(card =>
+          card.instanceId === cardId || card.id === cardId
+        );
         if (cardIndex !== -1) {
           const newHand = [...(otherPlayer.hand || [])];
           const [removedCard] = newHand.splice(cardIndex, 1);
@@ -715,16 +718,41 @@ export function moveCard(
     }
 
     const { sourceCards, updateSourceFunction } = sourceLocation;
-    const newSourceCards = [...sourceCards];
 
-    for (const cardId of selectedCardIds) {
-      const cardIndex = newSourceCards.findIndex(card => card.id === cardId);
-      if (cardIndex === -1) {
-        return { success: false, message: `Card ${cardId} not found in ${target}` };
+    // For cache operations, ensure we work with the most current state
+    const workingSourceCards = target === Location.Cache ?
+      gameStateMap.get('cache') as Card[] || [] :
+      sourceCards;
+
+    const newSourceCards = [...workingSourceCards];
+
+    // For cache with potential duplicates, remove specific instances
+    if (target === Location.Cache) {
+      for (const cardId of selectedCardIds) {
+        const cardIndex = newSourceCards.findIndex(card =>
+          card.instanceId === cardId || card.id === cardId
+        );
+        if (cardIndex === -1) {
+          return { success: false, message: `Card ${cardId} not found in cache` };
+        }
+        const [removedCard] = newSourceCards.splice(cardIndex, 1);
+        drawnCards.push(removedCard);
       }
-      const [removedCard] = newSourceCards.splice(cardIndex, 1);
-      drawnCards.push(removedCard);
+    } else {
+      // For other locations, use the original logic
+      for (const cardId of selectedCardIds) {
+        const cardIndex = newSourceCards.findIndex(card =>
+          card.instanceId === cardId || card.id === cardId
+        );
+        if (cardIndex === -1) {
+          return { success: false, message: `Card ${cardId} not found in ${target}` };
+        }
+        const [removedCard] = newSourceCards.splice(cardIndex, 1);
+        drawnCards.push(removedCard);
+      }
     }
+
+    // Always use the update function to ensure proper Yjs handling
     updateSourceFunction(newSourceCards);
   }
 

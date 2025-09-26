@@ -88,13 +88,17 @@ export function createSupportStackFromDatabase(): Card[] {
     return []
   }
 
-  // Create support stack with available cards (allowing duplicates for now)
+  // Create support stack with available cards, each with unique instance ID
   const supportStack: Card[] = []
   for (let i = 0; i < 20; i++) {
     const randomIndex = Math.floor(Math.random() * allAvailableCards.length)
     const selectedCard = allAvailableCards[randomIndex]
-    // Use the original card without modifying the ID
-    supportStack.push({ ...selectedCard })
+    // Create a unique instance of the card with an instance ID
+    const cardInstance: Card = {
+      ...selectedCard,
+      instanceId: `${selectedCard.id}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    }
+    supportStack.push(cardInstance)
   }
 
   return supportStack

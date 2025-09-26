@@ -84,9 +84,10 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
 
   const currentAction = currentTurn.action_queue[0];
 
-  // Extract original parameters
-  const target = getParam<Location>({ parameters: currentAction.parameters }, 'target');
-  const destination = getParam<Location>({ parameters: currentAction.parameters }, 'destination');
+  // Extract original parameters (excluding user_input)
+  const originalParams = currentAction.parameters.filter(p => p.name !== 'user_input');
+  const target = getParam<Location>({ parameters: originalParams }, 'target');
+  const destination = getParam<Location>({ parameters: originalParams }, 'destination');
 
   // Special validation for AnyHand: all selected cards must come from the same player
   if (target === Location.AnyHand) {
@@ -123,7 +124,6 @@ export function callback(context: ActionContext, userInput: string[]): ActionRes
 
   // Move the user-selected cards
   const result = moveCard(context, target, destination, userInput);
-
   return result;
 }
 

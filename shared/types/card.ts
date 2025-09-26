@@ -13,6 +13,7 @@ export type SimpleRequirement = {
 
 // Flexible Card type that can handle both database and game data
 export type Card = Omit<InferSelectModel<typeof cards>, 'heroClass' | 'imagePath'> & {
+  instanceId?: string // Unique identifier for each card instance in game
   heroClass?: string | null
   imagePath?: string | null
   requirements?: (DatabaseRequirement | SimpleRequirement)[]
