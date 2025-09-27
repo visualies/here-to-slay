@@ -88,23 +88,27 @@ export async function joinRoomAction(
   prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const roomId = formData.get('roomId') as string;
+  const playerName = formData.get('playerName') as string;
+
+  if (!roomId || roomId.trim().length === 0) {
+    return { error: 'Room ID is required' };
+  }
+
+  if (roomId.trim().length !== 6) {
+    return { error: 'Room ID must be 6 characters' };
+  }
+
   try {
-    const roomId = formData.get('roomId') as string;
-    const playerName = formData.get('playerName') as string;
-
-    if (!roomId || roomId.trim().length === 0) {
-      return { error: 'Room ID is required' };
-    }
-
-    if (roomId.trim().length !== 6) {
-      return { error: 'Room ID must be 6 characters' };
-    }
-
-    // Since RoomProvider auto-joins, we just need to redirect to the room
-    // The actual joining will happen when RoomProvider mounts
-    redirect(`/room/${roomId.toUpperCase()}`);
+    // Additional validation could go here if needed
+    // For now, we just validate the input and redirect
   } catch (error) {
     console.error('Failed to join room:', error);
     return { error: error instanceof Error ? error.message : 'Failed to join room' };
   }
+
+  // Redirect happens outside try-catch so it's not caught as an error
+  // Since RoomProvider auto-joins, we just need to redirect to the room
+  // The actual joining will happen when RoomProvider mounts
+  redirect(`/room/${roomId.toUpperCase()}`);
 }
